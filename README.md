@@ -157,6 +157,7 @@ Disponible en `/admin/` solo para administradores.
 ├── server.js        # Servidor Express y API
 ├── db.js            # SQLite, contraseñas y migración
 ├── zip.js           # Generador ZIP en streaming (sin dependencias)
+├── reset-password.js # Recuperación de cuentas desde la terminal
 ├── public/
 │   ├── index.html   # Inicio de sesión y registro
 │   ├── panel.html   # Panel del usuario
@@ -257,7 +258,8 @@ Los enlaces antiguos (`/share/usuario/ruta` y `/files/...`) dejan de funcionar p
 | `Cannot find module 'better-sqlite3'` | Usa Node 22.13+ o ejecuta `npm install` con herramientas de compilación disponibles. |
 | Las subidas grandes fallan tras un proxy | Aumenta `client_max_body_size` en Nginx o su equivalente. |
 | Todos los usuarios aparecen con la misma IP | Arranca con `TRUST_PROXY=1` si usas proxy inverso. |
-| Olvidé la contraseña del admin | Otro administrador puede restablecerla desde el panel. Si no hay otro, borra `data/filecloud.db` y regístrate de nuevo (los archivos de `hosting/` se conservan). |
+| «Credenciales inválidas» con cuentas de la versión 1 | Comprueba que `data/users.json` estaba en la carpeta al primer arranque (la consola indica cuántos usuarios se importaron). Si no, crea o recupera la cuenta con `node reset-password.js <usuario> <contraseña> --admin`. |
+| Olvidé la contraseña | Otro administrador puede restablecerla desde el panel, o ejecuta `node reset-password.js <usuario> <nueva-contraseña>` en el servidor. Sin argumentos, el comando lista los usuarios existentes. |
 | El ZIP de una carpeta falla | El límite es 4 GB por ZIP y 65 000 archivos. |
 
 ## Créditos

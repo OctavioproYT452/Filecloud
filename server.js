@@ -485,4 +485,6 @@ setInterval(() => {
   for (const [k, f] of fails) if (f.until < now()) fails.delete(k);
 }, 36e5).unref();
 
+if (!get("SELECT COUNT(*) n FROM users").n)
+  console.warn("AVISO: no hay usuarios en la base de datos. Si vienes de la versión anterior, copia tu users.json a data/ y reinicia; o crea un usuario con: node reset-password.js <usuario> <contraseña> --admin");
 app.listen(PORT, () => console.log(`File Cloud corriendo en http://localhost:${PORT}`));

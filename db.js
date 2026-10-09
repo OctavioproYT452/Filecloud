@@ -44,13 +44,20 @@ const verify = (pw, h) => {
 // Migración única desde el antiguo data/users.json (las contraseñas en texto plano se cifran)
 const old = path.join(DIR, "users.json");
 if (fs.existsSync(old)) {
-  try {
-    for (const u of JSON.parse(fs.readFileSync(old, "utf8")))
+  let list = [];
+  try { list = JSON.parse(fs.readFileSync(old, "utf8").replace(/^\uFEFF/, "")); }
+  catch (e) { console.error("No se pudo leer users.json:", e.message); }
+  let ok = 0, bad = 0;
+  for (const u of Array.isArray(list) ? list : []) {
+    try { // cada usuario se importa por separado: uno defectuoso no bloquea a los demás
+      if (!u || !String(u.username || "").trim()) throw Error("sin nombre de usuario");
       run("INSERT OR IGNORE INTO users(username,password_hash,is_admin,max_space_mb,created_at) VALUES(?,?,?,?,?)",
-        u.username, hash(String(u.password)), u.admin ? 1 : 0, u.maxSpaceMB ?? 100, now());
-    fs.renameSync(old, old + ".migrado");
-    console.log("users.json migrado a SQLite (copia: users.json.migrado)");
-  } catch (e) { console.error("Migración fallida:", e.message); }
+        String(u.username).trim(), hash(String(u.password ?? "")), u.admin ? 1 : 0, Number.isFinite(Number(u.maxSpaceMB)) ? Number(u.maxSpaceMB) : 100, now());
+      ok++;
+    } catch (e) { bad++; console.error("Usuario omitido en la migración:", u && u.username, "-", e.message); }
+  }
+  if (ok || !bad) { try { fs.renameSync(old, old + ".migrado"); } catch { } }
+  console.log(`Migración de users.json: ${ok} usuario(s) importado(s), ${bad} omitido(s).`);
 }
 
 module.exports = { get, all, run, now, hash, verify };
