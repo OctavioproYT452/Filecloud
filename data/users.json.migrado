@@ -1,0 +1,9 @@
+[
+  {
+    "username": "Admin",
+    "password": "admin123",
+    "maxSpaceMB": -1,
+    "usedSpaceMB": 0,
+    "admin": true
+  }
+]

@@ -1,0 +1,16 @@
+{
+  "name": "file-cloud",
+  "version": "2.0.0",
+  "description": "File Cloud - gestión de archivos por usuario",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "author": "Jesús Octavio Olivera Silva",
+  "license": "MIT",
+  "engines": { "node": ">=18" },
+  "dependencies": {
+    "express": "^4.21.2",
+    "multer": "^2.0.2",
+    "systeminformation": "^5.27.11"
+  },
+  "optionalDependencies": { "better-sqlite3": "^11.5.0" }
+}
