@@ -1,6 +1,7 @@
 const express = require("express"), fs = require("fs"), fsp = fs.promises, path = require("path"),
   crypto = require("crypto"), os = require("os"), multer = require("multer"), si = require("systeminformation");
 const { get, all, run, now, hash, verify } = require("./db");
+const { zipTo } = require("./zip");
 
 const PORT = process.env.PORT || 3001;
 const HOSTING = path.join(__dirname, "hosting"), TMP = path.join(__dirname, "data", "tmp");
@@ -139,7 +140,7 @@ const logout = (req, res) => {
 app.post("/api/logout", (req, res) => { logout(req, res); res.json({ success: true }); });
 app.get("/logout", (req, res) => { logout(req, res); res.redirect("/"); });
 
-app.get("/api/session", (req, res) => res.json(req.user ? { logged: true, user: req.user.username, admin: !!req.user.is_admin, registration: false } : { logged: false, registration: setting("allow_registration") === "1" }));
+app.get("/api/session", (req, res) => res.json(req.user ? { logged: true, user: req.user.username, admin: !!req.user.is_admin, registration: false, announcement: setting("announcement") || "" } : { logged: false, registration: setting("allow_registration") === "1" }));
 
 app.post("/api/password", need, wrap(async (req, res) => {
   const { current, next } = req.body;
@@ -161,7 +162,7 @@ app.get("/api/list", need, wrap(async (req, res) => {
     if (s) items.push({ name: e.name, isDir: s.isDirectory(), size: s.isDirectory() ? 0 : s.size, mtime: s.mtimeMs });
   }
   const used = await usage(u);
-  res.json({ items, usedBytes: used, maxMB: u.max_space_mb });
+  res.json({ items, usedBytes: used, maxMB: u.max_space_mb, favs: all("SELECT path FROM favs WHERE user_id=?", u.id).map(r => r.path) });
 }));
 
 app.post("/api/mkdir", need, wrap(async (req, res) => {
@@ -186,7 +187,12 @@ app.post("/api/upload", need, wrap(async (req, res) => {
     if (files.reduce((s, f) => s + f.size, 0) > rem) throw Error(NOSPACE);
     const dir = safe(base(u), req.body.destPath);
     await fsp.mkdir(dir, { recursive: true });
-    for (const f of files) await move(f.path, path.join(dir, await uniq(dir, nm(path.basename(fix(f.originalname))))));
+    const rels = [].concat(req.body.paths ?? []);
+    for (const [i, f] of files.entries()) { // "paths" conserva la estructura al subir carpetas
+      const sub = path.dirname(String(rels[i] || "")), d2 = sub === "." ? dir : safe(dir, sub);
+      await fsp.mkdir(d2, { recursive: true });
+      await move(f.path, path.join(d2, await uniq(d2, nm(path.basename(fix(f.originalname))))));
+    }
     
   } finally { await Promise.all(files.map(f => fsp.rm(f.path, { force: true }))); }
   await usage(u, true); res.json({ success: true });
@@ -235,15 +241,20 @@ app.post("/api/share", need, wrap(async (req, res) => {
 app.get("/api/shares", need, (req, res) => res.json({ shares: all("SELECT * FROM shares WHERE user_id=? ORDER BY created_at DESC", req.user.id) }));
 app.post("/api/share/revoke", need, (req, res) => { run("DELETE FROM shares WHERE token=? AND user_id=?", String(req.body.token), req.user.id); res.json({ success: true }); });
 
-const page = (t, b) => `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(t)}</title><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/theme.css"></head><body><header class="top"><a class="brand" href="/"><span class="logo">FC</span>File Cloud</a></header><main class="wrap share">${b}</main></body></html>`;
+const IC = (n, c = "") => `<svg class="i ${c}"><use href="/icons.svg#${n}"/></svg>`;
+const themeCss = t => t ? ":root{" + [...COLORS.filter(k => t[k]).map(k => `--${k}:${t[k]}`), t.r !== undefined && `--r:${t.r}px`, t.font && `--font:${FONTS[t.font]}`, t.sp && `--sp:${t.sp}`].filter(Boolean).join(";") + "}" : "";
+const page = (t, b, th) => `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(t)}</title><link rel="stylesheet" href="/style.css"><style>${themeCss(th)}</style></head><body><header class="top"><a class="brand" href="/"><span class="logo">${IC("cloud")}</span>File Cloud</a></header><main class="wrap share">${b}</main><footer class="foot muted">Compartido con File Cloud</footer></body></html>`;
 const bytes = b => b < 1024 ? b + " B" : b < 1048576 ? (b / 1024).toFixed(1) + " KB" : b < 1073741824 ? (b / 1048576).toFixed(1) + " MB" : (b / 1073741824).toFixed(2) + " GB";
+const KINDS = { image: ".png .jpg .jpeg .gif .webp .bmp .svg .ico", video: ".mp4 .webm .mov .mkv .ogg", audio: ".mp3 .wav .flac .m4a .aac", doc: ".pdf .doc .docx .txt .md .odt .csv", code: ".js .json .html .htm .css .xml .py .java .c .cpp .h .php .yml" };
+const kind = e => Object.keys(KINDS).find(k => KINDS[k].split(" ").includes(e)) || "file";
+const expTxt = s => s.expires_at ? "Caduca el " + new Date(s.expires_at).toLocaleDateString("es") : "Sin caducidad";
 
 function shareCtx(req) {
-  const s = get("SELECT s.*,u.username,u.suspended FROM shares s JOIN users u ON u.id=s.user_id WHERE s.token=?", req.params.token);
+  const s = get("SELECT s.*,u.username,u.suspended,u.theme FROM shares s JOIN users u ON u.id=s.user_id WHERE s.token=?", req.params.token);
   if (!s || s.suspended || (s.expires_at && s.expires_at < now())) return null;
   try {
     const root = safe(path.join(HOSTING, nm(s.username)), s.path), full = safe(root, req.query.p);
-    return fs.existsSync(full) ? { s, root, full } : null;
+    return fs.existsSync(full) ? { s, root, full, th: userTheme(s) } : null;
   } catch { return null; }
 }
 const unlocked = (req, s) => !s.pw || cookies(req)["fc_s_" + s.token] === sha(s.pw + s.token);
@@ -261,28 +272,34 @@ app.get("/s/:token/raw", (req, res) => {
   if (!unlocked(req, c.s)) return res.sendStatus(403);
   serve(res, c.full, req.query.dl);
 });
-app.get("/s/:token", (req, res) => {
+app.get("/s/:token/zip", async (req, res) => {
   const c = shareCtx(req);
-  if (!c) return res.status(404).send(page("No encontrado", `<div class="card center"><h2>Enlace no disponible</h2><p class="muted">Ha caducado, fue revocado o el archivo ya no existe.</p></div>`));
-  if (!unlocked(req, c.s)) return res.send(page("Enlace protegido", `<div class="card center"><h2>🔒 Enlace protegido</h2><form method="post" action="/s/${encodeURIComponent(req.params.token)}/unlock"><input class="input" type="password" name="password" placeholder="Contraseña" autofocus required><div class="err">${req.query.bad ? "Contraseña incorrecta" : ""}</div><button class="btn">Abrir</button></form></div>`));
-  const t = encodeURIComponent(req.params.token), q = p => `?p=${encodeURIComponent(p)}`, rel = path.relative(c.root, c.full);
-  if (fs.statSync(c.full).isDirectory()) {
-    const rows = fs.readdirSync(c.full, { withFileTypes: true }).map(e => {
-      const p = path.join(rel, e.name), st = fs.statSync(path.join(c.full, e.name));
-      return `<tr><td>${e.isDirectory() ? "📁" : "📄"}</td><td><a href="/s/${t}${q(p)}">${esc(e.name)}</a></td><td class="muted">${e.isDirectory() ? "—" : bytes(st.size)}</td></tr>`;
-    }).join("") || `<tr><td colspan="3" class="muted">Carpeta vacía</td></tr>`;
-    const up = rel ? `<a class="btn ghost" href="/s/${t}${q(path.dirname(rel) === "." ? "" : path.dirname(rel))}">⬅ Subir</a>` : "";
-    return res.send(page(path.basename(c.full), `<div class="card"><h2>📂 ${esc(path.basename(c.full))}</h2><p class="muted">Compartido por ${esc(c.s.username)}</p>${up}<div class="scroll"><table class="tbl"><tbody>${rows}</tbody></table></div></div>`));
-  }
-  const ext = path.extname(c.full).toLowerCase(), raw = `/s/${t}/raw${q(rel)}`, name = path.basename(c.full);
-  let pv = `<p class="muted">Sin vista previa para este tipo de archivo.</p>`;
-  if ([".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".svg"].includes(ext)) pv = `<img class="pv" src="${raw}" alt="${esc(name)}">`;
-  else if ([".mp4", ".webm", ".ogg", ".mov"].includes(ext)) pv = `<video class="pv" controls src="${raw}"></video>`;
-  else if ([".mp3", ".wav", ".flac", ".aac", ".m4a"].includes(ext)) pv = `<audio controls style="width:100%" src="${raw}"></audio>`;
-  else if (ext === ".pdf" || ext === ".html" || ext === ".htm") pv = `<iframe class="pv frame" src="${raw}" sandbox="allow-scripts"></iframe>`;
-  else if ([".txt", ".md", ".json", ".log", ".csv", ".js", ".css", ".py", ".xml"].includes(ext))
-    pv = `<pre class="code">${esc(fs.readFileSync(c.full, "utf8").slice(0, 20000))}</pre>`;
-  res.send(page(name, `<div class="card center"><h2>🔗 ${esc(name)}</h2><p class="muted">${bytes(fs.statSync(c.full).size)} · compartido por ${esc(c.s.username)}</p><a class="btn" href="${raw}&dl=1">⬇ Descargar</a><div style="margin-top:18px">${pv}</div></div>`));
+  if (!c || !fs.statSync(c.full).isDirectory()) return res.sendStatus(404);
+  if (!unlocked(req, c.s)) return res.sendStatus(403);
+  try { await zipTo(res, [{ abs: c.full, name: path.basename(c.full) }], path.basename(c.full)); } catch (e) { res.status(400).send(e.message); }
+});
+app.get("/s/:token", (req, res) => {
+  try {
+    const c = shareCtx(req), t = encodeURIComponent(req.params.token);
+    if (!c) return res.status(404).send(page("No encontrado", `<div class="card sh-hero"><div class="sh-ico bad">${IC("ban")}</div><h2>Enlace no disponible</h2><p class="muted">Ha caducado, fue revocado o el archivo ya no existe.</p></div>`));
+    if (!unlocked(req, c.s)) return res.send(page("Enlace protegido", `<div class="card sh-hero"><div class="sh-ico">${IC("lock")}</div><h2>Enlace protegido</h2><p class="muted">Introduce la contraseña para continuar.</p><form method="post" action="/s/${t}/unlock" class="sh-form"><input class="input" type="password" name="password" placeholder="Contraseña" autofocus required><div class="err">${req.query.bad ? "Contraseña incorrecta" : ""}</div><button class="btn">${IC("key")} Abrir</button></form></div>`, c.th));
+    const q = p => `?p=${encodeURIComponent(p)}`, rel = path.relative(c.root, c.full), st = fs.statSync(c.full), name = path.basename(c.full), up = path.dirname(rel) === "." ? "" : path.dirname(rel);
+    const meta = n => `<div class="sh-meta"><span>${IC("user")} ${esc(c.s.username)}</span>${n}<span>${IC("clock")} ${expTxt(c.s)}</span></div>`;
+    const crumbs = () => { const ps = rel ? rel.split(path.sep) : []; return `<nav class="crumbs">${ps.length ? `<a href="/s/${t}">${esc(path.basename(c.root))}</a>` : `<b>${esc(path.basename(c.root))}</b>`}${ps.map((p, i) => i < ps.length - 1 ? `›<a href="/s/${t}${q(ps.slice(0, i + 1).join("/"))}">${esc(p)}</a>` : `›<b>${esc(p)}</b>`).join("")}</nav>`; };
+    if (st.isDirectory()) {
+      const es = fs.readdirSync(c.full, { withFileTypes: true }).sort((a, b) => b.isDirectory() - a.isDirectory() || a.name.localeCompare(b.name));
+      const cards = es.map(e => { const isD = e.isDirectory(); return `<a class="item" href="/s/${t}${q(path.join(rel, e.name))}"><div class="ico">${IC(isD ? "folder" : kind(path.extname(e.name).toLowerCase()))}</div><div class="meta"><b>${esc(e.name)}</b><small>${isD ? "Carpeta" : bytes(fs.statSync(path.join(c.full, e.name)).size)}</small></div></a>`; }).join("") || `<p class="muted">Carpeta vacía</p>`;
+      return res.send(page(name, `<div class="card sh-hero"><div class="sh-ico">${IC("folder")}</div><h2 class="sh-name">${esc(name)}</h2>${meta(`<span>${IC("file")} ${es.length} elemento(s)</span>`)}<div class="row sh-act"><a class="btn" href="/s/${t}/zip${q(rel)}">${IC("zip")} Descargar todo (.zip)</a></div></div><div class="card" style="margin-top:12px">${crumbs()}<div class="grid">${cards}</div></div>`, c.th));
+    }
+    const ext = path.extname(c.full).toLowerCase(), raw = `/s/${t}/raw${q(rel)}`;
+    let pv = `<p class="muted">Sin vista previa para este tipo de archivo.</p>`;
+    if ([".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".svg"].includes(ext)) pv = `<img class="pv" src="${raw}" alt="${esc(name)}">`;
+    else if ([".mp4", ".webm", ".ogg", ".mov"].includes(ext)) pv = `<video class="pv" controls src="${raw}"></video>`;
+    else if ([".mp3", ".wav", ".flac", ".aac", ".m4a"].includes(ext)) pv = `<audio controls style="width:100%" src="${raw}"></audio>`;
+    else if ([".pdf", ".html", ".htm"].includes(ext)) pv = `<iframe class="pv frame" src="${raw}" sandbox="allow-scripts"></iframe>`;
+    else if ([".txt", ".md", ".json", ".log", ".csv", ".js", ".css", ".py", ".xml"].includes(ext) && st.size < 2e6) pv = `<pre class="code">${esc(fs.readFileSync(c.full, "utf8").slice(0, 20000))}</pre>`;
+    res.send(page(name, `<div class="card sh-hero"><div class="sh-ico">${IC(kind(ext))}</div><h2 class="sh-name">${esc(name)}</h2>${meta(`<span>${IC("file")} ${bytes(st.size)}</span>`)}<div class="row sh-act"><a class="btn" href="${raw}&dl=1">${IC("download")} Descargar</a>${c.s.is_dir ? `<a class="btn ghost" href="/s/${t}${q(up)}">${IC("back")} Volver</a>` : ""}</div></div><div class="card sh-pv">${c.s.is_dir ? crumbs() : ""}${pv}</div>`, c.th));
+  } catch { res.status(500).send("Error al mostrar el enlace"); }
 });
 
 // ---------- administración ----------
@@ -344,12 +361,13 @@ app.post("/api/admin/delete-file", needAdmin, wrap(async (req, res) => {
   await fsp.rm(f, { recursive: true, force: true }); await usage(u, true);
   res.json({ success: true });
 }));
-app.get("/api/admin/settings", needAdmin, (req, res) => res.json({ allow_registration: setting("allow_registration") === "1", default_quota_mb: Number(setting("default_quota_mb")) }));
+app.get("/api/admin/settings", needAdmin, (req, res) => res.json({ allow_registration: setting("allow_registration") === "1", default_quota_mb: Number(setting("default_quota_mb")), announcement: setting("announcement") || "" }));
 app.post("/api/admin/settings", needAdmin, wrap(async (req, res) => {
   const q = Number(req.body.default_quota_mb);
   if (!Number.isFinite(q)) throw Error("Cuota inválida");
   run("UPDATE settings SET value=? WHERE key='allow_registration'", req.body.allow_registration ? "1" : "0");
   run("UPDATE settings SET value=? WHERE key='default_quota_mb'", String(q));
+  run("INSERT OR REPLACE INTO settings VALUES('announcement',?)", String(req.body.announcement || "").slice(0, 300));
   res.json({ success: true });
 }));
 
@@ -369,7 +387,7 @@ const userTheme = u => { try { return cleanTheme(JSON.parse(u?.theme || "null"))
 app.get("/theme.css", (req, res) => {
   const t = userTheme(req.user);
   res.type("css").set("Cache-Control", "no-cache");
-  res.send(t ? ":root{" + [...COLORS.filter(k => t[k]).map(k => `--${k}:${t[k]}`), t.r !== undefined && `--r:${t.r}px`, t.font && `--font:${FONTS[t.font]}`, t.sp && `--sp:${t.sp}`].filter(Boolean).join(";") + "}" : "");
+  res.send(themeCss(t));
 });
 app.get("/api/theme", need, (req, res) => res.json({ theme: userTheme(req.user) }));
 app.post("/api/theme", need, (req, res) => {
@@ -419,6 +437,40 @@ app.post("/api/sessions/revoke-others", need, (req, res) => { run("DELETE FROM s
 
 app.get("/api/admin/shares", needAdmin, (req, res) => res.json({ shares: all("SELECT s.token,s.path,s.expires_at,s.created_at,s.pw IS NOT NULL locked,u.username FROM shares s JOIN users u ON u.id=s.user_id ORDER BY s.created_at DESC LIMIT 300") }));
 app.post("/api/admin/shares/revoke", needAdmin, (req, res) => { run("DELETE FROM shares WHERE token=?", String(req.body.token)); res.json({ success: true }); });
+
+app.post("/api/fav", need, wrap(async (req, res) => {
+  const p = path.relative(base(req.user), fileOf(req)), had = get("SELECT 1 x FROM favs WHERE user_id=? AND path=?", req.user.id, p);
+  if (had) run("DELETE FROM favs WHERE user_id=? AND path=?", req.user.id, p); else run("INSERT INTO favs VALUES(?,?)", req.user.id, p);
+  res.json({ fav: !had });
+}));
+app.get("/api/favs", need, wrap(async (req, res) => {
+  const b = base(req.user), items = [];
+  for (const { path: p } of all("SELECT path FROM favs WHERE user_id=?", req.user.id)) {
+    const s = await fsp.stat(safe(b, p)).catch(() => null);
+    if (!s) { run("DELETE FROM favs WHERE user_id=? AND path=?", req.user.id, p); continue; }
+    items.push({ name: path.basename(p), path: p, isDir: s.isDirectory(), size: s.isDirectory() ? 0 : s.size, mtime: s.mtimeMs });
+  }
+  res.json({ items });
+}));
+app.get("/api/recent", need, wrap(async (req, res) => {
+  const b = base(req.user), top = [], stack = [b];
+  while (stack.length) {
+    const d = stack.pop(), es = await fsp.readdir(d, { withFileTypes: true }).catch(() => []);
+    for (const e of es) {
+      const p = path.join(d, e.name);
+      if (e.isDirectory()) { stack.push(p); continue; }
+      const s = await fsp.stat(p).catch(() => null); if (!s) continue;
+      top.push({ name: e.name, path: path.relative(b, p), isDir: false, size: s.size, mtime: s.mtimeMs });
+      if (top.length > 60) { top.sort((a, c) => c.mtime - a.mtime); top.length = 30; }
+    }
+  }
+  res.json({ items: top.sort((a, c) => c.mtime - a.mtime).slice(0, 30) });
+}));
+app.get("/api/zip", need, wrap(async (req, res) => {
+  const b = base(req.user), ps = [].concat(req.query.path || []).map(String), abs = ps.map(p => safe(b, p));
+  if (!abs.length || abs.includes(b)) throw Error("Falta ruta");
+  await zipTo(res, abs.map(a => ({ abs: a, name: path.basename(a) })), abs.length === 1 ? path.basename(abs[0]) : "archivos");
+}));
 
 // ---------- páginas estáticas protegidas ----------
 app.get(["/", "/index.html"], (req, res, next) => req.user ? res.redirect("/panel.html") : next());

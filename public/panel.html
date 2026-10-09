@@ -1,26 +1,25 @@
 <!doctype html>
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>File Cloud - Panel</title><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/theme.css"></head>
 <body>
-<header class="top"><a class="brand" href="/panel.html"><span class="logo">FC</span><span class="hide-sm">File Cloud</span></a><span class="spacer"></span>
-  <button class="btn ghost sm" data-a="theme" title="Apariencia">🎨</button>
-  <button class="btn ghost sm" data-a="shares">🔗 <span class="hide-sm">Enlaces</span></button>
-  <a class="btn ghost sm" id="adminLink" href="/admin/" hidden>🛠 <span class="hide-sm">Admin</span></a>
-  <button class="btn ghost sm" data-a="account">👤 <span id="me"></span></button></header>
+<header class="top"><a class="brand" href="/panel.html"><span class="logo"><svg class="i "><use href="/icons.svg#cloud"/></svg></span><span>File Cloud</span></a><span class="spacer"></span><button class="btn ghost sm burger" id="burger" aria-label="Menú" aria-expanded="false"><svg class="i "><use href="/icons.svg#menu"/></svg></button><nav class="nav" id="nav"><button class="btn ghost sm" data-a="theme"><svg class="i "><use href="/icons.svg#palette"/></svg> Apariencia</button><button class="btn ghost sm" data-a="shares"><svg class="i "><use href="/icons.svg#link"/></svg> Enlaces</button><a class="btn ghost sm" id="adminLink" href="/admin/" hidden><svg class="i "><use href="/icons.svg#shield"/></svg> Admin</a><button class="btn ghost sm" data-a="account"><svg class="i "><use href="/icons.svg#user"/></svg> <span id="me"></span></button></nav></header>
 <main class="wrap">
+  <div class="card banner" id="ann" hidden></div>
   <div class="card">
-    <div class="row"><button class="btn" data-a="newFile">➕ Archivo</button><button class="btn" data-a="newDir">📁 Carpeta</button>
-      <label class="btn ghost" style="margin:0;cursor:pointer">⬆ Subir<input id="up" type="file" multiple hidden></label><span class="spacer"></span>
-      <button class="btn ghost sm" data-a="select">☑ Seleccionar</button><button class="btn ghost sm" data-a="view" title="Cambiar vista">▦</button></div>
+    <div class="row"><button class="btn" data-a="newFile"><svg class="i "><use href="/icons.svg#plus"/></svg> Archivo</button><button class="btn" data-a="newDir"><svg class="i "><use href="/icons.svg#folder"/></svg> Carpeta</button>
+      <label class="btn ghost" style="margin:0;cursor:pointer"><svg class="i "><use href="/icons.svg#upload"/></svg> Subir<input id="up" type="file" multiple hidden></label>
+      <label class="btn ghost" style="margin:0;cursor:pointer"><svg class="i "><use href="/icons.svg#upload"/></svg> Subir carpeta<input id="upd" type="file" webkitdirectory multiple hidden></label><span class="spacer"></span>
+      <button class="btn ghost sm" data-a="favview"><svg class="i "><use href="/icons.svg#star"/></svg> Favoritos</button><button class="btn ghost sm" data-a="recent"><svg class="i "><use href="/icons.svg#clock"/></svg> Recientes</button>
+      <button class="btn ghost sm" data-a="select"><svg class="i "><use href="/icons.svg#checksq"/></svg> Seleccionar</button><button class="btn ghost sm" data-a="view" aria-label="Cambiar vista"><svg class="i "><use href="/icons.svg#grid"/></svg></button></div>
     <div style="margin:14px 0 4px"><div class="row"><small id="space" class="grow"></small><small id="pct"></small></div><div class="bar" id="bar"><i></i></div></div>
   </div>
   <div class="card" style="margin-top:12px">
     <div class="row"><div class="crumbs grow" id="crumbs"></div>
-      <input class="input grow" id="filter" placeholder="Filtrar… (Enter = buscar en todo)" style="max-width:220px">
+      <input class="input grow" id="filter" placeholder="Filtrar… (Enter = buscar en todo)" style="max-width:260px">
       <select id="sort" style="width:auto"><option value="name">Nombre</option><option value="date">Fecha</option><option value="size">Tamaño</option></select></div>
     <div class="grid" id="grid"></div>
   </div>
 </main>
-<div class="bulk card" id="bulk" hidden><b><span id="bn">0</span> sel.</b><button class="btn sm ghost" data-b="mv">Mover</button><button class="btn sm ghost" data-b="cp">Copiar</button><button class="btn sm danger" data-b="del">Eliminar</button></div>
+<div class="bulk card" id="bulk" hidden><b><span id="bn">0</span> sel.</b><button class="btn sm ghost" data-b="mv"><svg class="i "><use href="/icons.svg#move"/></svg> Mover</button><button class="btn sm ghost" data-b="cp"><svg class="i "><use href="/icons.svg#copy"/></svg> Copiar</button><button class="btn sm ghost" data-b="zip"><svg class="i "><use href="/icons.svg#zip"/></svg> ZIP</button><button class="btn sm danger" data-b="del"><svg class="i "><use href="/icons.svg#trash"/></svg> Eliminar</button></div>
 <div class="drop" id="drop">Suelta los archivos para subirlos</div>
 <div class="prog card" id="prog"><small id="progT"></small><div class="bar"><i id="progB"></i></div></div>
 <script src="/js/common.js"></script><script src="/js/panel.js"></script></body></html>

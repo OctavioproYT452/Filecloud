@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS shares(
   token TEXT PRIMARY KEY, user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
   path TEXT, is_dir INTEGER, expires_at INTEGER, created_at INTEGER, pw TEXT);
 DROP TABLE IF EXISTS logs;
+CREATE TABLE IF NOT EXISTS favs(user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, path TEXT, PRIMARY KEY(user_id,path));
 CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY, value TEXT);
 INSERT OR IGNORE INTO settings VALUES('allow_registration','1'),('default_quota_mb','100');
 `);

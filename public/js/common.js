@@ -1,3 +1,4 @@
+const ic=(n,c='')=>`<svg class="i ${c}"><use href="/icons.svg#${n}"/></svg>`;
 const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=b=>{if(b==null)return'—';const u=['B','KB','MB','GB','TB'];let i=0;while(b>=1024&&i<4){b/=1024;i++}return(i?b.toFixed(b<10?2:1):b)+' '+u[i]};
@@ -33,8 +34,8 @@ P('Menta','#eefaf4','#ffffff','#dff3e9','#0f2a1d','#4f7a63','#10b981','#ffffff',
 function applyTheme(t){const s=document.documentElement.style;CK.forEach(([k])=>t[k]?s.setProperty('--'+k,t[k]):s.removeProperty('--'+k));
 t.r!=null?s.setProperty('--r',t.r+'px'):s.removeProperty('--r');t.font?s.setProperty('--font',FONTS[t.font]):s.removeProperty('--font');t.sp?s.setProperty('--sp',t.sp):s.removeProperty('--sp')}
 async function appearance(){const{theme}=await api('/api/theme');let t={...(theme||{})},saved=false;
-const d=dialog('🎨 Apariencia',`<small>Elige un tema y ajusta lo que quieras. Se ve al instante y se guarda en tu cuenta.</small>
-<div class="presets">${PRESETS.map((p,i)=>`<button type="button" class="pre" data-i="${i}" style="background:${p.bg};color:${p.text};border-color:${p.accent};border-radius:${p.r}px;font-family:${FONTS[p.font]}"><i style="background:${p.accent}"></i>${p.n}</button>`).join('')}<button type="button" class="pre" data-i="-1">⟲ Predeterminado</button></div>
+const d=dialog('Apariencia',`<small>Elige un tema y ajusta lo que quieras. Se ve al instante y se guarda en tu cuenta.</small>
+<div class="presets">${PRESETS.map((p,i)=>`<button type="button" class="pre" data-i="${i}" style="background:${p.bg};color:${p.text};border-color:${p.accent};border-radius:${p.r}px;font-family:${FONTS[p.font]}"><i style="background:${p.accent}"></i>${p.n}</button>`).join('')}<button type="button" class="pre" data-i="-1">${ic('refresh')} Predeterminado</button></div>
 <div class="cgrid">${CK.map(([k,l])=>`<label>${l}<input type="color" data-k="${k}"></label>`).join('')}</div>
 <label>Redondeo de esquinas: <b data-rv></b><input type="range" min="0" max="28" data-r></label>
 <div class="row"><label class="grow">Tipografía<select data-f><option value="system">Moderna</option><option value="serif">Clásica</option><option value="mono">Monoespaciada</option><option value="rounded">Redondeada</option></select></label>
@@ -46,3 +47,8 @@ const set=()=>{applyTheme(t);sync()};
 d.addEventListener('click',e=>{const b=e.target.closest('.pre');if(!b)return;const i=+b.dataset.i;t=i<0?{}:{...PRESETS[i]};delete t.n;set()});
 d.addEventListener('input',e=>{const x=e.target;if(x.dataset.k)t[x.dataset.k]=x.value;else if('r'in x.dataset)t.r=+x.value;else if('f'in x.dataset)t.font=x.value;else if('s'in x.dataset)t.sp=x.value;applyTheme(t);if('r'in x.dataset)$('[data-rv]',d).textContent=x.value+'px'});
 d.addEventListener('close',()=>{if(!saved)applyTheme(theme||{})});sync()}
+
+// Menú hamburguesa (solo visible en pantallas pequeñas)
+document.addEventListener('click',e=>{const b=$('#burger'),n=$('#nav');if(!b||!n)return;
+  if(e.target.closest('#burger')){const o=n.classList.toggle('open');b.setAttribute('aria-expanded',o)}
+  else if(n.classList.contains('open')&&(e.target.closest('#nav .btn')||!e.target.closest('#nav'))){n.classList.remove('open');b.setAttribute('aria-expanded',false)}});
