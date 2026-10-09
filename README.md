@@ -3,7 +3,7 @@
 npm install
 npm start
 ```
-Ese se inicia en el puerto 3001, lo puedes modificar ejecutando el servidor de la siguente forma:
+Este se inicia en el puerto 3001, lo puedes modificar ejecutando el servidor de la siguente forma:
 ```
 PORT=8080 npm start
 ```
