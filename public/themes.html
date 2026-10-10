@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Comunidad de temas | File Cloud</title><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/theme.css"></head>
+<body>
+<header class="top"><a class="brand" href="/panel.html"><span class="logo"><svg class="i "><use href="/icons.svg#cloud"/></svg></span><span>File Cloud</span></a><span class="spacer"></span><button class="btn ghost sm burger" id="burger" aria-label="Menú" aria-expanded="false"><svg class="i "><use href="/icons.svg#menu"/></svg></button>
+<nav class="nav" id="nav"><a class="btn ghost sm" href="/panel.html"><svg class="i "><use href="/icons.svg#back"/></svg> Mis archivos</a><button class="btn ghost sm" id="th"><svg class="i "><use href="/icons.svg#palette"/></svg> Apariencia</button></nav></header>
+<main class="wrap">
+  <div class="card"><h2><svg class="i "><use href="/icons.svg#globe"/></svg> Comunidad de temas</h2>
+    <p class="muted">Temas publicados por los usuarios de este servidor. Pruébalos, guárdalos en «Mis temas» o aplícalos. Para publicar el tuyo: Apariencia → Mis temas → icono del globo.</p>
+    <div class="row"><input class="input grow" id="q" placeholder="Buscar por nombre o autor…" style="max-width:320px"><select id="s" style="width:auto"><option value="new">Más recientes</option><option value="name">Nombre</option><option value="author">Autor</option></select></div></div>
+  <div class="tgrid" id="g"></div>
+</main>
+<div class="bulk card" id="tryBar" hidden><span>Probando: <b id="tn"></b></span><button class="btn sm" data-t="use"><svg class="i "><use href="/icons.svg#palette"/></svg> Usar</button><button class="btn sm ghost" data-t="cancel">Cancelar</button></div>
+<script src="/js/common.js"></script><script src="/js/themes.js"></script></body></html>

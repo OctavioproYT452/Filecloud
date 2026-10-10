@@ -21,11 +21,12 @@ CREATE TABLE IF NOT EXISTS shares(
   path TEXT, is_dir INTEGER, expires_at INTEGER, created_at INTEGER, pw TEXT);
 DROP TABLE IF EXISTS logs;
 CREATE TABLE IF NOT EXISTS favs(user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, path TEXT, PRIMARY KEY(user_id,path));
+CREATE TABLE IF NOT EXISTS user_themes(user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, name TEXT, data TEXT, public INTEGER DEFAULT 0, PRIMARY KEY(user_id,name));
 CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY, value TEXT);
 INSERT OR IGNORE INTO settings VALUES('allow_registration','1'),('default_quota_mb','100');
 `);
 
-for (const q of ["ALTER TABLE users ADD COLUMN theme TEXT", "ALTER TABLE shares ADD COLUMN pw TEXT"]) try { db.exec(q); } catch { }
+for (const q of ["ALTER TABLE users ADD COLUMN theme TEXT", "ALTER TABLE shares ADD COLUMN pw TEXT", "ALTER TABLE user_themes ADD COLUMN public INTEGER DEFAULT 0"]) try { db.exec(q); } catch { }
 
 const get = (sql, ...a) => db.prepare(sql).get(...a);
 const all = (sql, ...a) => db.prepare(sql).all(...a);

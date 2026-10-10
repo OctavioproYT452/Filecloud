@@ -395,6 +395,31 @@ app.post("/api/theme", need, (req, res) => {
   run("UPDATE users SET theme=? WHERE id=?", t ? JSON.stringify(t) : null, req.user.id); res.json({ success: true });
 });
 
+app.get("/api/themes", need, (req, res) => res.json({ themes: all("SELECT name,data,public FROM user_themes WHERE user_id=? ORDER BY name", req.user.id).map(r => ({ name: r.name, public: !!r.public, theme: cleanTheme(JSON.parse(r.data)) })) }));
+app.post("/api/themes", need, wrap(async (req, res) => {
+  const name = String(req.body.name || "").replace(/[\u0000-\u001f]/g, "").trim().slice(0, 40), t = cleanTheme(req.body.theme);
+  if (!name || !t) throw Error("Tema inválido");
+  if (!get("SELECT 1 x FROM user_themes WHERE user_id=? AND name=?", req.user.id, name) && get("SELECT COUNT(*) n FROM user_themes WHERE user_id=?", req.user.id).n >= 50) throw Error("Máximo 50 temas guardados");
+  run("INSERT INTO user_themes(user_id,name,data) VALUES(?,?,?) ON CONFLICT(user_id,name) DO UPDATE SET data=excluded.data", req.user.id, name, JSON.stringify(t)); res.json({ success: true });
+}));
+app.post("/api/themes/publish", need, wrap(async (req, res) => {
+  const r = run("UPDATE user_themes SET public=? WHERE user_id=? AND name=?", req.body.public ? 1 : 0, req.user.id, String(req.body.name || ""));
+  if (!r.changes) throw Error("Tema no encontrado"); res.json({ success: true });
+}));
+app.get("/api/community", need, (req, res) => res.json({ themes: all("SELECT t.rowid id,t.name,t.data,t.user_id,u.username author FROM user_themes t JOIN users u ON u.id=t.user_id WHERE t.public=1 AND u.suspended=0 ORDER BY t.rowid DESC LIMIT 300").map(r => ({ id: r.id, name: r.name, author: r.author, mine: r.user_id === req.user.id, theme: cleanTheme(JSON.parse(r.data)) })) }));
+app.post("/api/community/save", need, wrap(async (req, res) => {
+  const r = get("SELECT t.name,t.data,u.username author FROM user_themes t JOIN users u ON u.id=t.user_id WHERE t.rowid=? AND t.public=1", Number(req.body.id));
+  if (!r) throw Error("El tema ya no está disponible");
+  const has = n => get("SELECT data FROM user_themes WHERE user_id=? AND name=?", req.user.id, n);
+  let name = r.name;
+  if (has(name) && has(name).data !== r.data) name = (r.name + " (" + r.author + ")").slice(0, 40);
+  if (!has(name) && get("SELECT COUNT(*) n FROM user_themes WHERE user_id=?", req.user.id).n >= 50) throw Error("Máximo 50 temas guardados");
+  run("INSERT INTO user_themes(user_id,name,data) VALUES(?,?,?) ON CONFLICT(user_id,name) DO UPDATE SET data=excluded.data", req.user.id, name, r.data);
+  res.json({ success: true, name });
+}));
+app.post("/api/admin/community/unpublish", needAdmin, (req, res) => { run("UPDATE user_themes SET public=0 WHERE rowid=?", Number(req.body.id)); res.json({ success: true }); });
+app.delete("/api/themes", need, (req, res) => { run("DELETE FROM user_themes WHERE user_id=? AND name=?", req.user.id, String(req.body.name || "")); res.json({ success: true }); });
+
 // ---------- extras: búsqueda, copiar, estadísticas, sesiones ----------
 app.get("/api/search", need, wrap(async (req, res) => {
   const q = String(req.query.q || "").toLowerCase().trim(), b = base(req.user), out = [], stack = [b];
@@ -474,7 +499,7 @@ app.get("/api/zip", need, wrap(async (req, res) => {
 
 // ---------- páginas estáticas protegidas ----------
 app.get(["/", "/index.html"], (req, res, next) => req.user ? res.redirect("/panel.html") : next());
-app.get("/panel.html", (req, res, next) => req.user ? next() : res.redirect("/"));
+app.get(["/panel.html", "/themes.html"], (req, res, next) => req.user ? next() : res.redirect("/"));
 app.use("/admin", (req, res, next) => req.user?.is_admin ? next() : res.redirect("/"));
 app.use(express.static(path.join(__dirname, "public")));
 app.use((err, req, res, next) => res.status(500).json({ error: "Error interno" }));

@@ -45,7 +45,7 @@ Sube, organiza, edita y comparte archivos desde cualquier dispositivo, con usuar
 - **Descarga en ZIP** de carpetas o de una selección de elementos.
 - **Enlaces para compartir** con caducidad, **contraseña opcional**, revocables en cualquier momento y con descarga de carpetas en ZIP.
 - Cuota de almacenamiento por usuario con desglose por tipo (imágenes, vídeo, audio, documentos y otros).
-- **12 temas** y personalización completa de colores, tipografía, redondeo y densidad.
+- **12 temas** y personalización completa (colores con selector o código hex, tipografía, redondeo y densidad), con **temas propios que se pueden exportar e importar como JSON** y una **comunidad de temas** para compartirlos con los demás usuarios del servidor.
 - Atajos de teclado: `/` filtra, `Supr` elimina la selección, `Ctrl+A` selecciona todo, `Esc` sale de la selección.
 - Diseño responsivo: menú hamburguesa en móvil y barra superior completa en pantallas grandes.
 
@@ -73,10 +73,53 @@ La base de datos usa `node:sqlite` si tu Node lo incluye (22.13 o superior) y `b
 
 ## Instalación
 
+### Opción 1: instalación en una línea
+
+**Linux y macOS** (instala git y Node.js si faltan, clona el repositorio y ejecuta el instalador):
+
 ```bash
-git clone https://github.com/<tu-usuario>/<tu-repositorio>.git
-cd <tu-repositorio>
+curl -fsSL https://raw.githubusercontent.com/OctavioproYT452/Filecloud/HEAD/get.sh | bash
+```
+
+**Windows** (PowerShell):
+
+```powershell
+irm https://raw.githubusercontent.com/OctavioproYT452/Filecloud/HEAD/get.ps1 | iex
+```
+
+Se instala en `~/Filecloud` (Linux/macOS) o `%USERPROFILE%\Filecloud` (Windows). Variables opcionales:
+
+| Variable | Descripción |
+| --- | --- |
+| `FILECLOUD_DIR` | Carpeta de destino. |
+| `FILECLOUD_REPO` | URL del repositorio (para usar un _fork_). |
+| `FILECLOUD_START=1` | (Linux/macOS) arranca el servidor al terminar. |
+
+Si ya existe la carpeta de destino como repositorio, se actualiza con `git pull`.
+
+### Opción 2: clonar y ejecutar el instalador
+
+```bash
+git clone https://github.com/OctavioproYT452/Filecloud.git
+cd Filecloud
+bash install.sh        # Linux y macOS
+```
+
+En Windows, haz doble clic en `install.bat` o ejecuta `.\install.ps1` en PowerShell.
+
+Los instaladores detectan el sistema (apt, dnf/yum, pacman, zypper, apk, Homebrew, winget o Chocolatey), instalan Node.js y npm si no están, y ejecutan `npm install`. En Linux instalan Node.js 22 mediante NodeSource (apt, dnf, yum) o el repositorio de la distribución; necesitan `root` o `sudo` para instalar paquetes.
+
+### Opción 3: manual
+
+```bash
+git clone https://github.com/OctavioproYT452/Filecloud.git
+cd Filecloud
 npm install
+```
+
+### Iniciar
+
+```bash
 npm start
 ```
 
@@ -128,6 +171,46 @@ Temas incluidos: Medianoche, Océano, Bosque, Atardecer, Neón, Dracula, Termina
 
 Personalizable: 10 colores (fondo, tarjetas, elementos, texto, texto suave, acento, texto sobre acento, peligro, éxito y aviso), redondeo de esquinas, tipografía (moderna, clásica, monoespaciada o redondeada) y densidad (compacta, normal o amplia). Las páginas de enlaces compartidos usan el tema de quien comparte.
 
+### Crear, exportar e importar temas
+
+Cualquier usuario puede crear sus propios temas:
+
+1. En **Apariencia**, ajusta los colores con el selector o escribiendo el código hex (`#RRGGBB`; también acepta `#RGB`), además del redondeo, la tipografía y la densidad.
+2. Pulsa **Guardar como tema** para guardarlo en **Mis temas** (hasta 50 por usuario).
+3. **Exportar (.json)** descarga el tema actual como archivo; **Exportar todos** descarga un paquete con todos tus temas.
+4. **Importar (.json)** añade a Mis temas uno o varios archivos. Así puedes compartir temas por cualquier medio (GitHub, Discord, correo…).
+
+Formato del archivo (también se acepta un objeto con solo los valores del tema):
+
+```json
+{
+  "filecloud": "theme",
+  "version": 1,
+  "name": "Mi tema",
+  "theme": {
+    "bg": "#0b1020", "card": "#121a2e", "card2": "#18223a",
+    "text": "#e8eefc", "muted": "#8d9ab3",
+    "accent": "#6ea8fe", "on": "#04213f",
+    "danger": "#ff6b7a", "ok": "#34d399", "warn": "#fbbf24",
+    "r": 14, "font": "system", "sp": "1"
+  }
+}
+```
+
+- `r`: redondeo de 0 a 28. `font`: `system`, `serif`, `mono` o `rounded`. `sp` (densidad): `0.8`, `1` o `1.25`.
+- Los paquetes usan `{"filecloud": "theme-pack", "themes": [ {…}, {…} ]}`.
+- Los valores se validan al importar: solo se aceptan colores hex y los valores anteriores, así que un archivo ajeno no puede introducir código.
+
+### Comunidad de temas
+
+Cada servidor tiene su propia comunidad de temas, accesible desde **Apariencia → Comunidad de temas** (`/themes.html`).
+
+- **Publicar:** en **Mis temas**, pulsa el icono del globo de un tema. Se mostrará con tu nombre de usuario; vuelve a pulsarlo para dejar de compartirlo. Es opcional: tus temas son privados por defecto.
+- **Explorar:** busca por nombre o autor y ordena por recientes, nombre o autor. Cada tema muestra una vista previa con sus colores.
+- **Probar, usar o guardar:** **Probar** lo aplica temporalmente en la página, **Usar** lo guarda en tus temas y lo activa, y **Guardar** solo lo añade a **Mis temas**.
+- Si cambias o borras un tema publicado, la comunidad se actualiza al instante. Los temas de usuarios suspendidos no se muestran.
+- **Moderación:** los administradores pueden retirar cualquier tema de la comunidad (el autor lo conserva en su cuenta, pero deja de ser público).
+
 ## Panel de administración
 
 Disponible en `/admin/` solo para administradores.
@@ -158,9 +241,12 @@ Disponible en `/admin/` solo para administradores.
 ├── db.js            # SQLite, contraseñas y migración
 ├── zip.js           # Generador ZIP en streaming (sin dependencias)
 ├── reset-password.js # Recuperación de cuentas desde la terminal
+├── install.sh / install.ps1 / install.bat   # Instaladores (Linux·macOS / Windows)
+├── get.sh / get.ps1 # Instalación en una línea (git + clonar + instalar)
 ├── public/
 │   ├── index.html   # Inicio de sesión y registro
 │   ├── panel.html   # Panel del usuario
+│   ├── themes.html  # Comunidad de temas
 │   ├── admin/       # Panel de administración
 │   ├── js/          # common.js, auth.js, panel.js, admin.js
 │   ├── style.css    # Sistema de diseño compartido
@@ -184,7 +270,9 @@ Todas las rutas `/api/*` devuelven JSON y requieren sesión, salvo `login`, `reg
 | `POST` | `/api/rename`, `/api/move`, `/api/copy`, `/api/delete`, `/api/edit`, `/api/fav` | Operaciones sobre elementos. |
 | `GET` | `/api/download`, `/api/preview`, `/api/zip`, `/api/file-content` | Lectura y descarga. |
 | `POST` / `GET` | `/api/share`, `/api/shares`, `/api/share/revoke` | Enlaces compartidos. |
-| `GET` / `POST` | `/api/theme` | Tema del usuario. |
+| `GET` / `POST` | `/api/theme` | Tema activo del usuario. |
+| `GET` / `POST` / `DELETE` | `/api/themes` | Temas propios guardados (Mis temas). |
+| `POST` / `GET` | `/api/themes/publish`, `/api/community`, `/api/community/save` | Comunidad de temas. |
 | `GET` | `/api/stats` | Uso de espacio por tipo. |
 | `*` | `/api/admin/*` | Administración (solo admins). |
 

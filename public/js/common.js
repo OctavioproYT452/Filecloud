@@ -33,20 +33,52 @@ P('Papel','#fafafa','#ffffff','#f0f0f0','#111111','#666666','#111111','#ffffff',
 P('Menta','#eefaf4','#ffffff','#dff3e9','#0f2a1d','#4f7a63','#10b981','#ffffff',22,'rounded','1.25')];
 function applyTheme(t){const s=document.documentElement.style;CK.forEach(([k])=>t[k]?s.setProperty('--'+k,t[k]):s.removeProperty('--'+k));
 t.r!=null?s.setProperty('--r',t.r+'px'):s.removeProperty('--r');t.font?s.setProperty('--font',FONTS[t.font]):s.removeProperty('--font');t.sp?s.setProperty('--sp',t.sp):s.removeProperty('--sp')}
-async function appearance(){const{theme}=await api('/api/theme');let t={...(theme||{})},saved=false;
-const d=dialog('Apariencia',`<small>Elige un tema y ajusta lo que quieras. Se ve al instante y se guarda en tu cuenta.</small>
-<div class="presets">${PRESETS.map((p,i)=>`<button type="button" class="pre" data-i="${i}" style="background:${p.bg};color:${p.text};border-color:${p.accent};border-radius:${p.r}px;font-family:${FONTS[p.font]}"><i style="background:${p.accent}"></i>${p.n}</button>`).join('')}<button type="button" class="pre" data-i="-1">${ic('refresh')} Predeterminado</button></div>
-<div class="cgrid">${CK.map(([k,l])=>`<label>${l}<input type="color" data-k="${k}"></label>`).join('')}</div>
+const HEX=/^#[0-9a-f]{6}$/i;
+const normHex=v=>{v=String(v||'').trim();if(/^([0-9a-f]{3}|[0-9a-f]{6})$/i.test(v))v='#'+v;if(/^#[0-9a-f]{3}$/i.test(v))v='#'+[...v.slice(1)].map(c=>c+c).join('');return HEX.test(v)?v.toLowerCase():null};
+function cleanT(t){const o={};if(!t||typeof t!=='object')return o;CK.forEach(([k])=>{const h=normHex(t[k]);if(h)o[k]=h});const r=Number(t.r);if(t.r!==undefined&&Number.isFinite(r))o.r=Math.max(0,Math.min(28,Math.round(r)));if(FONTS[t.font])o.font=t.font;if(['0.8','1','1.25'].includes(String(t.sp)))o.sp=String(t.sp);return o}
+function parseThemeFile(text){let j;try{j=JSON.parse(text.replace(/^\uFEFF/,''))}catch{throw Error('El archivo no es un JSON válido')}
+  const arr=Array.isArray(j?.themes)?j.themes:[j];const out=arr.map(x=>({name:String(x?.name||'Tema importado').replace(/[\u0000-\u001f]/g,'').trim().slice(0,40)||'Tema importado',theme:cleanT(x?.theme||x)})).filter(x=>Object.keys(x.theme).length);
+  if(!out.length)throw Error('El archivo no contiene ningún tema válido');return out}
+function downloadJSON(name,obj){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(obj,null,2)],{type:'application/json'}));a.download=(name.replace(/[^\w\-]+/g,'_')||'tema')+'.json';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+const themeFile=(name,theme)=>({filecloud:'theme',version:1,name,theme});
+
+async function appearance(){
+const[{theme},{themes}]=await Promise.all([api('/api/theme'),api('/api/themes')]);let t={...(theme||{})},saved=false,mine=themes;
+const d=dialog('Apariencia',`<small>Elige un tema, crea el tuyo o importa uno. Todo se ve al instante; «Aplicar» lo guarda en tu cuenta.</small>
+<h4>Temas predeterminados</h4><div class="presets">${PRESETS.map((p,i)=>`<button type="button" class="pre" data-i="${i}" style="background:${p.bg};color:${p.text};border-color:${p.accent};border-radius:${p.r}px;font-family:${FONTS[p.font]}"><i style="background:${p.accent}"></i>${p.n}</button>`).join('')}<button type="button" class="pre" data-i="-1">${ic('refresh')} Predeterminado</button></div>
+<h4>Mis temas</h4><div class="presets" id="mine"></div>
+<div class="row"><button type="button" class="btn ghost sm" data-act="saveas">${ic('plus')} Guardar como tema</button><button type="button" class="btn ghost sm" data-act="export">${ic('download')} Exportar (.json)</button><button type="button" class="btn ghost sm" data-act="exportall">${ic('zip')} Exportar todos</button><label class="btn ghost sm" style="margin:0;cursor:pointer">${ic('upload')} Importar (.json)<input type="file" accept=".json,application/json" hidden multiple data-imp></label><a class="btn ghost sm" href="/themes.html">${ic('globe')} Comunidad de temas</a></div><small>El icono del globo publica un tema de «Mis temas» en la comunidad de este servidor (se mostrará tu nombre de usuario).</small>
+<h4>Colores (selector o código hex)</h4><div class="cgrid">${CK.map(([k,l])=>`<label>${l}<span class="chex"><input type="color" data-k="${k}"><input class="input" data-h="${k}" maxlength="7" spellcheck="false" autocomplete="off" placeholder="#rrggbb"></span></label>`).join('')}</div>
 <label>Redondeo de esquinas: <b data-rv></b><input type="range" min="0" max="28" data-r></label>
 <div class="row"><label class="grow">Tipografía<select data-f><option value="system">Moderna</option><option value="serif">Clásica</option><option value="mono">Monoespaciada</option><option value="rounded">Redondeada</option></select></label>
 <label class="grow">Densidad<select data-s><option value="0.8">Compacta</option><option value="1">Normal</option><option value="1.25">Amplia</option></select></label></div>`,
-async()=>{await api('/api/theme',{theme:t});saved=true;toast('Tema guardado')},'Guardar','wide');
-const sync=()=>{const cs=getComputedStyle(document.documentElement);CK.forEach(([k])=>{const v=cs.getPropertyValue('--'+k).trim();$(`[data-k=${k}]`,d).value=/^#[0-9a-f]{6}$/i.test(v)?v:'#000000'});
-const r=parseInt(cs.getPropertyValue('--r'))||14;$('[data-r]',d).value=r;$('[data-rv]',d).textContent=r+'px';$('[data-f]',d).value=t.font||'system';$('[data-s]',d).value=t.sp||'1'};
+async()=>{await api('/api/theme',{theme:t});saved=true;toast('Tema aplicado y guardado')},'Aplicar','wide');
+const cssNum=()=>{const v=parseInt(getComputedStyle(document.documentElement).getPropertyValue('--r'));return Number.isNaN(v)?14:v};
+const sync=skip=>{const cs=getComputedStyle(document.documentElement);CK.forEach(([k])=>{const h=normHex(cs.getPropertyValue('--'+k))||'#000000',c=$(`[data-k=${k}]`,d),x=$(`[data-h=${k}]`,d);if(c!==skip)c.value=h;if(x!==skip){x.value=h;x.classList.remove('bad')}});
+  const r=cssNum();$('[data-r]',d).value=r;$('[data-rv]',d).textContent=r+'px';$('[data-f]',d).value=t.font||'system';$('[data-s]',d).value=t.sp||'1'};
 const set=()=>{applyTheme(t);sync()};
-d.addEventListener('click',e=>{const b=e.target.closest('.pre');if(!b)return;const i=+b.dataset.i;t=i<0?{}:{...PRESETS[i]};delete t.n;set()});
-d.addEventListener('input',e=>{const x=e.target;if(x.dataset.k)t[x.dataset.k]=x.value;else if('r'in x.dataset)t.r=+x.value;else if('f'in x.dataset)t.font=x.value;else if('s'in x.dataset)t.sp=x.value;applyTheme(t);if('r'in x.dataset)$('[data-rv]',d).textContent=x.value+'px'});
-d.addEventListener('close',()=>{if(!saved)applyTheme(theme||{})});sync()}
+const full=()=>{const cs=getComputedStyle(document.documentElement),o={};CK.forEach(([k])=>{o[k]=normHex(cs.getPropertyValue('--'+k))||'#000000'});o.r=cssNum();o.font=t.font||'system';o.sp=t.sp||'1';return o};
+const renderMine=()=>{$('#mine',d).innerHTML=mine.length?mine.map((m,i)=>`<div class="pre-w"><button type="button" class="pre" data-m="${i}"><i style="background:${m.theme.accent||'var(--accent)'}"></i>${esc(m.name)}</button><button type="button" class="more${m.public?' on':''}" data-p="${i}" title="${m.public?'Publicado: clic para dejar de compartir':'Publicar en la comunidad'}" aria-label="Publicar">${ic('globe')}</button><button type="button" class="more" data-d="${i}" aria-label="Eliminar">${ic('x')}</button></div>`).join(''):'<small>Aún no tienes temas propios. Personaliza y pulsa «Guardar como tema», o importa un archivo .json.</small>'};
+const reload=async()=>{mine=(await api('/api/themes')).themes;renderMine()};
+d.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;const ds=b.dataset;
+  try{
+    if(ds.i!==undefined){const i=+ds.i;t=i<0?{}:{...PRESETS[i]};delete t.n;return set()}
+    if(ds.m!==undefined){t={...mine[+ds.m].theme};return set()}
+    if(ds.p!==undefined){const m=mine[+ds.p],v=!m.public;await api('/api/themes/publish',{name:m.name,public:v});await reload();toast(v?'Publicado en la comunidad del servidor':'Dejaste de compartirlo');return}
+    if(ds.d!==undefined){const m=mine[+ds.d];if(await yes('Eliminar tema',`¿Eliminar "${m.name}" de tus temas?`)){await api('/api/themes',{name:m.name},'DELETE');await reload()}return}
+    if(ds.act==='saveas'){const n=await ask('Guardar como tema','Nombre del tema','Mi tema');if(n){await api('/api/themes',{name:n,theme:full()});await reload();toast('Guardado en Mis temas')}}
+    if(ds.act==='export'){const n=await ask('Exportar tema','Nombre del tema','Mi tema');if(n)downloadJSON(n,themeFile(n,full()))}
+    if(ds.act==='exportall'){if(!mine.length)return toast('No tienes temas guardados que exportar',1);downloadJSON('mis-temas',{filecloud:'theme-pack',version:1,themes:mine.map(m=>themeFile(m.name,m.theme))})}
+  }catch(x){toast(x.message,1)}});
+d.addEventListener('input',e=>{const x=e.target,ds=x.dataset;
+  if(ds.k)t[ds.k]=x.value;
+  else if(ds.h){const h=normHex(x.value);x.classList.toggle('bad',!h);if(!h)return;t[ds.h]=h}
+  else if('r'in ds)t.r=+x.value;else if('f'in ds)t.font=x.value;else if('s'in ds)t.sp=x.value;else return;
+  applyTheme(t);sync(x)});
+d.addEventListener('change',async e=>{if(!('imp'in e.target.dataset))return;const inp=e.target;
+  try{let last;for(const f of inp.files){if(f.size>2e5)throw Error('Archivo demasiado grande: '+f.name);for(const x of parseThemeFile(await f.text())){await api('/api/themes',{name:x.name,theme:x.theme});last=x}}
+    await reload();if(last){t={...last.theme};set()}toast('Tema(s) importado(s) a Mis temas')}catch(x){toast(x.message,1)}inp.value=''});
+d.addEventListener('close',()=>{if(!saved)applyTheme(theme||{})});renderMine();sync()}
 
 // Menú hamburguesa (solo visible en pantallas pequeñas)
 document.addEventListener('click',e=>{const b=$('#burger'),n=$('#nav');if(!b||!n)return;
