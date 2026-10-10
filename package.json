@@ -1,6 +1,6 @@
 {
   "name": "file-cloud",
-  "version": "2.0.0",
+  "version": "2.3.0",
   "description": "File Cloud - gestión de archivos por usuario",
   "main": "server.js",
   "scripts": { "start": "node server.js", "reset-password": "node reset-password.js" },

@@ -19,6 +19,6 @@ if (u) {
   console.log("Contraseña actualizada para", u.username);
 } else {
   run("INSERT INTO users(username,password_hash,is_admin,max_space_mb,created_at) VALUES(?,?,?,?,?)", user, hash(pass), admin ? 1 : 0, 100, now());
-  fs.mkdirSync(path.join(__dirname, "hosting", user), { recursive: true });
+  fs.mkdirSync(path.join(__dirname, "hosting", get("SELECT uuid FROM users WHERE username=?", user).uuid), { recursive: true });
   console.log("Usuario creado:", user, admin ? "(admin)" : "");
 }

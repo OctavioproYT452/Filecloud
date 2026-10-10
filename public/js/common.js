@@ -10,7 +10,7 @@ function dialog(title,html,onOk,okText='Aceptar',cls=''){const d=document.create
 d.innerHTML=`<form method="dialog"><h3>${esc(title)}</h3><div>${html}</div><div class="row end" style="margin-top:14px"><button type="button" class="btn ghost" data-x>${onOk?'Cancelar':'Cerrar'}</button>${onOk?`<button class="btn" value="ok">${okText}</button>`:''}</div></form>`;
 document.body.append(d);$('[data-x]',d).onclick=()=>d.close();d.addEventListener('close',()=>d.remove());
 $('form',d).addEventListener('submit',async e=>{e.preventDefault();if(!onOk)return;try{await onOk(d);d.close()}catch(x){toast(x.message,1)}});d.showModal();$('input,textarea',d)?.focus();return d}
-const ask=(title,label,value='')=>new Promise(r=>{let v=null;dialog(title,`<label>${esc(label)}<input class="input" value="${esc(value)}"></label>`,d=>{v=$('input',d).value.trim()}).addEventListener('close',()=>r(v))});
+const ask=(title,label,value='',type='text')=>new Promise(r=>{let v=null;dialog(title,`<label>${esc(label)}<input class="input" type="${type}" value="${esc(value)}" autocomplete="off"></label>`,d=>{v=type==='password'?$('input',d).value:$('input',d).value.trim()}).addEventListener('close',()=>r(v))});
 const yes=(title,msg)=>new Promise(r=>{let v=false;dialog(title,`<p>${esc(msg)}</p>`,()=>{v=true},'Confirmar').addEventListener('close',()=>r(v))});
 const logout=async()=>{await api('/api/logout',{});location.href='/'};
 
@@ -43,10 +43,10 @@ function downloadJSON(name,obj){const a=document.createElement('a');a.href=URL.c
 const themeFile=(name,theme)=>({filecloud:'theme',version:1,name,theme});
 
 async function appearance(){
-const[{theme},{themes}]=await Promise.all([api('/api/theme'),api('/api/themes')]);let t={...(theme||{})},saved=false,mine=themes;
+const[{theme},{themes},ses]=await Promise.all([api('/api/theme'),api('/api/themes'),api('/api/session')]);let t={...(theme||{})},saved=false,mine=themes;
 const d=dialog('Apariencia',`<small>Elige un tema, crea el tuyo o importa uno. Todo se ve al instante; «Aplicar» lo guarda en tu cuenta.</small>
 <h4>Temas predeterminados</h4><div class="presets">${PRESETS.map((p,i)=>`<button type="button" class="pre" data-i="${i}" style="background:${p.bg};color:${p.text};border-color:${p.accent};border-radius:${p.r}px;font-family:${FONTS[p.font]}"><i style="background:${p.accent}"></i>${p.n}</button>`).join('')}<button type="button" class="pre" data-i="-1">${ic('refresh')} Predeterminado</button></div>
-<h4>Mis temas</h4><div class="presets" id="mine"></div>
+<h4>Mis temas</h4><div class="mine" id="mine"></div>
 <div class="row"><button type="button" class="btn ghost sm" data-act="saveas">${ic('plus')} Guardar como tema</button><button type="button" class="btn ghost sm" data-act="export">${ic('download')} Exportar (.json)</button><button type="button" class="btn ghost sm" data-act="exportall">${ic('zip')} Exportar todos</button><label class="btn ghost sm" style="margin:0;cursor:pointer">${ic('upload')} Importar (.json)<input type="file" accept=".json,application/json" hidden multiple data-imp></label><a class="btn ghost sm" href="/themes.html">${ic('globe')} Comunidad de temas</a></div><small>El icono del globo publica un tema de «Mis temas» en la comunidad de este servidor (se mostrará tu nombre de usuario).</small>
 <h4>Colores (selector o código hex)</h4><div class="cgrid">${CK.map(([k,l])=>`<label>${l}<span class="chex"><input type="color" data-k="${k}"><input class="input" data-h="${k}" maxlength="7" spellcheck="false" autocomplete="off" placeholder="#rrggbb"></span></label>`).join('')}</div>
 <label>Redondeo de esquinas: <b data-rv></b><input type="range" min="0" max="28" data-r></label>
@@ -58,13 +58,15 @@ const sync=skip=>{const cs=getComputedStyle(document.documentElement);CK.forEach
   const r=cssNum();$('[data-r]',d).value=r;$('[data-rv]',d).textContent=r+'px';$('[data-f]',d).value=t.font||'system';$('[data-s]',d).value=t.sp||'1'};
 const set=()=>{applyTheme(t);sync()};
 const full=()=>{const cs=getComputedStyle(document.documentElement),o={};CK.forEach(([k])=>{o[k]=normHex(cs.getPropertyValue('--'+k))||'#000000'});o.r=cssNum();o.font=t.font||'system';o.sp=t.sp||'1';return o};
-const renderMine=()=>{$('#mine',d).innerHTML=mine.length?mine.map((m,i)=>`<div class="pre-w"><button type="button" class="pre" data-m="${i}"><i style="background:${m.theme.accent||'var(--accent)'}"></i>${esc(m.name)}</button><button type="button" class="more${m.public?' on':''}" data-p="${i}" title="${m.public?'Publicado: clic para dejar de compartir':'Publicar en la comunidad'}" aria-label="Publicar">${ic('globe')}</button><button type="button" class="more" data-d="${i}" aria-label="Eliminar">${ic('x')}</button></div>`).join(''):'<small>Aún no tienes temas propios. Personaliza y pulsa «Guardar como tema», o importa un archivo .json.</small>'};
+const renderMine=()=>{$('#mine',d).innerHTML=mine.length?mine.map((m,i)=>{const th=m.theme,c=k=>th[k]||'#888888';return `<div class="mt${m.public?' pub':''}"><div class="mt-head"><b class="mt-name">${esc(m.name)}</b>${m.public?`<span class="badge pub">${ic('globe')} Público</span>`:'<span class="badge">Privado</span>'}</div><div class="sw"><i style="background:${c('bg')}"></i><i style="background:${c('card')}"></i><i style="background:${c('card2')}"></i><i style="background:${c('accent')}"></i><i style="background:${c('text')}"></i></div><div class="row mt-act"><button type="button" class="btn sm" data-m="${i}">Aplicar</button><button type="button" class="btn sm ghost" data-p="${i}">${ic('globe')} ${m.public?'Dejar de compartir':'Publicar'}</button><button type="button" class="btn sm ghost" data-d="${i}" aria-label="Eliminar">${ic('trash')}</button></div></div>`}).join(''):'<small>Aún no tienes temas propios. Personaliza y pulsa «Guardar como tema», o importa un archivo .json.</small>'};
 const reload=async()=>{mine=(await api('/api/themes')).themes;renderMine()};
 d.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;const ds=b.dataset;
   try{
     if(ds.i!==undefined){const i=+ds.i;t=i<0?{}:{...PRESETS[i]};delete t.n;return set()}
     if(ds.m!==undefined){t={...mine[+ds.m].theme};return set()}
-    if(ds.p!==undefined){const m=mine[+ds.p],v=!m.public;await api('/api/themes/publish',{name:m.name,public:v});await reload();toast(v?'Publicado en la comunidad del servidor':'Dejaste de compartirlo');return}
+    if(ds.p!==undefined){const m=mine[+ds.p],v=!m.public;
+      if(!await yes(v?'Publicar tema':'Dejar de compartir',v?`«${m.name}» será visible para todos los usuarios de este servidor y se mostrará con tu nombre de usuario (${ses.user}). Puedes dejar de compartirlo cuando quieras.`:`«${m.name}» dejará de aparecer en la comunidad. Seguirá en Mis temas.`))return;
+      await api('/api/themes/publish',{name:m.name,public:v});await reload();toast(v?`Tema «${m.name}» publicado en la comunidad`:`Tema «${m.name}» retirado de la comunidad`);return}
     if(ds.d!==undefined){const m=mine[+ds.d];if(await yes('Eliminar tema',`¿Eliminar "${m.name}" de tus temas?`)){await api('/api/themes',{name:m.name},'DELETE');await reload()}return}
     if(ds.act==='saveas'){const n=await ask('Guardar como tema','Nombre del tema','Mi tema');if(n){await api('/api/themes',{name:n,theme:full()});await reload();toast('Guardado en Mis temas')}}
     if(ds.act==='export'){const n=await ask('Exportar tema','Nombre del tema','Mi tema');if(n)downloadJSON(n,themeFile(n,full()))}
@@ -84,3 +86,10 @@ d.addEventListener('close',()=>{if(!saved)applyTheme(theme||{})});renderMine();s
 document.addEventListener('click',e=>{const b=$('#burger'),n=$('#nav');if(!b||!n)return;
   if(e.target.closest('#burger')){const o=n.classList.toggle('open');b.setAttribute('aria-expanded',o)}
   else if(n.classList.contains('open')&&(e.target.closest('#nav .btn')||!e.target.closest('#nav'))){n.classList.remove('open');b.setAttribute('aria-expanded',false)}});
+
+// Aviso de nueva versión para administradores (se puede cerrar, pero reaparece al recargar o cambiar de página)
+function updateNotice(s){if(!s?.update?.available)return;const m=$('main');if(!m||$('#upd'))return;
+  const d=document.createElement('div');d.id='upd';d.className='card banner';
+  d.innerHTML=`${ic('refresh')}<span class="grow"><b>Nueva versión disponible: ${esc(s.update.latest)}</b> (instalada: ${esc(s.update.current)}). <a href="#" data-how>Cómo actualizar</a> · <a href="${esc(s.update.url)}" target="_blank" rel="noopener">Ver en GitHub</a></span><button class="more" aria-label="Cerrar aviso">${ic('x')}</button>`;
+  m.prepend(d);$('.more',d).onclick=()=>d.remove();
+  $('[data-how]',d).onclick=e=>{e.preventDefault();dialog('Actualizar File Cloud',`<p>En la carpeta del proyecto, en el servidor:</p><pre class="code">git pull\nnpm install</pre><p>Después reinicia el servidor (por ejemplo <code>pm2 restart file-cloud</code> o <code>systemctl restart file-cloud</code>). Tus usuarios y archivos no se tocan.</p>`)}}

@@ -56,8 +56,8 @@ async function shares(){const{shares}=await api('/api/shares');
   d.onclick=async e=>{const c=e.target.dataset?.c,r=e.target.dataset?.r;if(c){await navigator.clipboard?.writeText(location.origin+'/s/'+c);toast('Copiado')}if(r){await api('/api/share/revoke',{token:r});d.close();shares_()}}}
 const shares_=shares;
 
-function account(){const d=dialog('Mi cuenta',`<p>Sesión: <b>${esc(me.user)}</b> ${me.admin?'<span class="badge ad">ADMIN</span>':''}</p><label>Contraseña actual<input class="input" type="password" autocomplete="current-password"></label><label>Nueva contraseña (mín. 8)<input class="input" type="password" autocomplete="new-password"></label><div id="st" class="muted" style="margin:10px 0">Calculando uso…</div><div class="row"><button type="button" class="btn ghost sm" data-rv>Cerrar otras sesiones</button><button type="button" class="btn danger sm" data-out>Cerrar sesión</button></div>`,async d=>{const i=$$('input',d);
-  if(!i[1].value)return;await api('/api/password',{current:i[0].value,next:i[1].value});toast('Contraseña actualizada; las demás sesiones se cerraron')},'Cambiar contraseña');$('[data-out]',d).onclick=logout;$('[data-rv]',d).onclick=async()=>{await api('/api/sessions/revoke-others',{});toast('Otras sesiones cerradas')};
+function account(){const d=dialog('Mi cuenta',`<p>Sesión: <b>${esc(me.user)}</b> ${me.admin?'<span class="badge ad">ADMIN</span>':''}</p><p><small class="muted">ID de cuenta (permanente): <code>${esc(me.uuid)}</code></small></p><button type="button" class="btn ghost sm" data-rn>${ic('edit')} Cambiar nombre de usuario</button><label>Contraseña actual<input class="input" type="password" autocomplete="current-password"></label><label>Nueva contraseña (mín. 8)<input class="input" type="password" autocomplete="new-password"></label><div id="st" class="muted" style="margin:10px 0">Calculando uso…</div><div class="row"><button type="button" class="btn ghost sm" data-rv>Cerrar otras sesiones</button><button type="button" class="btn danger sm" data-out>Cerrar sesión</button></div>`,async d=>{const i=$$('input',d);
+  if(!i[1].value)return;await api('/api/password',{current:i[0].value,next:i[1].value});toast('Contraseña actualizada; las demás sesiones se cerraron')},'Cambiar contraseña');$('[data-out]',d).onclick=logout;$('[data-rn]',d).onclick=()=>renameUser(d);$('[data-rv]',d).onclick=async()=>{await api('/api/sessions/revoke-others',{});toast('Otras sesiones cerradas')};
   api('/api/stats').then(({stats})=>{const t=Object.values(stats).reduce((a,b)=>a+b,0)||1;$('#st',d).innerHTML=Object.entries(stats).map(([k,v])=>`<div class="row"><span class="grow">${k}</span><small>${fmt(v)}</small></div><div class="bar"><i style="width:${v/t*100}%"></i></div>`).join('')}).catch(()=>{})}
 
 async function newDir(){const n=await ask('Nueva carpeta','Nombre');if(n)act('/api/mkdir',{name:n,path:cwd})}
@@ -74,7 +74,7 @@ addEventListener('dragover',e=>e.preventDefault());addEventListener('drop',e=>{e
 
 document.addEventListener('click',e=>{const a=e.target.closest('[data-a]')?.dataset.a;if(!a)return;
   ({shares,account,newDir,newFile,favview:()=>showList('/api/favs','Favoritos'),recent:()=>showList('/api/recent','Recientes'),theme:appearance,select:()=>{selMode=!selMode;sel.clear();render()},view:()=>{list=!list;localStorage.fcList=list?'1':'0';render()}})[a]()});
-api('/api/session').then(s=>{if(!s.logged)return location.href='/';me=s;$('#me').textContent=s.user;$('#adminLink').hidden=!s.admin;load();
+api('/api/session').then(s=>{if(!s.logged)return location.href='/';me=s;$('#me').textContent=s.user;$('#adminLink').hidden=!s.admin;load();updateNotice(s);
   if(s.announcement&&localStorage.fcAnn!==s.announcement){const a=$('#ann');a.hidden=false;a.innerHTML=`${ic('info')}<span class="grow">${esc(s.announcement)}</span><button class="more" aria-label="Cerrar">${ic('x')}</button>`;$('button',a).onclick=()=>{localStorage.fcAnn=s.announcement;a.hidden=true}}});
 
 async function bulk(k){const ns=[...sel];if(!ns.length)return;let dest;
@@ -88,3 +88,7 @@ addEventListener('keydown',e=>{if(/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)
   if(e.key==='/'){e.preventDefault();$('#filter').focus()}if(e.key==='Escape'&&selMode){selMode=false;sel.clear();render()}
   if(selMode&&e.key==='Delete')bulk('del');if(selMode&&e.ctrlKey&&e.key==='a'){e.preventDefault();items.forEach(i=>sel.add(i.name));render()}});
 async function showList(url,title){try{const d=await api(url);items=d.items;searching=true;viewTitle=title;selMode=false;sel.clear();$('#filter').value='';render()}catch(e){toast(e.message,1)}}
+
+async function renameUser(d){const n=await ask('Cambiar nombre de usuario','Nuevo nombre (3-32: letras, números, _ . -)',me.user);if(!n||n===me.user)return;
+  const p=await ask('Confirma tu contraseña','Contraseña actual','','password');if(!p)return;
+  try{const r=await api('/api/username',{username:n,password:p});me.user=r.user;$('#me').textContent=r.user;d.close();toast('Ahora te llamas '+r.user)}catch(e){toast(e.message,1)}}

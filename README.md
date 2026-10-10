@@ -163,6 +163,12 @@ Ajustes desde el panel de administración: registro público (activar o desactiv
 
 Los enlaces compartidos tienen la forma `https://tu-dominio/s/<token>`. Cualquier persona con el enlace puede ver el contenido (y la contraseña, si la configuraste), sin necesidad de cuenta.
 
+### Cuentas: UUID y nombre de usuario
+
+- Cada usuario recibe al crearse un **UUID permanente** que nunca cambia. Sus archivos se guardan en `hosting/<uuid>/`, no con su nombre de usuario.
+- El **nombre de usuario** solo existe en la base de datos y se puede cambiar (en **Mi cuenta → Cambiar nombre de usuario**, pidiendo la contraseña; los administradores pueden hacerlo desde el panel de admin). El cambio se refleja al instante en todas partes, por ejemplo como autor en la comunidad de temas, y no mueve ni renombra ningún archivo.
+- Al actualizar desde una versión anterior, las carpetas antiguas (`hosting/<usuario>/`) se renombran solas a su UUID al primer arranque.
+
 ## Temas y personalización
 
 Desde **Apariencia** puedes elegir un tema y retocar cada detalle. El cambio se ve al instante y se guarda en tu cuenta.
@@ -220,6 +226,20 @@ Disponible en `/admin/` solo para administradores.
 - **Enlaces:** todos los enlaces compartidos, con opción de revocarlos.
 - **Ajustes:** registro público, cuota por defecto y anuncio global.
 
+### Actualizaciones
+
+- La versión instalada está en `data/version.json`:
+
+  ```json
+  { "version": "2.3" }
+  ```
+
+- Cada 2 minutos el servidor lee ese archivo local y lo compara con el `data/version.json` publicado en GitHub. Si el de GitHub es más nuevo (se comparan los números: `2.10` es mayor que `2.9`), los **administradores** ven un aviso de nueva versión con instrucciones para actualizar.
+- El aviso se puede cerrar, pero vuelve a aparecer cada vez que se abre el panel, el de administración o la comunidad de temas, hasta que actualices.
+- Para actualizar: `git pull`, `npm install` y reiniciar el servidor. `data/version.json` es el único archivo de `data/` que se versiona.
+- **Para publicar una versión nueva** (mantenedores): sube el número en `data/version.json` y haz _push_.
+- Variables opcionales: `FILECLOUD_VERSION_URL` (otra URL de comprobación, útil en _forks_) y `FILECLOUD_REPO_URL` (enlace que muestra el aviso).
+
 ## Seguridad
 
 - Contraseñas cifradas con `scrypt` y sal individual.
@@ -251,8 +271,9 @@ Disponible en `/admin/` solo para administradores.
 │   ├── js/          # common.js, auth.js, panel.js, admin.js
 │   ├── style.css    # Sistema de diseño compartido
 │   └── icons.svg    # Iconos SVG
-├── hosting/         # Archivos de los usuarios (una carpeta por usuario)
-└── data/            # Base de datos SQLite (se crea sola)
+├── version.js       # Comprobación de nuevas versiones
+├── hosting/         # Archivos de los usuarios (una carpeta por usuario, nombrada con su UUID)
+└── data/            # Base de datos SQLite (se crea sola) y version.json
 ```
 
 ## API
@@ -263,7 +284,7 @@ Todas las rutas `/api/*` devuelven JSON y requieren sesión, salvo `login`, `reg
 | --- | --- | --- |
 | `POST` | `/api/register`, `/api/login`, `/api/logout` | Cuenta y sesión. |
 | `GET` | `/api/session` | Estado de la sesión. |
-| `POST` | `/api/password` | Cambiar contraseña. |
+| `POST` | `/api/password`, `/api/username` | Cambiar contraseña y nombre de usuario. |
 | `GET` | `/api/list?path=` | Listar una carpeta. |
 | `GET` | `/api/search?q=`, `/api/recent`, `/api/favs` | Búsqueda, recientes y favoritos. |
 | `POST` | `/api/mkdir`, `/api/create-file`, `/api/upload` | Crear y subir. |
@@ -272,7 +293,7 @@ Todas las rutas `/api/*` devuelven JSON y requieren sesión, salvo `login`, `reg
 | `POST` / `GET` | `/api/share`, `/api/shares`, `/api/share/revoke` | Enlaces compartidos. |
 | `GET` / `POST` | `/api/theme` | Tema activo del usuario. |
 | `GET` / `POST` / `DELETE` | `/api/themes` | Temas propios guardados (Mis temas). |
-| `POST` / `GET` | `/api/themes/publish`, `/api/community`, `/api/community/save` | Comunidad de temas. |
+| `POST` / `GET` | `/api/themes/publish`, `/api/community`, `/api/community/save`, `/api/community/unpublish` | Comunidad de temas. |
 | `GET` | `/api/stats` | Uso de espacio por tipo. |
 | `*` | `/api/admin/*` | Administración (solo admins). |
 
@@ -329,13 +350,15 @@ Añade HTTPS con Certbot o usa Caddy, que lo configura solo.
 Todo el estado de la aplicación está en dos carpetas:
 
 - `data/` → base de datos (usuarios, sesiones, enlaces, favoritos y ajustes).
-- `hosting/` → archivos de los usuarios.
+- `hosting/` → archivos de los usuarios (una carpeta por UUID; la relación UUID ↔ nombre está en la base de datos, así que guarda ambas carpetas juntas).
 
 Con el servidor parado, copia ambas carpetas. Para restaurar, devuélvelas a su sitio.
 
 ## Migrar desde la versión 1
 
 Si tienes un `data/users.json` de la versión anterior, se importa solo al primer arranque: los usuarios, sus cuotas y roles se conservan, y las contraseñas en texto plano se cifran. El archivo original se renombra a `users.json.migrado`.
+
+Las carpetas de usuario pasan a nombrarse con su UUID (se renombran solas al arrancar).
 
 Los enlaces antiguos (`/share/usuario/ruta` y `/files/...`) dejan de funcionar por seguridad: vuelve a compartir los elementos para generar enlaces nuevos.
 
@@ -353,7 +376,7 @@ Los enlaces antiguos (`/share/usuario/ruta` y `/files/...`) dejan de funcionar p
 ## Créditos
 
 - **Autor:** Jesús Octavio Olivera Silva
-- **Tester:** [TwisSpark](https://github.com/TwisSpark)
+- **Co-Owner:** [TwisSpark](https://github.com/TwisSpark)
 
 ¿Encontraste un fallo o tienes una idea? Abre un _issue_ o un _pull request_.
 

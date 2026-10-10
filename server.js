@@ -2,6 +2,7 @@ const express = require("express"), fs = require("fs"), fsp = fs.promises, path 
   crypto = require("crypto"), os = require("os"), multer = require("multer"), si = require("systeminformation");
 const { get, all, run, now, hash, verify } = require("./db");
 const { zipTo } = require("./zip");
+const ver = require("./version");
 
 const PORT = process.env.PORT || 3001;
 const HOSTING = path.join(__dirname, "hosting"), TMP = path.join(__dirname, "data", "tmp");
@@ -27,7 +28,7 @@ function safe(base, rel = "") {
   return f;
 }
 const nm = n => { n = String(n || "").trim(); if (!n || /[\/\\\0]/.test(n) || n === "." || n === ".." || n.length > 200) throw Error("Nombre inválido"); return n; };
-const base = u => path.join(HOSTING, nm(u.username));
+const base = u => path.join(HOSTING, u.uuid); // la carpeta usa el UUID, no el nombre de usuario
 const limitB = u => u.max_space_mb < 0 ? Infinity : u.max_space_mb * 1048576;
 
 async function dirSize(d) {
@@ -102,6 +103,18 @@ function startSession(req, res, uid) {
   run("INSERT INTO sessions VALUES(?,?,?,?,?,?)", sha(t), uid, now(), now() + SESSION_MS, req.ip, String(req.headers["user-agent"] || "").slice(0, 200));
   res.set("Set-Cookie", `fc_sid=${t}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${SESSION_MS / 1000}${req.secure ? "; Secure" : ""}`);
 }
+function confirmPw(req, pw) { // verifica la contraseña actual con límite de intentos
+  const k = "pw|" + req.user.id;
+  if (locked(k)) throw Error("Demasiados intentos. Prueba de nuevo en 15 minutos.");
+  if (!verify(String(pw || ""), req.user.password_hash)) { addFail(k); throw Error("La contraseña actual no es correcta"); }
+  fails.delete(k);
+}
+function setUsername(id, name) { // el nombre solo existe en la tabla users: todo lo demás usa el UUID / id
+  name = String(name || "").trim();
+  if (!/^[a-zA-Z0-9_.-]{3,32}$/.test(name)) throw Error("Usuario: 3-32 caracteres (letras, números, _ . -)");
+  if (get("SELECT 1 x FROM users WHERE username=? AND id<>?", name, id)) throw Error("Ese nombre de usuario ya está en uso");
+  run("UPDATE users SET username=? WHERE id=?", name, id);
+}
 const checkPw = p => { if (String(p || "").length < 8) throw Error("La contraseña debe tener al menos 8 caracteres"); };
 
 app.post("/api/register", wrap(async (req, res) => {
@@ -113,7 +126,7 @@ app.post("/api/register", wrap(async (req, res) => {
   const first = get("SELECT COUNT(*) n FROM users").n === 0; // el primer usuario es administrador
   const r = run("INSERT INTO users(username,password_hash,is_admin,max_space_mb,created_at) VALUES(?,?,?,?,?)",
     username, hash(password), first ? 1 : 0, Number(setting("default_quota_mb")) || 100, now());
-  await fsp.mkdir(path.join(HOSTING, username), { recursive: true });
+  await fsp.mkdir(path.join(HOSTING, get("SELECT uuid FROM users WHERE username=?", username).uuid), { recursive: true });
   startSession(req, res, Number(r.lastInsertRowid));
   req.user = { username }; 
   res.json({ success: true });
@@ -140,11 +153,16 @@ const logout = (req, res) => {
 app.post("/api/logout", (req, res) => { logout(req, res); res.json({ success: true }); });
 app.get("/logout", (req, res) => { logout(req, res); res.redirect("/"); });
 
-app.get("/api/session", (req, res) => res.json(req.user ? { logged: true, user: req.user.username, admin: !!req.user.is_admin, registration: false, announcement: setting("announcement") || "" } : { logged: false, registration: setting("allow_registration") === "1" }));
+app.get("/api/session", (req, res) => res.json(req.user ? { logged: true, user: req.user.username, admin: !!req.user.is_admin, uuid: req.user.uuid, update: req.user.is_admin ? ver.info() : null, registration: false, announcement: setting("announcement") || "" } : { logged: false, registration: setting("allow_registration") === "1" }));
 
+app.post("/api/username", need, wrap(async (req, res) => {
+  confirmPw(req, req.body.password);
+  setUsername(req.user.id, req.body.username);
+  res.json({ success: true, user: String(req.body.username).trim() });
+}));
 app.post("/api/password", need, wrap(async (req, res) => {
   const { current, next } = req.body;
-  if (!verify(String(current || ""), req.user.password_hash)) throw Error("La contraseña actual no es correcta");
+  confirmPw(req, current);
   checkPw(next);
   run("UPDATE users SET password_hash=? WHERE id=?", hash(next), req.user.id);
   run("DELETE FROM sessions WHERE user_id=? AND token<>?", req.user.id, req.sid); // cierra las demás sesiones
@@ -250,10 +268,10 @@ const kind = e => Object.keys(KINDS).find(k => KINDS[k].split(" ").includes(e)) 
 const expTxt = s => s.expires_at ? "Caduca el " + new Date(s.expires_at).toLocaleDateString("es") : "Sin caducidad";
 
 function shareCtx(req) {
-  const s = get("SELECT s.*,u.username,u.suspended,u.theme FROM shares s JOIN users u ON u.id=s.user_id WHERE s.token=?", req.params.token);
+  const s = get("SELECT s.*,u.username,u.suspended,u.theme,u.uuid owner_uuid FROM shares s JOIN users u ON u.id=s.user_id WHERE s.token=?", req.params.token);
   if (!s || s.suspended || (s.expires_at && s.expires_at < now())) return null;
   try {
-    const root = safe(path.join(HOSTING, nm(s.username)), s.path), full = safe(root, req.query.p);
+    const root = safe(path.join(HOSTING, s.owner_uuid), s.path), full = safe(root, req.query.p);
     return fs.existsSync(full) ? { s, root, full, th: userTheme(s) } : null;
   } catch { return null; }
 }
@@ -308,11 +326,11 @@ app.get("/api/admin/server", needAdmin, wrap(async (req, res) => {
   res.json({
     cpu: l.currentLoad, memUsed: m.total - m.available, memTotal: m.total, diskUsed: dk.used, diskTotal: dk.size, uptime: os.uptime(),
     users: get("SELECT COUNT(*) n FROM users").n, stored: get("SELECT COALESCE(SUM(used_bytes),0) n FROM users").n,
-    shares: get("SELECT COUNT(*) n FROM shares").n, sessions: get("SELECT COUNT(*) n FROM sessions WHERE expires_at>?", now()).n
+    version: ver.info().current, shares: get("SELECT COUNT(*) n FROM shares").n, sessions: get("SELECT COUNT(*) n FROM sessions WHERE expires_at>?", now()).n
   });
 }));
 app.get("/api/admin/users", needAdmin, wrap(async (req, res) => {
-  const us = all("SELECT id,username,is_admin,suspended,max_space_mb,used_bytes,used_at,created_at,last_login,last_ip FROM users ORDER BY username");
+  const us = all("SELECT id,uuid,username,is_admin,suspended,max_space_mb,used_bytes,used_at,created_at,last_login,last_ip FROM users ORDER BY username");
   for (const u of us) await usage(u);
   res.json({ users: us.map(({ used_at, ...u }) => u), me: req.user.id });
 }));
@@ -323,13 +341,14 @@ app.post("/api/admin/users", needAdmin, wrap(async (req, res) => {
   if (get("SELECT 1 x FROM users WHERE username=?", username)) throw Error("Ese usuario ya existe");
   const q = Number(max_space_mb);
   run("INSERT INTO users(username,password_hash,is_admin,max_space_mb,created_at) VALUES(?,?,?,?,?)", username, hash(password), is_admin ? 1 : 0, Number.isFinite(q) ? (q < 0 ? -1 : q) : 100, now());
-  await fsp.mkdir(path.join(HOSTING, username), { recursive: true });
+  await fsp.mkdir(path.join(HOSTING, get("SELECT uuid FROM users WHERE username=?", username).uuid), { recursive: true });
   res.json({ success: true });
 }));
 app.post("/api/admin/users/:id", needAdmin, wrap(async (req, res) => {
   const t = get("SELECT * FROM users WHERE id=?", req.params.id), b = req.body;
   if (!t) throw Error("Usuario no encontrado");
   if (t.id === req.user.id && (b.is_admin === false || b.suspended === true)) throw Error("No puedes quitarte el rol de admin ni suspenderte");
+  if (b.username !== undefined && b.username !== t.username) setUsername(t.id, b.username);
   if (b.max_space_mb !== undefined) { const v = Number(b.max_space_mb); if (!Number.isFinite(v)) throw Error("Límite inválido"); run("UPDATE users SET max_space_mb=? WHERE id=?", v < 0 ? -1 : v, t.id); }
   if (b.is_admin !== undefined) run("UPDATE users SET is_admin=? WHERE id=?", b.is_admin ? 1 : 0, t.id);
   if (b.suspended !== undefined) { run("UPDATE users SET suspended=? WHERE id=?", b.suspended ? 1 : 0, t.id); if (b.suspended) run("DELETE FROM sessions WHERE user_id=?", t.id); }
@@ -416,6 +435,10 @@ app.post("/api/community/save", need, wrap(async (req, res) => {
   if (!has(name) && get("SELECT COUNT(*) n FROM user_themes WHERE user_id=?", req.user.id).n >= 50) throw Error("Máximo 50 temas guardados");
   run("INSERT INTO user_themes(user_id,name,data) VALUES(?,?,?) ON CONFLICT(user_id,name) DO UPDATE SET data=excluded.data", req.user.id, name, r.data);
   res.json({ success: true, name });
+}));
+app.post("/api/community/unpublish", need, wrap(async (req, res) => {
+  const r = run("UPDATE user_themes SET public=0 WHERE rowid=? AND user_id=?", Number(req.body.id), req.user.id);
+  if (!r.changes) throw Error("Tema no encontrado"); res.json({ success: true });
 }));
 app.post("/api/admin/community/unpublish", needAdmin, (req, res) => { run("UPDATE user_themes SET public=0 WHERE rowid=?", Number(req.body.id)); res.json({ success: true }); });
 app.delete("/api/themes", need, (req, res) => { run("DELETE FROM user_themes WHERE user_id=? AND name=?", req.user.id, String(req.body.name || "")); res.json({ success: true }); });
@@ -512,4 +535,5 @@ setInterval(() => {
 
 if (!get("SELECT COUNT(*) n FROM users").n)
   console.warn("AVISO: no hay usuarios en la base de datos. Si vienes de la versión anterior, copia tu users.json a data/ y reinicia; o crea un usuario con: node reset-password.js <usuario> <contraseña> --admin");
+ver.start();
 app.listen(PORT, () => console.log(`File Cloud corriendo en http://localhost:${PORT}`));
