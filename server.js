@@ -3,6 +3,7 @@ const express = require("express"), fs = require("fs"), fsp = fs.promises, path 
 const { get, all, run, now, hash, verify } = require("./db");
 const { zipTo } = require("./zip");
 const ver = require("./version");
+const ai = require("./ai");
 
 const PORT = process.env.PORT || 3001;
 const HOSTING = path.join(__dirname, "hosting"), TMP = path.join(__dirname, "data", "tmp");
@@ -90,6 +91,8 @@ app.use((req, res, next) => {
   }
   next();
 });
+// Agente de IA: la configuración se lee de la base de datos al iniciar (y cuando el admin la cambia)
+ai.init({ base, safe, usage, limitB, dirSize });
 const need = (req, res, next) => req.user ? next() : res.status(401).json({ error: "No autorizado" });
 const needAdmin = (req, res, next) => !req.user ? res.status(401).json({ error: "No autorizado" }) : req.user.is_admin ? next() : res.status(403).json({ error: "Solo administradores" });
 
@@ -153,7 +156,7 @@ const logout = (req, res) => {
 app.post("/api/logout", (req, res) => { logout(req, res); res.json({ success: true }); });
 app.get("/logout", (req, res) => { logout(req, res); res.redirect("/"); });
 
-app.get("/api/session", (req, res) => res.json(req.user ? { logged: true, user: req.user.username, admin: !!req.user.is_admin, uuid: req.user.uuid, update: req.user.is_admin ? ver.info() : null, registration: false, announcement: setting("announcement") || "" } : { logged: false, registration: setting("allow_registration") === "1" }));
+app.get("/api/session", (req, res) => res.json(req.user ? { logged: true, user: req.user.username, admin: !!req.user.is_admin, uuid: req.user.uuid, update: req.user.is_admin ? ver.info() : null, registration: false, announcement: setting("announcement") || "", ai: ai.enabled() } : { logged: false, registration: setting("allow_registration") === "1" }));
 
 app.post("/api/username", need, wrap(async (req, res) => {
   confirmPw(req, req.body.password);
@@ -330,9 +333,10 @@ app.get("/api/admin/server", needAdmin, wrap(async (req, res) => {
   });
 }));
 app.get("/api/admin/users", needAdmin, wrap(async (req, res) => {
-  const us = all("SELECT id,uuid,username,is_admin,suspended,max_space_mb,used_bytes,used_at,created_at,last_login,last_ip FROM users ORDER BY username");
+  const us = all("SELECT id,uuid,username,is_admin,suspended,max_space_mb,used_bytes,used_at,created_at,last_login,last_ip,ai_limit,ai_period FROM users ORDER BY username");
   for (const u of us) await usage(u);
-  res.json({ users: us.map(({ used_at, ...u }) => u), me: req.user.id });
+  const on = ai.enabled();
+  res.json({ ai: on, users: us.map(({ used_at, ...u }) => { if (on) { const l = ai.limitFor(u); u.ai_eff_limit = l.limit; u.ai_eff_period = l.period; u.ai_used = ai.usedBy(u.id, l.period); } return u; }), me: req.user.id });
 }));
 app.post("/api/admin/users", needAdmin, wrap(async (req, res) => {
   const { username, password, max_space_mb, is_admin } = req.body;
@@ -350,6 +354,11 @@ app.post("/api/admin/users/:id", needAdmin, wrap(async (req, res) => {
   if (t.id === req.user.id && (b.is_admin === false || b.suspended === true)) throw Error("No puedes quitarte el rol de admin ni suspenderte");
   if (b.username !== undefined && b.username !== t.username) setUsername(t.id, b.username);
   if (b.max_space_mb !== undefined) { const v = Number(b.max_space_mb); if (!Number.isFinite(v)) throw Error("Límite inválido"); run("UPDATE users SET max_space_mb=? WHERE id=?", v < 0 ? -1 : v, t.id); }
+  if (b.ai_limit !== undefined) { // null/"" = usar el límite general; -1 = ilimitado; 0 = sin acceso a la IA
+    if (b.ai_limit === null || b.ai_limit === "") run("UPDATE users SET ai_limit=NULL WHERE id=?", t.id);
+    else { const v = Math.floor(Number(b.ai_limit)); if (!Number.isFinite(v) || v < -1 || v > 1e6) throw Error("Límite de IA inválido"); run("UPDATE users SET ai_limit=? WHERE id=?", v, t.id); }
+  }
+  if (b.ai_period !== undefined) run("UPDATE users SET ai_period=? WHERE id=?", b.ai_period === "day" || b.ai_period === "hour" ? b.ai_period : null, t.id);
   if (b.is_admin !== undefined) run("UPDATE users SET is_admin=? WHERE id=?", b.is_admin ? 1 : 0, t.id);
   if (b.suspended !== undefined) { run("UPDATE users SET suspended=? WHERE id=?", b.suspended ? 1 : 0, t.id); if (b.suspended) run("DELETE FROM sessions WHERE user_id=?", t.id); }
   if (b.password) { checkPw(b.password); run("UPDATE users SET password_hash=? WHERE id=?", hash(b.password), t.id); b.logout = true; }
@@ -389,6 +398,20 @@ app.post("/api/admin/settings", needAdmin, wrap(async (req, res) => {
   run("INSERT OR REPLACE INTO settings VALUES('announcement',?)", String(req.body.announcement || "").slice(0, 300));
   res.json({ success: true });
 }));
+
+// ---------- agente de IA ----------
+const needAI = (req, res, next) => ai.enabled() ? next() : res.status(404).json({ error: "No encontrado" }); // IA desactivada: la API no existe
+app.get("/api/ai/status", need, needAI, (req, res) => res.json({ usage: ai.status(req.user) }));
+app.post("/api/ai/chat", need, needAI, async (req, res) => {
+  try { res.json(await ai.chat(req.user, req.body.messages)); }
+  catch (e) { res.status(e.code || 400).json({ error: e.message }); }
+});
+app.get("/api/admin/ai", needAdmin, (req, res) => res.json(ai.publicConfig()));
+app.post("/api/admin/ai", needAdmin, wrap(async (req, res) => { ai.save(req.body || {}); res.json({ success: true, ...ai.publicConfig() }); }));
+app.post("/api/admin/ai/test", needAdmin, async (req, res) => {
+  try { res.json({ ok: true, reply: await ai.test(req.body || {}) }); }
+  catch (e) { res.status(400).json({ error: e.message + (e.detail ? " (" + e.detail + ")" : "") }); }
+});
 
 // ---------- apariencia (tema por usuario) ----------
 const FONTS = { system: 'Inter,"Segoe UI",system-ui,sans-serif', serif: 'Georgia,"Times New Roman",serif', mono: "ui-monospace,Menlo,Consolas,monospace", rounded: 'ui-rounded,Nunito,"Segoe UI",system-ui,sans-serif' };
@@ -530,10 +553,11 @@ app.use((err, req, res, next) => res.status(500).json({ error: "Error interno" }
 setInterval(() => {
   run("DELETE FROM sessions WHERE expires_at<?", now());
   run("DELETE FROM shares WHERE expires_at IS NOT NULL AND expires_at<?", now());
+  ai.purge();
   for (const [k, f] of fails) if (f.until < now()) fails.delete(k);
 }, 36e5).unref();
 
 if (!get("SELECT COUNT(*) n FROM users").n)
   console.warn("AVISO: no hay usuarios en la base de datos. Si vienes de la versión anterior, copia tu users.json a data/ y reinicia; o crea un usuario con: node reset-password.js <usuario> <contraseña> --admin");
 ver.start();
-app.listen(PORT, () => console.log(`File Cloud corriendo en http://localhost:${PORT}`));
+app.listen(PORT, () => { console.log(`File Cloud corriendo en http://localhost:${PORT}`); console.log("Agente de IA: " + ai.describe()); });

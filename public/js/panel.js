@@ -74,7 +74,7 @@ addEventListener('dragover',e=>e.preventDefault());addEventListener('drop',e=>{e
 
 document.addEventListener('click',e=>{const a=e.target.closest('[data-a]')?.dataset.a;if(!a)return;
   ({shares,account,newDir,newFile,favview:()=>showList('/api/favs','Favoritos'),recent:()=>showList('/api/recent','Recientes'),theme:appearance,select:()=>{selMode=!selMode;sel.clear();render()},view:()=>{list=!list;localStorage.fcList=list?'1':'0';render()}})[a]()});
-api('/api/session').then(s=>{if(!s.logged)return location.href='/';me=s;$('#me').textContent=s.user;$('#adminLink').hidden=!s.admin;load();updateNotice(s);
+api('/api/session').then(s=>{if(!s.logged)return location.href='/';me=s;$('#me').textContent=s.user;$('#adminLink').hidden=!s.admin;if(s.ai)aiInit();load();updateNotice(s);
   if(s.announcement&&localStorage.fcAnn!==s.announcement){const a=$('#ann');a.hidden=false;a.innerHTML=`${ic('info')}<span class="grow">${esc(s.announcement)}</span><button class="more" aria-label="Cerrar">${ic('x')}</button>`;$('button',a).onclick=()=>{localStorage.fcAnn=s.announcement;a.hidden=true}}});
 
 async function bulk(k){const ns=[...sel];if(!ns.length)return;let dest;

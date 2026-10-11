@@ -23,15 +23,16 @@ Sube, organiza, edita y comparte archivos desde cualquier dispositivo, con usuar
 6. [Guía de uso](#guía-de-uso)
 7. [Temas y personalización](#temas-y-personalización)
 8. [Panel de administración](#panel-de-administración)
-9. [Seguridad](#seguridad)
-10. [Estructura del proyecto](#estructura-del-proyecto)
-11. [API](#api)
-12. [Despliegue en producción](#despliegue-en-producción)
-13. [Copias de seguridad](#copias-de-seguridad)
-14. [Migrar desde la versión 1](#migrar-desde-la-versión-1)
-15. [Solución de problemas](#solución-de-problemas)
-16. [Créditos](#créditos)
-17. [Licencia](#licencia)
+9. [Agente de IA (opcional)](#agente-de-ia-opcional)
+10. [Seguridad](#seguridad)
+11. [Estructura del proyecto](#estructura-del-proyecto)
+12. [API](#api)
+13. [Despliegue en producción](#despliegue-en-producción)
+14. [Copias de seguridad](#copias-de-seguridad)
+15. [Migrar desde la versión 1](#migrar-desde-la-versión-1)
+16. [Solución de problemas](#solución-de-problemas)
+17. [Créditos](#créditos)
+18. [Licencia](#licencia)
 
 ## Características
 
@@ -224,6 +225,7 @@ Disponible en `/admin/` solo para administradores.
 - **Resumen:** usuarios, almacenamiento total, enlaces activos, sesiones activas y estado del servidor (se actualiza cada 5 s).
 - **Usuarios:** alta, edición de cuota y rol, suspensión, cambio de contraseña, cierre de sesiones, explorador de archivos y eliminación.
 - **Enlaces:** todos los enlaces compartidos, con opción de revocarlos.
+- **IA:** activar o desactivar el agente de IA, elegir Grok u Ollama, API key, modelo y límite de usos (ver [Agente de IA](#agente-de-ia-opcional)).
 - **Ajustes:** registro público, cuota por defecto y anuncio global.
 
 ### Actualizaciones
@@ -239,6 +241,37 @@ Disponible en `/admin/` solo para administradores.
 - Para actualizar: `git pull`, `npm install` y reiniciar el servidor. `data/version.json` es el único archivo de `data/` que se versiona.
 - **Para publicar una versión nueva** (mantenedores): sube el número en `data/version.json` y haz _push_.
 - Variables opcionales: `FILECLOUD_VERSION_URL` (otra URL de comprobación, útil en _forks_) y `FILECLOUD_REPO_URL` (enlace que muestra el aviso).
+
+## Agente de IA (opcional)
+
+Al terminar `npm install`, los instaladores (`install.sh`, `install.ps1`, `install.bat` y los de una línea) ejecutan `setup-ai.js`, que pregunta:
+
+1. **¿Quieres configurar un agente de IA?**
+   - **No** → se guarda en la base de datos que no hay IA. Al arrancar, el servidor lo lee y **oculta todo lo relacionado con la IA** (botón, chat, campos de límites y la propia API `/api/ai/*`, que responde 404).
+   - **Sí** → eliges proveedor:
+     - **Grok (xAI):** te muestra el enlace para conseguir la API key (<https://console.x.ai/>) y te pide que la pegues. También puedes indicar el modelo.
+     - **Ollama:** indicas la URL (por defecto `http://localhost:11434`) y el modelo (por defecto `llama3.1`; instálalo con `ollama pull llama3.1`).
+
+Puedes repetir el asistente con `npm run setup-ai`. Para instalaciones sin teclado: `FILECLOUD_AI=none|grok|ollama` junto con `FILECLOUD_AI_KEY`, `FILECLOUD_AI_MODEL` y `FILECLOUD_OLLAMA_URL`. Si no hay terminal interactiva, no se cambia nada y la IA queda desactivada.
+
+### Activar, cambiar o desactivar desde el panel
+
+En **Admin → IA** el administrador puede, en cualquier momento y sin reiniciar el servidor, activar la IA (aunque en la instalación dijera que no), pegar o cambiar la API key de Grok (con el enlace para conseguirla), cambiar de Grok a Ollama (URL + modelo), probar la conexión o desactivarla.
+
+### Límites de uso
+
+- **General:** número de usos **por hora o por día** para cada usuario (`-1` = ilimitado, `0` = nadie). Por defecto, 20 por hora.
+- **Por usuario:** en **Admin → Usuarios → Editar** se puede dar a un usuario otro límite y otro periodo (vacío = usar el general; `0` = bloquearle la IA).
+- Cada mensaje enviado al agente cuenta como **un uso** (aunque haga varias operaciones). Si el proveedor falla, el uso no se descuenta. Solo se procesa una petición a la vez por usuario.
+
+### Qué puede hacer el agente (y qué no)
+
+El agente trabaja **únicamente dentro de la carpeta del usuario que lo usa** (para él es la raíz `/`) y dispone solo de estas herramientas: listar, leer archivos de texto, crear carpetas, crear archivos de texto, mover, copiar y borrar. **No existe ninguna herramienta para ejecutar nada**: los archivos que crea son datos (permisos `0644`, nunca ejecutables) y las copias pierden el bit de ejecución.
+
+- Las rutas se validan en el servidor (no se confía en el modelo): se rechazan `..`, rutas absolutas hacia fuera, caracteres de control y enlaces simbólicos, y no se puede operar sobre la carpeta raíz.
+- Se respeta la cuota de almacenamiento del usuario.
+- La API key se guarda en la base de datos (`data/filecloud.db`) y nunca se devuelve al navegador. Protege esa carpeta y sus copias de seguridad.
+- Con Grok, lo que el usuario escriba y el contenido de los archivos que el agente lea se envían a xAI; con Ollama todo queda en tu servidor. Tenlo en cuenta al elegir proveedor.
 
 ## Seguridad
 
@@ -259,6 +292,8 @@ Disponible en `/admin/` solo para administradores.
 .
 ├── server.js        # Servidor Express y API
 ├── db.js            # SQLite, contraseñas y migración
+├── ai.js            # Agente de IA (Grok/Ollama), herramientas con sandbox y límites de uso
+├── setup-ai.js      # Asistente de configuración de la IA (lo ejecuta el instalador)
 ├── zip.js           # Generador ZIP en streaming (sin dependencias)
 ├── reset-password.js # Recuperación de cuentas desde la terminal
 ├── install.sh / install.ps1 / install.bat   # Instaladores (Linux·macOS / Windows)
@@ -268,7 +303,7 @@ Disponible en `/admin/` solo para administradores.
 │   ├── panel.html   # Panel del usuario
 │   ├── themes.html  # Comunidad de temas
 │   ├── admin/       # Panel de administración
-│   ├── js/          # common.js, auth.js, panel.js, admin.js
+│   ├── js/          # common.js, auth.js, panel.js, admin.js, ai.js
 │   ├── style.css    # Sistema de diseño compartido
 │   └── icons.svg    # Iconos SVG
 ├── version.js       # Comprobación de nuevas versiones
@@ -295,7 +330,8 @@ Todas las rutas `/api/*` devuelven JSON y requieren sesión, salvo `login`, `reg
 | `GET` / `POST` / `DELETE` | `/api/themes` | Temas propios guardados (Mis temas). |
 | `POST` / `GET` | `/api/themes/publish`, `/api/community`, `/api/community/save`, `/api/community/unpublish` | Comunidad de temas. |
 | `GET` | `/api/stats` | Uso de espacio por tipo. |
-| `*` | `/api/admin/*` | Administración (solo admins). |
+| `GET` / `POST` | `/api/ai/status`, `/api/ai/chat` | Agente de IA (404 si está desactivada). |
+| `*` | `/api/admin/*` | Administración (solo admins), incluida `/api/admin/ai`. |
 
 ## Despliegue en producción
 

@@ -64,6 +64,9 @@ if node_modern; then npm install --omit=optional --no-audit --no-fund
 else build_tools || true; npm install --no-audit --no-fund; fi
 mkdir -p data hosting
 
+info "Configuración del agente de IA…"
+node setup-ai.js || true   # pregunta si quieres IA (Grok u Ollama); nunca interrumpe la instalación
+
 ok "File Cloud listo."
 echo "   Iniciar:  npm start        (http://localhost:3001)"
 echo "   El primer usuario que se registre será administrador."

@@ -63,3 +63,13 @@ h4{margin:16px 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.04e
 .sw{display:flex;height:18px;border-radius:6px;overflow:hidden;border:1px solid var(--line)}.sw i{flex:1}
 .mt-act{gap:6px}.mt-act .btn{flex:1 1 auto;min-width:0}.badge.pub{display:inline-flex;gap:4px;align-items:center;background:color-mix(in srgb,var(--ok) 22%,transparent);color:var(--ok)}
 code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.9em;overflow-wrap:anywhere}
+/* Asistente de IA */
+.aip{position:fixed;right:14px;bottom:14px;z-index:60;display:flex;flex-direction:column;gap:8px;width:min(420px,calc(100vw - 28px));height:min(580px,75vh);padding:12px;box-shadow:0 14px 40px rgba(0,0,0,.45)}
+.aip[hidden]{display:none}
+.ailog{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:8px;padding:2px}
+.aim{max-width:90%;padding:8px 12px;border-radius:calc(var(--r)*.8);background:var(--card2);white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px}
+.aim.me{align-self:flex-end;background:var(--accent);color:var(--on)}
+.aim.wait{color:var(--muted);font-style:italic}
+.aia{list-style:none;margin:8px 0 0;padding:8px 0 0;border-top:1px solid var(--line);font-size:12px;display:grid;gap:3px}
+.aia .ok{color:var(--ok)}.aia .bad{color:var(--danger)}
+.aiform{display:flex;gap:8px;align-items:flex-end}.aiform textarea{resize:none;max-height:120px;field-sizing:content}
