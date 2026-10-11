@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # File Cloud - instalación en una línea (Linux y macOS):
 #   curl -fsSL https://raw.githubusercontent.com/OctavioproYT452/Filecloud/HEAD/get.sh | bash
-# Instala git si falta, clona el repositorio y ejecuta install.sh.
+# Instala git si falta, clona el repositorio y ejecuta scripts/unix/install.sh.
 # Variables opcionales: FILECLOUD_DIR (destino, por defecto ~/Filecloud), FILECLOUD_REPO, FILECLOUD_START=1
 main() {
   set -euo pipefail
@@ -32,6 +32,6 @@ main() {
     printf '\033[1;36m==>\033[0m Clonando en %s…\n' "$DIR"; git clone --depth 1 "$REPO" "$DIR"
   fi
   # </dev/null: evita que los comandos hijos lean (y se coman) el script que llega por la tubería
-  bash "$DIR/install.sh" </dev/null
+  bash "$DIR/scripts/unix/install.sh" </dev/null
 }
 main "$@"

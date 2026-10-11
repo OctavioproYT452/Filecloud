@@ -3,13 +3,13 @@
 // Pregunta si quieres un agente de IA (Grok de xAI u Ollama) y guarda la respuesta en la base de datos.
 // El servidor la lee al arrancar: si dijiste que no, toda la IA queda oculta (el admin puede activarla luego desde su panel).
 //
-//   node setup-ai.js            pregunta (si ya está configurada, no vuelve a preguntar)
-//   node setup-ai.js --force    vuelve a preguntar aunque ya esté configurada
-//   node setup-ai.js --skip     no pregunta ni cambia nada
+//   node tools/setup-ai.js            pregunta (si ya está configurada, no vuelve a preguntar)
+//   node tools/setup-ai.js --force    vuelve a preguntar aunque ya esté configurada
+//   node tools/setup-ai.js --skip     no pregunta ni cambia nada
 // Instalación sin teclado (variables de entorno):
 //   FILECLOUD_AI=none | grok | ollama   FILECLOUD_AI_KEY=...   FILECLOUD_AI_MODEL=...   FILECLOUD_OLLAMA_URL=http://localhost:11434
 const fs = require("fs"), tty = require("tty"), readline = require("readline");
-const ai = require("./ai");
+const ai = require("../src/ai");
 
 const args = process.argv.slice(2), FORCE = args.includes("--force"), SKIP = args.includes("--skip");
 const c = (n, t) => process.stdout.isTTY ? `\x1b[${n}m${t}\x1b[0m` : t;
@@ -35,11 +35,11 @@ async function main() {
   if (SKIP) return info("Configuración de IA omitida (--skip).");
   if (await fromEnv()) return;
   if (ai.publicConfig().configured && !FORCE) {
-    return info(`IA ya configurada (${ai.describe()}). Para cambiarla: node setup-ai.js --force, o desde el panel de administración.`);
+    return info(`IA ya configurada (${ai.describe()}). Para cambiarla: node tools/setup-ai.js --force, o desde el panel de administración.`);
   }
   const input = openInput();
   if (!input) {
-    return info("Sin terminal interactiva: no se configuró la IA (quedará desactivada). El admin puede activarla desde su panel, o ejecuta: node setup-ai.js");
+    return info("Sin terminal interactiva: no se configuró la IA (quedará desactivada). El admin puede activarla desde su panel, o ejecuta: node tools/setup-ai.js");
   }
   const rl = readline.createInterface({ input, output: process.stdout, terminal: !!input.isTTY });
   rl.on("close", () => { /* Ctrl+D / Ctrl+C */ });
@@ -82,6 +82,6 @@ async function main() {
 }
 
 main().then(() => process.exit(0), e => {
-  if (e && e.message === "cancelado") { console.log("\nConfiguración de IA cancelada: no se guardó nada. Puedes repetirla con: node setup-ai.js"); process.exit(0); }
+  if (e && e.message === "cancelado") { console.log("\nConfiguración de IA cancelada: no se guardó nada. Puedes repetirla con: node tools/setup-ai.js"); process.exit(0); }
   console.error("No se pudo configurar la IA:", e.message); process.exit(0); // nunca rompe la instalación
 });

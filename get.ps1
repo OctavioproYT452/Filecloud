@@ -1,6 +1,6 @@
 # File Cloud - instalación en una línea (Windows, PowerShell):
 #   irm https://raw.githubusercontent.com/OctavioproYT452/Filecloud/HEAD/get.ps1 | iex
-# Instala git si falta, clona el repositorio y ejecuta install.ps1.
+# Instala git si falta, clona el repositorio y ejecuta scripts\windows\install.ps1.
 # Variables opcionales: FILECLOUD_DIR (destino, por defecto %USERPROFILE%\Filecloud), FILECLOUD_REPO
 $ErrorActionPreference = 'Stop'
 $Repo = if ($env:FILECLOUD_REPO) { $env:FILECLOUD_REPO } else { 'https://github.com/OctavioproYT452/Filecloud.git' }
@@ -19,4 +19,4 @@ if (-not (Has git)) {
 if (Test-Path (Join-Path $Dir '.git')) { Write-Host "==> Actualizando $Dir..." -ForegroundColor Cyan; git -C $Dir pull --ff-only }
 elseif ((Test-Path $Dir) -and (Get-ChildItem $Dir -Force | Select-Object -First 1)) { throw "La carpeta $Dir ya existe y no está vacía. Define FILECLOUD_DIR con otra ruta." }
 else { Write-Host "==> Clonando en $Dir..." -ForegroundColor Cyan; git clone --depth 1 $Repo $Dir }
-& powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $Dir 'install.ps1')
+& powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $Dir 'scripts\windows\install.ps1')

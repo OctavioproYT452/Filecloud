@@ -1,6 +1,6 @@
 // Comprueba cada 2 minutos si hay una versión más reciente publicada en GitHub.
-const fs = require("fs"), path = require("path");
-const FILE = path.join(__dirname, "data", "version.json");
+const fs = require("fs");
+const { VERSION_FILE } = require("./config");
 const REMOTE = process.env.FILECLOUD_VERSION_URL || "https://raw.githubusercontent.com/OctavioproYT452/Filecloud/HEAD/data/version.json";
 const REPO = process.env.FILECLOUD_REPO_URL || "https://github.com/OctavioproYT452/Filecloud";
 let versionActual = "0", versionRemota = null;
@@ -14,7 +14,7 @@ function isNewer(a, b) { // ¿a es más nueva que b? (compara cada número: 2.10
 const readVersion = t => String(JSON.parse(t.replace(/^\uFEFF/, "")).version || "");
 
 async function checkVersion() {
-  try { versionActual = readVersion(fs.readFileSync(FILE, "utf8")) || "0"; } catch { /* sin archivo local */ }
+  try { versionActual = readVersion(fs.readFileSync(VERSION_FILE, "utf8")) || "0"; } catch { /* sin archivo local */ }
   try {
     const r = await fetch(REMOTE + "?_=" + Date.now(), { signal: AbortSignal.timeout(8000) });
     if (r.ok) versionRemota = readVersion(await r.text()) || versionRemota;

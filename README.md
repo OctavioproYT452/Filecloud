@@ -103,10 +103,10 @@ Si ya existe la carpeta de destino como repositorio, se actualiza con `git pull`
 ```bash
 git clone https://github.com/OctavioproYT452/Filecloud.git
 cd Filecloud
-bash install.sh        # Linux y macOS
+bash scripts/unix/install.sh        # Linux y macOS
 ```
 
-En Windows, haz doble clic en `install.bat` o ejecuta `.\install.ps1` en PowerShell.
+En Windows, haz doble clic en `scripts\windows\install.bat` o ejecuta `.\scripts\windows\install.ps1` en PowerShell.
 
 Los instaladores detectan el sistema (apt, dnf/yum, pacman, zypper, apk, Homebrew, winget o Chocolatey), instalan Node.js y npm si no están, y ejecutan `npm install`. En Linux instalan Node.js 22 mediante NodeSource (apt, dnf, yum) o el repositorio de la distribución; necesitan `root` o `sudo` para instalar paquetes.
 
@@ -233,7 +233,7 @@ Disponible en `/admin/` solo para administradores.
 - La versión instalada está en `data/version.json`:
 
   ```json
-  { "version": "2.3" }
+  { "version": "2.5" }
   ```
 
 - Cada 2 minutos el servidor lee ese archivo local y lo compara con el `data/version.json` publicado en GitHub. Si el de GitHub es más nuevo (se comparan los números: `2.10` es mayor que `2.9`), los **administradores** ven un aviso de nueva versión con instrucciones para actualizar.
@@ -244,7 +244,7 @@ Disponible en `/admin/` solo para administradores.
 
 ## Agente de IA (opcional)
 
-Al terminar `npm install`, los instaladores (`install.sh`, `install.ps1`, `install.bat` y los de una línea) ejecutan `setup-ai.js`, que pregunta:
+Al terminar `npm install`, los instaladores (`scripts/unix/install.sh`, `scripts/windows/install.ps1`, `scripts/windows/install.bat` y los de una línea) ejecutan `tools/setup-ai.js`, que pregunta:
 
 1. **¿Quieres configurar un agente de IA?**
    - **No** → se guarda en la base de datos que no hay IA. Al arrancar, el servidor lo lee y **oculta todo lo relacionado con la IA** (botón, chat, campos de límites y la propia API `/api/ai/*`, que responde 404).
@@ -290,25 +290,72 @@ El agente trabaja **únicamente dentro de la carpeta del usuario que lo usa** (p
 
 ```
 .
-├── server.js        # Servidor Express y API
-├── db.js            # SQLite, contraseñas y migración
-├── ai.js            # Agente de IA (Grok/Ollama), herramientas con sandbox y límites de uso
-├── setup-ai.js      # Asistente de configuración de la IA (lo ejecuta el instalador)
-├── zip.js           # Generador ZIP en streaming (sin dependencias)
-├── reset-password.js # Recuperación de cuentas desde la terminal
-├── install.sh / install.ps1 / install.bat   # Instaladores (Linux·macOS / Windows)
-├── get.sh / get.ps1 # Instalación en una línea (git + clonar + instalar)
+├── server.js              # Punto de entrada (para npm start, pm2 y systemd): carga src/
+├── src/                   # Código del servidor
+│   ├── index.js           # Arranque: Express, middleware, rutas y tareas periódicas
+│   ├── config.js          # Rutas (data, hosting, public), puerto y duración de sesión
+│   ├── version.js         # Comprobación de nuevas versiones
+│   ├── db/                # Base de datos SQLite
+│   │   ├── index.js       #   Ayudantes get / all / run / now
+│   │   ├── connection.js  #   Apertura (node:sqlite o better-sqlite3)
+│   │   ├── schema.js      #   Tablas, columnas y UUID de usuario
+│   │   ├── passwords.js   #   Contraseñas con scrypt
+│   │   └── migrations.js  #   Migración desde users.json y carpetas antiguas
+│   ├── middleware/
+│   │   ├── security.js    #   Cabeceras, cuerpo de las peticiones y CSRF
+│   │   └── auth.js        #   Sesión y guardas need / needAdmin
+│   ├── services/
+│   │   ├── auth.js        #   Sesiones, intentos fallidos y validaciones de cuenta
+│   │   └── themes.js      #   Validación de temas y generación del CSS
+│   ├── routes/
+│   │   ├── auth.js        #   Registro, login, sesión, usuario y contraseña
+│   │   ├── files.js       #   Archivos: listar, subir, editar, mover, copiar, ZIP…
+│   │   ├── shares.js      #   API de enlaces para compartir
+│   │   ├── share-page.js  #   Páginas públicas /s/<token>
+│   │   ├── explore.js     #   Búsqueda, estadísticas, favoritos y recientes
+│   │   ├── themes.js      #   Apariencia y comunidad de temas
+│   │   ├── admin.js       #   Panel de administración
+│   │   └── ai.js          #   API del agente de IA
+│   ├── views/
+│   │   └── share-helpers.js # HTML y formato de la página compartida
+│   ├── lib/
+│   │   ├── utils.js       #   sha, esc, cookies, wrap…
+│   │   ├── settings.js    #   Ajustes globales (tabla settings)
+│   │   ├── paths.js       #   Rutas seguras dentro de la carpeta del usuario
+│   │   ├── storage.js     #   Tamaños, cuota, nombres únicos y mover archivos
+│   │   ├── serve.js       #   Envío y vista previa aislada de archivos
+│   │   └── zip.js         #   Generador ZIP en streaming (sin dependencias)
+│   └── ai/                # Agente de IA (Grok/Ollama)
+│       ├── index.js       #   API pública del módulo
+│       ├── config.js      #   Configuración guardada en la base de datos
+│       ├── validate.js    #   Validación de URL, modelo, clave y límites
+│       ├── limits.js      #   Límites de uso por usuario
+│       ├── llm.js         #   Cliente del proveedor y prueba de conexión
+│       ├── tools.js       #   Herramientas con sandbox (confinadas a la carpeta del usuario)
+│       ├── chat.js        #   Bucle de conversación
+│       └── constants.js   #   Constantes
+├── tools/                 # Utilidades de terminal
+│   ├── setup-ai.js        #   Asistente de configuración de la IA (lo ejecuta el instalador)
+│   └── reset-password.js  #   Recuperación de cuentas
+├── scripts/               # Instaladores
+│   ├── unix/              #   Linux y macOS
+│   │   ├── install.sh
+│   │   └── lib/           #     common.sh, node.sh
+│   └── windows/           #   Windows
+│       ├── install.ps1
+│       ├── install.bat    #     Doble clic
+│       └── lib/           #     common.ps1, node.ps1
+├── get.sh / get.ps1       # Instalación en una línea (git + clonar + instalar)
 ├── public/
-│   ├── index.html   # Inicio de sesión y registro
-│   ├── panel.html   # Panel del usuario
-│   ├── themes.html  # Comunidad de temas
-│   ├── admin/       # Panel de administración
-│   ├── js/          # common.js, auth.js, panel.js, admin.js, ai.js
-│   ├── style.css    # Sistema de diseño compartido
-│   └── icons.svg    # Iconos SVG
-├── version.js       # Comprobación de nuevas versiones
-├── hosting/         # Archivos de los usuarios (una carpeta por usuario, nombrada con su UUID)
-└── data/            # Base de datos SQLite (se crea sola) y version.json
+│   ├── index.html         # Inicio de sesión y registro
+│   ├── panel.html         # Panel del usuario
+│   ├── themes.html        # Comunidad de temas
+│   ├── admin/             # Panel de administración
+│   ├── js/                # common.js, auth.js, panel.js, admin.js, ai.js
+│   ├── style.css          # Sistema de diseño compartido
+│   └── icons.svg          # Iconos SVG
+├── hosting/               # Archivos de los usuarios (una carpeta por usuario, nombrada con su UUID)
+└── data/                  # Base de datos SQLite (se crea sola) y version.json
 ```
 
 ## API
@@ -405,8 +452,8 @@ Los enlaces antiguos (`/share/usuario/ruta` y `/files/...`) dejan de funcionar p
 | `Cannot find module 'better-sqlite3'` | Usa Node 22.13+ o ejecuta `npm install` con herramientas de compilación disponibles. |
 | Las subidas grandes fallan tras un proxy | Aumenta `client_max_body_size` en Nginx o su equivalente. |
 | Todos los usuarios aparecen con la misma IP | Arranca con `TRUST_PROXY=1` si usas proxy inverso. |
-| «Credenciales inválidas» con cuentas de la versión 1 | Comprueba que `data/users.json` estaba en la carpeta al primer arranque (la consola indica cuántos usuarios se importaron). Si no, crea o recupera la cuenta con `node reset-password.js <usuario> <contraseña> --admin`. |
-| Olvidé la contraseña | Otro administrador puede restablecerla desde el panel, o ejecuta `node reset-password.js <usuario> <nueva-contraseña>` en el servidor. Sin argumentos, el comando lista los usuarios existentes. |
+| «Credenciales inválidas» con cuentas de la versión 1 | Comprueba que `data/users.json` estaba en la carpeta al primer arranque (la consola indica cuántos usuarios se importaron). Si no, crea o recupera la cuenta con `node tools/reset-password.js <usuario> <contraseña> --admin`. |
+| Olvidé la contraseña | Otro administrador puede restablecerla desde el panel, o ejecuta `node tools/reset-password.js <usuario> <nueva-contraseña>` en el servidor. Sin argumentos, el comando lista los usuarios existentes. |
 | El ZIP de una carpeta falla | El límite es 4 GB por ZIP y 65 000 archivos. |
 
 ## Créditos
