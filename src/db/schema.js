@@ -15,6 +15,11 @@ module.exports = function createSchema(db) {
   DROP TABLE IF EXISTS logs;
   CREATE TABLE IF NOT EXISTS favs(user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, path TEXT, PRIMARY KEY(user_id,path));
   CREATE TABLE IF NOT EXISTS user_themes(user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, name TEXT, data TEXT, public INTEGER DEFAULT 0, PRIMARY KEY(user_id,name));
+  CREATE TABLE IF NOT EXISTS collabs(
+    id INTEGER PRIMARY KEY, owner_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, path TEXT NOT NULL, role TEXT NOT NULL, created_at INTEGER,
+    UNIQUE(owner_id, path, user_id));
+  CREATE INDEX IF NOT EXISTS collabs_user ON collabs(user_id);
   CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY, value TEXT);
   CREATE TABLE IF NOT EXISTS ai_usage(user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, ts INTEGER);
   CREATE INDEX IF NOT EXISTS ai_usage_idx ON ai_usage(user_id, ts);

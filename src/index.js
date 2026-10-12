@@ -25,6 +25,7 @@ ai.init(); // Agente de IA: la configuración se lee de la base de datos al inic
 app.use(require("./routes/auth"));
 app.use(require("./routes/files"));
 app.use(require("./routes/shares"));
+app.use(require("./routes/collab"));
 app.use(require("./routes/share-page"));
 app.use(require("./routes/admin"));
 app.use(require("./routes/ai"));

@@ -45,6 +45,7 @@ Sube, organiza, edita y comparte archivos desde cualquier dispositivo, con usuar
 - Renombrar, mover, **duplicar** y eliminar, también en **selección múltiple**.
 - **Descarga en ZIP** de carpetas o de una selección de elementos.
 - **Enlaces para compartir** con caducidad, **contraseña opcional**, revocables en cualquier momento y con descarga de carpetas en ZIP.
+- **Carpetas colaborativas**: comparte una carpeta con otros usuarios por su UUID y asigna a cada uno un rol (solo lectura, edición, creación o permisos totales).
 - Cuota de almacenamiento por usuario con desglose por tipo (imágenes, vídeo, audio, documentos y otros).
 - **12 temas** y personalización completa (colores con selector o código hex, tipografía, redondeo y densidad), con **temas propios que se pueden exportar e importar como JSON** y una **comunidad de temas** para compartirlos con los demás usuarios del servidor.
 - Atajos de teclado: `/` filtra, `Supr` elimina la selección, `Ctrl+A` selecciona todo, `Esc` sale de la selección.
@@ -163,6 +164,28 @@ Ajustes desde el panel de administración: registro público (activar o desactiv
 | Cambiar el aspecto | **Apariencia** en el menú superior. |
 
 Los enlaces compartidos tienen la forma `https://tu-dominio/s/<token>`. Cualquier persona con el enlace puede ver el contenido (y la contraseña, si la configuraste), sin necesidad de cuenta.
+
+### Carpetas colaborativas
+
+El dueño de una carpeta puede invitar a otros usuarios de la instancia:
+
+1. En el menú de una carpeta (`⋯`), elige **Colaboración**.
+2. Escribe el **UUID** del usuario (lo encuentra en *Mi cuenta*), elige su rol y pulsa **Añadir**. Puedes cambiar el rol o quitar a alguien cuando quieras.
+3. El usuario añadido verá la carpeta en su panel, en la sección **Compartidas conmigo**, junto al nombre del **dueño** y su rol. Puede abandonar la colaboración con el botón de salida de esa tarjeta.
+
+| Rol | Ver y descargar | Editar contenido, renombrar y mover | Crear carpetas/archivos, subir y copiar | Borrar |
+| --- | :-: | :-: | :-: | :-: |
+| Solo lectura | ✔ | | | |
+| Lectura y edición | ✔ | ✔ | | |
+| Lectura, edición y creación | ✔ | ✔ | ✔ | |
+| Permisos totales | ✔ | ✔ | ✔ | ✔ |
+
+Notas:
+
+- Los archivos siguen siendo del dueño y **cuentan para su cuota de espacio**.
+- Los colaboradores solo ven la carpeta compartida y su contenido, nunca el resto de la cuenta del dueño. No pueden compartir con enlace, marcar favoritos ni cambiar los colaboradores.
+- No se puede compartir la carpeta raíz. Si el dueño renombra o mueve la carpeta, la colaboración la sigue; si la borra, se elimina.
+- Los permisos se comprueban siempre en el servidor, no solo en la interfaz.
 
 ### Cuentas: UUID y nombre de usuario
 
@@ -306,11 +329,13 @@ El agente trabaja **únicamente dentro de la carpeta del usuario que lo usa** (p
 │   │   └── auth.js        #   Sesión y guardas need / needAdmin
 │   ├── services/
 │   │   ├── auth.js        #   Sesiones, intentos fallidos y validaciones de cuenta
+│   │   ├── collab.js      #   Roles, permisos y espacio de cada petición
 │   │   └── themes.js      #   Validación de temas y generación del CSS
 │   ├── routes/
 │   │   ├── auth.js        #   Registro, login, sesión, usuario y contraseña
 │   │   ├── files.js       #   Archivos: listar, subir, editar, mover, copiar, ZIP…
 │   │   ├── shares.js      #   API de enlaces para compartir
+│   │   ├── collab.js      #   Carpetas colaborativas: colaboradores y roles
 │   │   ├── share-page.js  #   Páginas públicas /s/<token>
 │   │   ├── explore.js     #   Búsqueda, estadísticas, favoritos y recientes
 │   │   ├── themes.js      #   Apariencia y comunidad de temas
@@ -367,12 +392,14 @@ Todas las rutas `/api/*` devuelven JSON y requieren sesión, salvo `login`, `reg
 | `POST` | `/api/register`, `/api/login`, `/api/logout` | Cuenta y sesión. |
 | `GET` | `/api/session` | Estado de la sesión. |
 | `POST` | `/api/password`, `/api/username` | Cambiar contraseña y nombre de usuario. |
-| `GET` | `/api/list?path=` | Listar una carpeta. |
+| `GET` | `/api/list?path=` | Listar una carpeta. Con `collab=<id>` (también en las demás rutas de archivos) actúa dentro de una carpeta compartida contigo, según tu rol. |
 | `GET` | `/api/search?q=`, `/api/recent`, `/api/favs` | Búsqueda, recientes y favoritos. |
 | `POST` | `/api/mkdir`, `/api/create-file`, `/api/upload` | Crear y subir. |
 | `POST` | `/api/rename`, `/api/move`, `/api/copy`, `/api/delete`, `/api/edit`, `/api/fav` | Operaciones sobre elementos. |
 | `GET` | `/api/download`, `/api/preview`, `/api/zip`, `/api/file-content` | Lectura y descarga. |
 | `POST` / `GET` | `/api/share`, `/api/shares`, `/api/share/revoke` | Enlaces compartidos. |
+| `GET` | `/api/collab/shared` | Carpetas que otros han compartido conmigo (dueño y rol). |
+| `GET` / `POST` | `/api/collab/folder`, `/api/collab/add`, `/api/collab/role`, `/api/collab/remove`, `/api/collab/mine`, `/api/collab/roles` | Gestión de colaboradores (dueño); `remove` también permite abandonar una carpeta compartida. |
 | `GET` / `POST` | `/api/theme` | Tema activo del usuario. |
 | `GET` / `POST` / `DELETE` | `/api/themes` | Temas propios guardados (Mis temas). |
 | `POST` / `GET` | `/api/themes/publish`, `/api/community`, `/api/community/save`, `/api/community/unpublish` | Comunidad de temas. |

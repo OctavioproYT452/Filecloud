@@ -13,6 +13,6 @@ const nm = n => { n = String(n || "").trim(); if (!n || /[\/\\\0]/.test(n) || n 
 const base = u => path.join(HOSTING, u.uuid); // la carpeta usa el UUID, no el nombre de usuario
 const limitB = u => u.max_space_mb < 0 ? Infinity : u.max_space_mb * 1048576;
 // Ruta absoluta del archivo indicado en ?path= o en el cuerpo (nunca la carpeta raíz del usuario)
-const fileOf = req => { const f = safe(base(req.user), req.query.path || req.body.path); if (f === base(req.user)) throw Error("Falta ruta"); return f; };
+const fileOf = (req, root = base(req.user)) => { const f = safe(root, req.query.path || req.body.path); if (f === root) throw Error("Falta ruta"); return f; };
 
 module.exports = { safe, nm, base, limitB, fileOf };

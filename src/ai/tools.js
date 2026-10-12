@@ -4,6 +4,7 @@ const { all, run } = require("../db");
 const { MAX_READ, MAX_WRITE } = require("./constants");
 const { base, safe, limitB } = require("../lib/paths");
 const { usage, dirSize } = require("../lib/storage");
+const { relOf, moved, removed } = require("../services/collab");
 
 const segOk = s => s.length > 0 && s.length <= 200 && !/[\0-\x1f]/.test(s);
 // Convierte una ruta relativa del usuario en una ruta absoluta DENTRO de su carpeta (o falla).
@@ -85,7 +86,7 @@ const IMPL = {
   },
   async move_item(u, a) {
     const from = await R(u, a.from); if (!(await exists(from))) throw Error("No existe: " + rel(u, from));
-    const to = await dest(u, from, a.to); await fsp.rename(from, to); return `Movido a ${rel(u, to)}`;
+    const to = await dest(u, from, a.to); await fsp.rename(from, to); moved(u.id, relOf(u, from), relOf(u, to)); return `Movido a ${rel(u, to)}`;
   },
   async copy_item(u, a) {
     const from = await R(u, a.from), s = await fsp.lstat(from).catch(() => null); if (!s) throw Error("No existe: " + rel(u, from));
@@ -99,7 +100,7 @@ const IMPL = {
   async delete_item(u, a) {
     const f = await R(u, a.path); if (!(await exists(f))) throw Error("No existe: " + rel(u, f));
     const r = path.relative(base(u), f);
-    await fsp.rm(f, { recursive: true, force: true });
+    await fsp.rm(f, { recursive: true, force: true }); removed(u.id, relOf(u, f));
     for (const s of all("SELECT token,path FROM shares WHERE user_id=?", u.id)) if (s.path === r || s.path.startsWith(r + path.sep)) run("DELETE FROM shares WHERE token=?", s.token);
     await usage(u, true); return "Borrado: " + rel(u, f);
   },

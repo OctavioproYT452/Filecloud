@@ -73,3 +73,6 @@ code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.9em;overflow-w
 .aia{list-style:none;margin:8px 0 0;padding:8px 0 0;border-top:1px solid var(--line);font-size:12px;display:grid;gap:3px}
 .aia .ok{color:var(--ok)}.aia .bad{color:var(--danger)}
 .aiform{display:flex;gap:8px;align-items:flex-end}.aiform textarea{resize:none;max-height:120px;field-sizing:content}
+
+.cl{display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--card2)}.cl .grow{min-width:0;overflow:hidden;text-overflow:ellipsis}.cl select{width:auto;max-width:48%}
+#crumbs small{color:var(--muted);font-weight:400}

@@ -10,6 +10,7 @@ const { usage } = require("../lib/storage");
 const { serve } = require("../lib/serve");
 const { needAdmin } = require("../middleware/auth");
 const { checkPw, setUsername } = require("../services/auth");
+const { relOf, removed } = require("../services/collab");
 const ver = require("../version");
 const ai = require("../ai");
 
@@ -75,7 +76,7 @@ router.get("/api/admin/file", needAdmin, wrap(async (req, res) => serve(res, saf
 router.post("/api/admin/delete-file", needAdmin, wrap(async (req, res) => {
   const u = target(req), f = safe(base(u), req.body.path);
   if (f === base(u)) throw Error("Ruta inválida");
-  await fsp.rm(f, { recursive: true, force: true }); await usage(u, true);
+  await fsp.rm(f, { recursive: true, force: true }); removed(u.id, relOf(u, f)); await usage(u, true);
   res.json({ success: true });
 }));
 router.get("/api/admin/settings", needAdmin, (req, res) => res.json({ allow_registration: setting("allow_registration") === "1", default_quota_mb: Number(setting("default_quota_mb")), announcement: setting("announcement") || "" }));
