@@ -1,14 +1,15 @@
-// Cliente LLM (API compatible con OpenAI: Grok y Ollama).
-const { GROK_BASE, LLM_TIMEOUT } = require("./constants");
+// Cliente LLM (API compatible con OpenAI: Grok, OpenAI/ChatGPT, Gemini y Ollama).
+const { PROVIDERS, CLOUD, ALL, LLM_TIMEOUT } = require("./constants");
 const { getConfig, usable } = require("./config");
 const { cleanUrl, cleanModel, cleanKey } = require("./validate");
 
 async function llm(c, messages, tools, timeout = LLM_TIMEOUT) {
-  const grok = c.provider === "grok";
-  const url = (grok ? GROK_BASE : c.ollamaUrl.replace(/\/+$/, "") + "/v1") + "/chat/completions";
+  const P = PROVIDERS[c.provider]; // undefined si es Ollama
+  const url = (P ? P.base : c.ollamaUrl.replace(/\/+$/, "") + "/v1") + "/chat/completions";
   const headers = { "Content-Type": "application/json" };
-  if (grok) headers.Authorization = "Bearer " + c.key;
-  const body = { model: grok ? c.grokModel : c.ollamaModel, messages, stream: false, temperature: 0.2 };
+  if (P) headers.Authorization = "Bearer " + c.keys[c.provider];
+  const body = { model: P ? c.models[c.provider] : c.ollamaModel, messages, stream: false };
+  if (!P || P.temperature) body.temperature = 0.2; // los modelos GPT-5 de OpenAI no admiten otra temperatura que la de por defecto
   if (tools) { body.tools = tools; body.tool_choice = "auto"; }
   let r, txt;
   try { r = await fetch(url, { method: "POST", headers, body: JSON.stringify(body), signal: AbortSignal.timeout(timeout) }); txt = await r.text(); }
@@ -19,10 +20,10 @@ async function llm(c, messages, tools, timeout = LLM_TIMEOUT) {
 }
 // Prueba de conexión con la configuración indicada (o la guardada si no se pasan datos)
 async function test(b = {}) {
-  const c = { ...getConfig() };
-  if (b.provider === "grok" || b.provider === "ollama") {
+  const c = { ...getConfig(), keys: { ...getConfig().keys }, models: { ...getConfig().models } };
+  if (ALL.includes(b.provider)) {
     c.provider = b.provider;
-    if (b.provider === "grok") { if (b.api_key) c.key = cleanKey(b.api_key); c.grokModel = cleanModel(b.model || c.grokModel); }
+    if (CLOUD.includes(b.provider)) { if (b.api_key) c.keys[b.provider] = cleanKey(b.api_key); c.models[b.provider] = cleanModel(b.model || c.models[b.provider]); }
     else { c.ollamaUrl = cleanUrl(b.url || c.ollamaUrl); c.ollamaModel = cleanModel(b.model || c.ollamaModel); }
   }
   if (!usable(c)) throw Error("La IA no está configurada");

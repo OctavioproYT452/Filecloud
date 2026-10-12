@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 // File Cloud - configuración inicial del agente de IA. Lo ejecutan install.sh / install.ps1 justo después de "npm install".
-// Pregunta si quieres un agente de IA (Grok de xAI u Ollama) y guarda la respuesta en la base de datos.
+// Pregunta si quieres un agente de IA (Grok de xAI, OpenAI/ChatGPT, Google Gemini u Ollama) y guarda la respuesta en la base de datos.
 // El servidor la lee al arrancar: si dijiste que no, toda la IA queda oculta (el admin puede activarla luego desde su panel).
 //
 //   node tools/setup-ai.js            pregunta (si ya está configurada, no vuelve a preguntar)
 //   node tools/setup-ai.js --force    vuelve a preguntar aunque ya esté configurada
 //   node tools/setup-ai.js --skip     no pregunta ni cambia nada
 // Instalación sin teclado (variables de entorno):
-//   FILECLOUD_AI=none | grok | ollama   FILECLOUD_AI_KEY=...   FILECLOUD_AI_MODEL=...   FILECLOUD_OLLAMA_URL=http://localhost:11434
+//   FILECLOUD_AI=none | grok | openai | gemini | ollama   FILECLOUD_AI_KEY=...   FILECLOUD_AI_MODEL=...   FILECLOUD_OLLAMA_URL=http://localhost:11434
 const fs = require("fs"), tty = require("tty"), readline = require("readline");
 const ai = require("../src/ai");
 
@@ -24,7 +24,7 @@ function openInput() {
 async function fromEnv() {
   const p = String(process.env.FILECLOUD_AI || "").toLowerCase();
   if (!p) return false;
-  if (!["none", "grok", "ollama"].includes(p)) throw Error("FILECLOUD_AI debe ser none, grok u ollama");
+  if (p !== "none" && ![...ai.CLOUD, "ollama"].includes(p)) throw Error("FILECLOUD_AI debe ser none, grok, openai, gemini u ollama");
   ai.save({ provider: p, api_key: process.env.FILECLOUD_AI_KEY, model: process.env.FILECLOUD_AI_MODEL, url: process.env.FILECLOUD_OLLAMA_URL });
   ok("IA configurada desde variables de entorno: " + (p === "none" ? "sin IA" : ai.describe()));
   return true;
@@ -55,16 +55,19 @@ async function main() {
       ok("Sin IA: el servidor ocultará todo lo relacionado con la IA. El admin podrá activarla luego desde su panel.");
       return;
     }
-    const prov = await askUntil("¿Qué proveedor quieres usar?\n  1) Grok (xAI, en la nube, requiere API key)\n  2) Ollama (modelos locales en tu propio equipo o servidor)\nElige 1 o 2: ", a => /^(1|grok)$/i.test(a) ? "grok" : /^(2|ollama)$/i.test(a) ? "ollama" : null, "Escribe 1 (Grok) o 2 (Ollama).");
+    const ids = [...ai.CLOUD, "ollama"], label = i => i === "ollama" ? "Ollama (modelos locales en tu propio equipo o servidor)" : ai.PROVIDERS[i].name + " (en la nube, requiere API key)";
+    const prov = await askUntil("¿Qué proveedor quieres usar?\n" + ids.map((i, n) => `  ${n + 1}) ${label(i)}`).join("\n") + `\nElige 1-${ids.length}: `,
+      a => ids.includes(a.toLowerCase()) ? a.toLowerCase() : (ids[Number(a) - 1] || null), `Escribe un número del 1 al ${ids.length}.`);
 
-    if (prov === "grok") {
-      console.log("\nConsigue tu API key de Grok aquí:  " + c("1;4", ai.GROK_KEYS_URL) + "\n(inicia sesión, abre \"API Keys\" y pulsa \"Create API key\")\n");
-      const key = await askUntil("Pega aquí tu API key de Grok: ", a => a.length >= 8 && !/\s/.test(a) ? a : null, "La API key no parece válida (sin espacios, mínimo 8 caracteres). Pégala de nuevo.");
-      const model = (await ask(`Modelo de Grok [${ai.DEF.grokModel}]: `)) || ai.DEF.grokModel;
-      info("Probando la conexión con Grok…");
-      try { await ai.test({ provider: "grok", api_key: key, model }); ok("Grok responde correctamente."); }
+    if (prov !== "ollama") {
+      const P = ai.PROVIDERS[prov];
+      console.log(`\nConsigue tu API key de ${P.name} aquí:  ` + c("1;4", P.keysUrl) + "\n");
+      const key = await askUntil(`Pega aquí tu API key de ${P.name}: `, a => a.length >= 8 && !/\s/.test(a) ? a : null, "La API key no parece válida (sin espacios, mínimo 8 caracteres). Pégala de nuevo.");
+      const model = (await ask(`Modelo [${P.model}]: `)) || P.model;
+      info(`Probando la conexión con ${P.name}…`);
+      try { await ai.test({ provider: prov, api_key: key, model }); ok(`${P.name} responde correctamente.`); }
       catch (e) { warn("No se pudo verificar ahora (" + e.message + (e.detail ? ": " + e.detail : "") + "). Se guardará igual; puedes cambiarla desde el panel de admin."); }
-      ai.save({ provider: "grok", api_key: key, model });
+      ai.save({ provider: prov, api_key: key, model });
     } else {
       const url = await askUntil(`URL de Ollama [${ai.DEF.ollamaUrl}]: `, a => { try { const u = new URL(a || ai.DEF.ollamaUrl); return /^https?:$/.test(u.protocol) ? (a || ai.DEF.ollamaUrl) : null; } catch { return null; } }, "URL inválida. Ejemplo: http://localhost:11434");
       const model = (await ask(`Modelo a usar [${ai.DEF.ollamaModel}]: `)) || ai.DEF.ollamaModel;

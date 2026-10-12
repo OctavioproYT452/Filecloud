@@ -36,22 +36,22 @@ async function links(){const{shares}=await api('/api/admin/shares');
  $('#links').innerHTML=`<div class="card scroll"><table class="tbl rt"><thead><tr><th>Usuario</th><th>Elemento</th><th>Caduca</th><th></th></tr></thead><tbody>${shares.map(s=>`<tr><td data-l="Usuario">${esc(s.username)}</td><td data-l="Elemento">${s.locked?ic('lock')+' ':''}${esc(s.path)}</td><td data-l="Caduca"><small>${s.expires_at?when(s.expires_at):'Nunca'}</small></td><td data-l=""><button class="btn sm ghost" data-c="${s.token}">Copiar</button> <button class="btn sm danger" data-r="${s.token}">Revocar</button></td></tr>`).join('')||'<tr><td colspan="4" class="muted">No hay enlaces</td></tr>'}</tbody></table></div>`;
  $('#links tbody').onclick=async e=>{const c=e.target.dataset.c,r=e.target.dataset.r;if(c){await navigator.clipboard?.writeText(location.origin+'/s/'+c);toast('Copiado')}if(r&&await yes('Revocar','¿Revocar este enlace?')){await api('/api/admin/shares/revoke',{token:r});links()}}}
 
-async function aiAdmin(){const s=await api('/api/admin/ai');
+async function aiAdmin(){const s=await api('/api/admin/ai'),P=s.providers,ids=Object.keys(P);
  $('#ai').innerHTML=`<div class="card" style="max-width:560px"><h3>${ic('bot')} Agente de IA</h3>
- <p>Estado: ${s.enabled?'<span class="badge pub">ACTIVA</span> '+(s.provider==='grok'?'Grok':'Ollama'):'<span class="badge">DESACTIVADA</span> los usuarios no ven nada de IA'}</p>
- <label>Proveedor<select id="aiprov"><option value="none">Sin IA (oculta todo lo relacionado)</option><option value="grok">Grok (xAI)</option><option value="ollama">Ollama (modelos locales)</option></select></label>
- <div id="aigrok"><p><small>Consigue tu API key en <a href="${esc(s.keys_url)}" target="_blank" rel="noopener noreferrer">${esc(s.keys_url)}</a> (inicia sesión → API Keys → Create API key).</small></p>
- <label>API key de Grok<input class="input" id="aik" type="password" autocomplete="off" placeholder="${s.has_key?'•••••••• guardada (vacío = conservarla)':'Pega aquí tu API key'}"></label>
- <label>Modelo de Grok<input class="input" id="aigm" value="${esc(s.grok_model)}"></label></div>
- <div id="aiollama"><label>URL de Ollama<input class="input" id="aiou" value="${esc(s.ollama_url)}" placeholder="http://localhost:11434"></label>
+ <p>Estado: ${s.enabled?'<span class="badge pub">ACTIVA</span> '+esc(P[s.provider]?P[s.provider].name:'Ollama'):'<span class="badge">DESACTIVADA</span> los usuarios no ven nada de IA'}</p>
+ <label>Proveedor<select id="aiprov"><option value="none">Sin IA (oculta todo lo relacionado)</option>${ids.map(i=>`<option value="${i}">${esc(P[i].name)}</option>`).join('')}<option value="ollama">Ollama (modelos locales)</option></select></label>
+ ${ids.map(i=>`<div id="aic-${i}" hidden><p><small>Consigue tu API key en <a href="${esc(P[i].keys_url)}" target="_blank" rel="noopener noreferrer">${esc(P[i].keys_url)}</a>.</small></p>
+ <label>API key de ${esc(P[i].name)}<input class="input" id="aik-${i}" type="password" autocomplete="off" placeholder="${P[i].has_key?'•••••••• guardada (vacío = conservarla)':'Pega aquí tu API key'}"></label>
+ <label>Modelo<input class="input" id="aim-${i}" value="${esc(P[i].model)}" placeholder="${esc(P[i].default_model)}"></label></div>`).join('')}
+ <div id="aiollama" hidden><label>URL de Ollama<input class="input" id="aiou" value="${esc(s.ollama_url)}" placeholder="http://localhost:11434"></label>
  <label>Modelo de Ollama<input class="input" id="aiom" value="${esc(s.ollama_model)}"></label></div>
  <h4 style="margin:16px 0 4px">Límite de uso por usuario</h4>
  <div class="row"><input class="input" id="ail" type="number" min="-1" value="${s.limit_count}" style="max-width:120px"><select id="aiper" style="width:auto"><option value="hour">usos por hora</option><option value="day">usos por día</option></select></div>
  <p><small class="muted">-1 = ilimitado · 0 = nadie. Cada mensaje enviado al agente cuenta como un uso. Puedes dar un límite distinto a cada usuario en Usuarios → Editar.</small></p>
  <div class="row"><button class="btn" id="aisv">Guardar</button><button class="btn ghost" id="aite">Probar conexión</button></div></div>`;
  $('#aiprov').value=s.provider;$('#aiper').value=s.limit_period;
- const vis=()=>{const v=$('#aiprov').value;$('#aigrok').hidden=v!=='grok';$('#aiollama').hidden=v!=='ollama';$('#aite').hidden=v==='none'};vis();$('#aiprov').onchange=vis;
- const body=()=>{const p=$('#aiprov').value;return{provider:p,api_key:$('#aik').value.trim(),model:p==='grok'?$('#aigm').value.trim():$('#aiom').value.trim(),url:$('#aiou').value.trim(),limit_count:$('#ail').value,limit_period:$('#aiper').value}};
+ const vis=()=>{const v=$('#aiprov').value;for(const i of ids)$('#aic-'+i).hidden=v!==i;$('#aiollama').hidden=v!=='ollama';$('#aite').hidden=v==='none'};vis();$('#aiprov').onchange=vis;
+ const body=()=>{const p=$('#aiprov').value,c=ids.includes(p);return{provider:p,api_key:c?$('#aik-'+p).value.trim():'',model:c?$('#aim-'+p).value.trim():$('#aiom').value.trim(),url:$('#aiou').value.trim(),limit_count:$('#ail').value,limit_period:$('#aiper').value}};
  $('#aisv').onclick=async()=>{try{await api('/api/admin/ai',body());toast('Guardado');aiAdmin()}catch(e){toast(e.message,1)}};
  $('#aite').onclick=async()=>{const b=$('#aite');b.disabled=true;try{await api('/api/admin/ai/test',body());toast('Conexión correcta')}catch(e){toast(e.message,1)}b.disabled=false}}
 

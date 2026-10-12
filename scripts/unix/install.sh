@@ -16,7 +16,7 @@ install_dependencies
 mkdir -p data hosting
 
 info "Configuración del agente de IA…"
-node tools/setup-ai.js || true   # pregunta si quieres IA (Grok u Ollama); nunca interrumpe la instalación
+node tools/setup-ai.js || true   # pregunta si quieres IA (Grok, OpenAI, Gemini u Ollama); nunca interrumpe la instalación
 
 ok "File Cloud listo."
 echo "   Iniciar:  npm start        (http://localhost:3001)"

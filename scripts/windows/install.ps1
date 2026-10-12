@@ -13,7 +13,7 @@ Install-Dependencies
 New-Item -ItemType Directory -Force data, hosting | Out-Null
 
 Write-Host "==> Configuración del agente de IA..." -ForegroundColor Cyan
-node tools/setup-ai.js   # pregunta si quieres IA (Grok u Ollama); nunca interrumpe la instalación
+node tools/setup-ai.js   # pregunta si quieres IA (Grok, OpenAI, Gemini u Ollama); nunca interrumpe la instalación
 
 Write-Host " OK File Cloud listo. Inicia con:  npm start   (http://localhost:3001)" -ForegroundColor Green
 Write-Host "    El primer usuario que se registre será administrador."

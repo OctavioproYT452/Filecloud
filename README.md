@@ -248,7 +248,7 @@ Disponible en `/admin/` solo para administradores.
 - **Resumen:** usuarios, almacenamiento total, enlaces activos, sesiones activas y estado del servidor (se actualiza cada 5 s).
 - **Usuarios:** alta, edición de cuota y rol, suspensión, cambio de contraseña, cierre de sesiones, explorador de archivos y eliminación.
 - **Enlaces:** todos los enlaces compartidos, con opción de revocarlos.
-- **IA:** activar o desactivar el agente de IA, elegir Grok u Ollama, API key, modelo y límite de usos (ver [Agente de IA](#agente-de-ia-opcional)).
+- **IA:** activar o desactivar el agente de IA, elegir Grok, OpenAI (ChatGPT), Gemini u Ollama, API key, modelo y límite de usos (ver [Agente de IA](#agente-de-ia-opcional)).
 - **Ajustes:** registro público, cuota por defecto y anuncio global.
 
 ### Actualizaciones
@@ -256,7 +256,7 @@ Disponible en `/admin/` solo para administradores.
 - La versión instalada está en `data/version.json`:
 
   ```json
-  { "version": "2.5" }
+  { "version": "2.6" }
   ```
 
 - Cada 2 minutos el servidor lee ese archivo local y lo compara con el `data/version.json` publicado en GitHub. Si el de GitHub es más nuevo (se comparan los números: `2.10` es mayor que `2.9`), los **administradores** ven un aviso de nueva versión con instrucciones para actualizar.
@@ -272,14 +272,16 @@ Al terminar `npm install`, los instaladores (`scripts/unix/install.sh`, `scripts
 1. **¿Quieres configurar un agente de IA?**
    - **No** → se guarda en la base de datos que no hay IA. Al arrancar, el servidor lo lee y **oculta todo lo relacionado con la IA** (botón, chat, campos de límites y la propia API `/api/ai/*`, que responde 404).
    - **Sí** → eliges proveedor:
-     - **Grok (xAI):** te muestra el enlace para conseguir la API key (<https://console.x.ai/>) y te pide que la pegues. También puedes indicar el modelo.
+     - **Grok (xAI):** te muestra el enlace para conseguir la API key (<https://console.x.ai/>) y te pide que la pegues. También puedes indicar el modelo (por defecto `grok-4.7`).
+     - **OpenAI (ChatGPT):** API key en <https://platform.openai.com/api-keys> (es la API de pago de OpenAI, distinta de una suscripción a ChatGPT). Modelo por defecto: `gpt-5-mini`.
+     - **Google Gemini:** API key gratuita o de pago en <https://aistudio.google.com/apikey>. Modelo por defecto: `gemini-2.5-flash`.
      - **Ollama:** indicas la URL (por defecto `http://localhost:11434`) y el modelo (por defecto `llama3.1`; instálalo con `ollama pull llama3.1`).
 
-Puedes repetir el asistente con `npm run setup-ai`. Para instalaciones sin teclado: `FILECLOUD_AI=none|grok|ollama` junto con `FILECLOUD_AI_KEY`, `FILECLOUD_AI_MODEL` y `FILECLOUD_OLLAMA_URL`. Si no hay terminal interactiva, no se cambia nada y la IA queda desactivada.
+Puedes repetir el asistente con `npm run setup-ai`. Para instalaciones sin teclado: `FILECLOUD_AI=none|grok|openai|gemini|ollama` junto con `FILECLOUD_AI_KEY`, `FILECLOUD_AI_MODEL` y `FILECLOUD_OLLAMA_URL`. Si no hay terminal interactiva, no se cambia nada y la IA queda desactivada.
 
 ### Activar, cambiar o desactivar desde el panel
 
-En **Admin → IA** el administrador puede, en cualquier momento y sin reiniciar el servidor, activar la IA (aunque en la instalación dijera que no), pegar o cambiar la API key de Grok (con el enlace para conseguirla), cambiar de Grok a Ollama (URL + modelo), probar la conexión o desactivarla.
+En **Admin → IA** el administrador puede, en cualquier momento y sin reiniciar el servidor, activar la IA (aunque en la instalación dijera que no), pegar o cambiar la API key (con el enlace para conseguirla), cambiar entre Grok, OpenAI, Gemini y Ollama, elegir el modelo, probar la conexión o desactivarla. Cada proveedor en la nube conserva su propia API key y su modelo, así que puedes cambiar de uno a otro sin volver a pegarlos.
 
 ### Límites de uso
 
@@ -294,7 +296,7 @@ El agente trabaja **únicamente dentro de la carpeta del usuario que lo usa** (p
 - Las rutas se validan en el servidor (no se confía en el modelo): se rechazan `..`, rutas absolutas hacia fuera, caracteres de control y enlaces simbólicos, y no se puede operar sobre la carpeta raíz.
 - Se respeta la cuota de almacenamiento del usuario.
 - La API key se guarda en la base de datos (`data/filecloud.db`) y nunca se devuelve al navegador. Protege esa carpeta y sus copias de seguridad.
-- Con Grok, lo que el usuario escriba y el contenido de los archivos que el agente lea se envían a xAI; con Ollama todo queda en tu servidor. Tenlo en cuenta al elegir proveedor.
+- Con Grok, OpenAI o Gemini, lo que el usuario escriba y el contenido de los archivos que el agente lea se envían a xAI, OpenAI o Google respectivamente; con Ollama todo queda en tu servidor. Tenlo en cuenta al elegir proveedor.
 
 ## Seguridad
 
@@ -350,7 +352,7 @@ El agente trabaja **únicamente dentro de la carpeta del usuario que lo usa** (p
 │   │   ├── storage.js     #   Tamaños, cuota, nombres únicos y mover archivos
 │   │   ├── serve.js       #   Envío y vista previa aislada de archivos
 │   │   └── zip.js         #   Generador ZIP en streaming (sin dependencias)
-│   └── ai/                # Agente de IA (Grok/Ollama)
+│   └── ai/                # Agente de IA (Grok/OpenAI/Gemini/Ollama)
 │       ├── index.js       #   API pública del módulo
 │       ├── config.js      #   Configuración guardada en la base de datos
 │       ├── validate.js    #   Validación de URL, modelo, clave y límites
