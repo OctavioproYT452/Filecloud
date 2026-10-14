@@ -28,7 +28,7 @@ module.exports = function createSchema(db) {
   INSERT OR IGNORE INTO settings VALUES('allow_registration','1'),('default_quota_mb','100');
   `);
 
-  for (const q of ["ALTER TABLE users ADD COLUMN theme TEXT", "ALTER TABLE shares ADD COLUMN pw TEXT", "ALTER TABLE user_themes ADD COLUMN public INTEGER DEFAULT 0", "ALTER TABLE users ADD COLUMN uuid TEXT", "ALTER TABLE users ADD COLUMN ai_limit INTEGER", "ALTER TABLE users ADD COLUMN ai_period TEXT", "ALTER TABLE users ADD COLUMN totp_secret TEXT", "ALTER TABLE users ADD COLUMN totp_pending TEXT", "ALTER TABLE users ADD COLUMN totp_on INTEGER DEFAULT 0", "ALTER TABLE users ADD COLUMN totp_last INTEGER DEFAULT 0"]) try { db.exec(q); } catch { }
+  for (const q of ["ALTER TABLE users ADD COLUMN theme TEXT", "ALTER TABLE shares ADD COLUMN pw TEXT", "ALTER TABLE user_themes ADD COLUMN public INTEGER DEFAULT 0", "ALTER TABLE users ADD COLUMN uuid TEXT", "ALTER TABLE users ADD COLUMN ai_limit INTEGER", "ALTER TABLE users ADD COLUMN ai_period TEXT", "ALTER TABLE users ADD COLUMN totp_secret TEXT", "ALTER TABLE users ADD COLUMN totp_pending TEXT", "ALTER TABLE users ADD COLUMN totp_on INTEGER DEFAULT 0", "ALTER TABLE users ADD COLUMN totp_last INTEGER DEFAULT 0", "ALTER TABLE users ADD COLUMN dav_on INTEGER DEFAULT 0", "ALTER TABLE users ADD COLUMN dav_hash TEXT", "ALTER TABLE users ADD COLUMN dav_at INTEGER"]) try { db.exec(q); } catch { }
 
   // UUID permanente por usuario (v4). Se genera solo al crear la cuenta y nunca cambia.
   const UUID = "lower(hex(randomblob(4))||'-'||hex(randomblob(2))||'-4'||substr(hex(randomblob(2)),2)||'-'||substr('89ab',abs(random())%4+1,1)||substr(hex(randomblob(2)),2)||'-'||hex(randomblob(6)))";

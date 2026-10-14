@@ -11,7 +11,7 @@ Sube, organiza, edita y comparte archivos desde cualquier dispositivo, con usuar
 
 </div>
 
-> **Versión 2.7.6.** Qué ha cambiado en esta versión: consulta [RELEASE.md](RELEASE.md).
+> **Versión 2.8.0.** Qué ha cambiado en esta versión: consulta [RELEASE.md](RELEASE.md).
 
 ---
 
@@ -25,6 +25,7 @@ Sube, organiza, edita y comparte archivos desde cualquier dispositivo, con usuar
 6. [Guía de uso](#guía-de-uso)
 7. [Temas y personalización](#temas-y-personalización)
 8. [Panel de administración](#panel-de-administración)
+   - Relacionado: [Visor de documentos](#visor-de-documentos) y [Acceso WebDAV](#acceso-webdav)
 9. [Agente de IA (opcional)](#agente-de-ia-opcional)
 10. [Seguridad](#seguridad)
 11. [Estructura del proyecto](#estructura-del-proyecto)
@@ -43,7 +44,8 @@ Sube, organiza, edita y comparte archivos desde cualquier dispositivo, con usuar
 - Subida de archivos y **carpetas completas**, con barra de progreso y arrastrar y soltar.
 - Explorador con vista de cuadrícula o lista, orden por nombre, fecha o tamaño y filtro instantáneo.
 - **Búsqueda en todas tus carpetas**, **favoritos** y **archivos recientes**.
-- Vista previa de imágenes, vídeo, audio, PDF y texto, y editor integrado para archivos de texto y código.
+- Vista previa de imágenes, vídeo, audio, **PDF** y texto, **visor de documentos de Office** (doc, docx, xls, xlsx, ppt, pptx…) y editor integrado para archivos de texto y código.
+- **Acceso WebDAV** opcional por usuario: monta tu carpeta como unidad de red con una clave aleatoria que tú generas.
 - Renombrar, mover, **duplicar** y eliminar, también en **selección múltiple**.
 - **Descarga en ZIP** de carpetas o de una selección de elementos.
 - **Enlaces para compartir** con caducidad, **contraseña opcional**, revocables en cualquier momento y con descarga de carpetas en ZIP.
@@ -263,6 +265,29 @@ Cada servidor tiene su propia comunidad de temas, accesible desde el menú de us
 - Si cambias o borras un tema publicado, la comunidad se actualiza al instante. Los temas de usuarios suspendidos no se muestran.
 - **Moderación:** los administradores pueden retirar cualquier tema de la comunidad (el autor lo conserva en su cuenta, pero deja de ser público).
 
+## Visor de documentos
+
+Al abrir un archivo en el panel se muestra una vista previa integrada:
+
+- **PDF**: visor propio con pdf.js (incluido en `public/vendor/`, no necesita Internet). Funciona en escritorio y móvil, con zoom y carga perezosa de páginas. Sustituye al visor del navegador, que fallaba en muchos dispositivos.
+- **Word, Excel y PowerPoint** (`.doc .docx .xls .xlsx .ppt .pptx`, y también `.odt .ods .odp .rtf`):
+  - Si el servidor tiene **LibreOffice** instalado (`soffice` en el PATH, o la variable `SOFFICE` con su ruta), el documento se convierte a PDF y se ve con total fidelidad. Las conversiones se guardan en caché (6 h), se hacen de una en una y el límite es de 40 MB.
+  - Sin LibreOffice, **docx, xlsx y pptx** se dibujan directamente en el navegador (texto con formato, tablas, imágenes, hojas con pestañas y diapositivas). Es una vista aproximada. Los formatos antiguos (`.doc`, `.xls`, `.ppt`) y OpenDocument necesitan LibreOffice.
+  - Instalar LibreOffice en Debian/Ubuntu: `sudo apt install libreoffice-core libreoffice-writer libreoffice-calc libreoffice-impress`.
+
+## Acceso WebDAV
+
+Cada usuario puede montar su carpeta como unidad de red (Windows, macOS, Linux y apps móviles con WebDAV).
+
+1. **Menú de usuario → Acceso WebDAV → Activar** (pide la contraseña de la cuenta).
+2. Se muestra **una sola vez** la clave generada al azar. El usuario es el mismo de la cuenta y la dirección es `https://tu-servidor/dav/`.
+3. **Generar clave nueva** invalida la anterior; **Desactivar** cierra el acceso al instante.
+
+Detalles:
+- La clave **no sirve para entrar en la web** ni da acceso a nada fuera de tu carpeta de archivos; las cuentas suspendidas quedan bloqueadas.
+- Se admiten `GET`, `PUT`, `DELETE`, `MKCOL`, `COPY`, `MOVE`, `PROPFIND`, `PROPPATCH`, `LOCK` y `UNLOCK` (los bloqueos son de cortesía, sin exclusión real). Se respeta la cuota (`507` si no hay espacio).
+- Windows solo admite la autenticación Basic por **HTTPS** salvo que se cambie una opción del sistema; usa HTTPS siempre que sea posible. Detrás de Nginx no hace falta ninguna configuración extra (conviene `client_max_body_size 0`).
+
 ## Panel de administración
 
 Disponible en `/admin/` solo para administradores. Usa el mismo menú de usuario que el panel (avatar arriba a la derecha) y cada sección explica qué hace: formularios con ayudas, opciones agrupadas y acciones principales destacadas.
@@ -278,7 +303,7 @@ Disponible en `/admin/` solo para administradores. Usa el mismo menú de usuario
 - La versión instalada está en `data/version.json`:
 
   ```json
-  { "version": "2.7.6" }
+  { "version": "2.8.0" }
   ```
 
 - Cada 2 minutos el servidor lee ese archivo local y lo compara con el `data/version.json` publicado en GitHub. Si el de GitHub es más nuevo (se comparan los números: `2.10` es mayor que `2.9`), los **administradores** ven un aviso de nueva versión con instrucciones para actualizar.
@@ -330,6 +355,7 @@ El agente trabaja **únicamente dentro de la carpeta del usuario que lo usa** (p
 - Protección CSRF mediante comprobación del origen.
 - Rutas validadas contra _path traversal_; los archivos de los usuarios nunca se sirven de forma pública sin un enlace.
 - Los archivos HTML o de script subidos se sirven aislados (`sandbox`) para que no puedan actuar con la sesión de nadie.
+- **WebDAV**: la clave se genera al azar (≈100 bits), solo se guarda su hash, cada usuario solo ve su carpeta (también se comprueban los enlaces simbólicos), hay bloqueo tras 5 intentos fallidos y la cuota se respeta.
 - Cabeceras `Content-Security-Policy`, `X-Content-Type-Options` y `X-Frame-Options`.
 - Los enlaces compartidos usan tokens aleatorios, pueden caducar y se pueden proteger con contraseña.
 
@@ -357,13 +383,16 @@ El agente trabaja **únicamente dentro de la carpeta del usuario que lo usa** (p
 │   │   ├── auth.js        #   Sesiones, intentos fallidos y validaciones de cuenta
 │   │   ├── collab.js      #   Roles, permisos y espacio de cada petición
 │   │   ├── twofa.js       #   2FA (TOTP) y códigos de recuperación
-│   │   └── themes.js      #   Validación de temas y generación del CSS
+│   │   ├── themes.js      #   Validación de temas y generación del CSS
+│   │   └── webdav.js      #   Servidor WebDAV (/dav)
 │   ├── routes/
 │   │   ├── auth.js        #   Registro, login, sesión, usuario y contraseña
 │   │   ├── security.js    #   2FA, códigos de recuperación y recuperación de cuenta
 │   │   ├── files.js       #   Archivos: listar, subir, editar, mover, copiar, ZIP…
 │   │   ├── shares.js      #   API de enlaces para compartir
 │   │   ├── collab.js      #   Carpetas colaborativas: colaboradores y roles
+│   │   ├── webdav.js      #   Ajustes de WebDAV de cada usuario
+│   │   ├── office.js      #   Conversión de documentos a PDF (LibreOffice) para la vista previa
 │   │   ├── share-page.js  #   Páginas públicas /s/<token>
 │   │   ├── explore.js     #   Búsqueda, estadísticas, favoritos y recientes
 │   │   ├── themes.js      #   Apariencia y comunidad de temas
@@ -402,9 +431,10 @@ El agente trabaja **únicamente dentro de la carpeta del usuario que lo usa** (p
 ├── public/
 │   ├── index.html         # Inicio de sesión, registro y recuperación
 │   ├── panel.html         # Panel del usuario
+│   ├── vendor/            # pdf.js y JSZip (incluidos, sin depender de Internet)
 │   ├── themes.html        # Comunidad de temas
 │   ├── admin/             # Panel de administración
-│   ├── js/                # common.js, auth.js, bg.js, menu.js, nav.js, security.js, panel.js, admin.js, ai.js
+│   ├── js/                # common.js, auth.js, bg.js, menu.js, nav.js, viewer.js, webdav.js, security.js, panel.js, admin.js, ai.js
 │   ├── auth.css           # Animaciones del inicio de sesión
 │   ├── style.css          # Sistema de diseño compartido
 │   └── icons.svg          # Iconos SVG
@@ -434,6 +464,9 @@ Todas las rutas `/api/*` devuelven JSON y requieren sesión, salvo `login`, `reg
 | `GET` / `POST` | `/api/theme` | Tema activo del usuario. |
 | `GET` / `POST` / `DELETE` | `/api/themes` | Temas propios guardados (Mis temas). |
 | `POST` / `GET` | `/api/themes/publish`, `/api/community`, `/api/community/save`, `/api/community/unpublish` | Comunidad de temas. |
+| `GET` | `/api/convert` | Convierte un documento de Office a PDF con LibreOffice para la vista previa (501 si no está instalado). |
+| `GET` / `POST` | `/api/webdav`, `/api/webdav/enable`, `/api/webdav/disable` | Estado, activación (pide la contraseña y devuelve la clave una sola vez) y desactivación del acceso WebDAV. |
+| `*` | `/dav/*` | Servidor WebDAV (Basic: tu usuario y la clave WebDAV). |
 | `GET` | `/api/stats` | Uso de espacio por tipo. |
 | `GET` / `POST` | `/api/ai/status`, `/api/ai/chat` | Agente de IA (404 si está desactivada). |
 | `*` | `/api/admin/*` | Administración (solo admins), incluida `/api/admin/ai`. |

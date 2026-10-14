@@ -142,3 +142,13 @@ dialog.wide form>.row.end:last-child{position:sticky;bottom:-18px;margin:14px -1
 dialog h4:first-child,dialog .h0{margin-top:0}
 .presets{margin-top:4px}
 @media(max-width:720px){.cols{grid-template-columns:1fr}.ucell .uav{width:38px;height:38px}}
+
+/* ---- v2.8.0: visores de documentos y acceso WebDAV ---- */
+.vw{text-align:left}.vbar{display:flex;gap:8px;align-items:center;margin-bottom:8px}.vbar b{min-width:44px;text-align:center}
+.vpages{max-height:70vh;overflow:auto;padding:8px;border-radius:calc(var(--r)*.7);background:color-mix(in srgb,var(--text) 10%,var(--card2));display:flex;flex-direction:column;align-items:center;gap:10px}
+.vpage{background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.35);flex:none;max-width:none}.vpage canvas{display:block}
+.vdoc{max-height:70vh;overflow:auto;padding:28px 32px;background:#fff;color:#111;border-radius:calc(var(--r)*.7);font:15px/1.5 Georgia,'Times New Roman',serif}.vdoc p{margin:0 0 .6em}.vdoc h2,.vdoc h3,.vdoc h4,.vdoc h5{margin:.8em 0 .4em;color:#111}.vdoc td p{margin:0}
+.vtabs{display:flex;gap:4px;overflow-x:auto;margin-bottom:8px}.vtabs button{padding:6px 12px;border:1px solid var(--line);border-radius:calc(var(--r)*.6);background:var(--card2);color:var(--muted);font:inherit;cursor:pointer;white-space:nowrap}.vtabs button.on{background:var(--accent);color:var(--on);border-color:var(--accent)}
+.vsheet{max-height:65vh;overflow:auto;border:1px solid var(--line);border-radius:calc(var(--r)*.7)}.vtbl{border-collapse:collapse;font-size:13px;width:max-content;min-width:100%}.vtbl th,.vtbl td{padding:4px 10px;border:1px solid var(--line);white-space:nowrap;text-align:left}.vtbl th{position:sticky;top:0;background:var(--card2);color:var(--muted);font-weight:600;font-size:12px}.vtbl tbody th{position:static;left:0}
+.vslides{max-height:70vh;overflow:auto;padding:8px;border-radius:calc(var(--r)*.7);background:color-mix(in srgb,var(--text) 10%,var(--card2))}.vslab{font-size:12px;color:var(--muted);margin:6px 0 4px}.vslide{position:relative;container-type:inline-size;width:100%;background:#fff;color:#111;overflow:hidden;margin-bottom:10px;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+.kv{margin:10px 0}.kv .row{flex-wrap:nowrap}.kv code{padding:8px 10px;border-radius:calc(var(--r)*.6);background:var(--card2);border:1px solid var(--line);min-width:0;overflow-wrap:anywhere;user-select:all}.keybig{font-size:18px;letter-spacing:.06em;font-weight:700;color:var(--accent)}

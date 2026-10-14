@@ -16,6 +16,7 @@ if (process.env.TRUST_PROXY) app.set("trust proxy", 1);
 
 // ---------- middleware ----------
 app.use(security.headers);
+app.use("/dav", require("./routes/webdav").dav); // WebDAV antes del lector de cuerpos: los PUT llegan como flujo
 app.use(security.body);
 app.use(security.csrf); // protección CSRF: el origen debe coincidir con el host
 app.use(session);
@@ -32,6 +33,8 @@ app.use(require("./routes/admin"));
 app.use(require("./routes/ai"));
 app.use(require("./routes/themes"));
 app.use(require("./routes/explore"));
+app.use(require("./routes/webdav"));
+app.use(require("./routes/office"));
 
 // ---------- páginas estáticas protegidas ----------
 app.get(["/", "/index.html"], (req, res, next) => req.user ? res.redirect("/panel.html") : next());

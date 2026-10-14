@@ -8,10 +8,11 @@ const _api=api;api=(url,body,method)=>{ // dentro de una carpeta compartida, las
     if(body&&!(body instanceof FormData))body={...body,collab:cx.id};else if(!body)url+=(url.includes('?')?'&':'?')+'collab='+cx.id}
   return _api(url,body,method)};
 let favs=new Set(),viewTitle='Resultados',sel=new Set(),selMode=false,searching=false,cwd='',items=[],me=null,list=localStorage.fcList==='1';
+const OFFICE=new Set('.doc .docx .xls .xlsx .ppt .pptx .odt .ods .odp .rtf'.split(' '));
 const EDIT=new Set('.txt .md .js .json .html .css .csv .log .xml .py .java .c .cpp .h .php .yml .ini'.split(' '));
 const ext=n=>n.includes('.')?n.slice(n.lastIndexOf('.')).toLowerCase():'';
 const join=n=>cwd?cwd+'/'+n:n;
-const KIND={image:'.png .jpg .jpeg .gif .webp .svg .bmp .ico',video:'.mp4 .webm .mov .mkv',audio:'.mp3 .wav .flac .m4a .aac .ogg',doc:'.pdf .doc .docx .txt .md .odt .csv',code:'.js .json .html .css .xml .py .java .c .cpp .h .php .yml'};
+const KIND={image:'.png .jpg .jpeg .gif .webp .svg .bmp .ico',video:'.mp4 .webm .mov .mkv',audio:'.mp3 .wav .flac .m4a .aac .ogg',doc:'.pdf .doc .docx .txt .md .odt .csv .xls .xlsx .ppt .pptx .rtf .ods .odp',code:'.js .json .html .css .xml .py .java .c .cpp .h .php .yml'};
 const icon=i=>{if(i.isDir)return ic(!cx&&shared.has(i.path||join(i.name))?'users':'folder');const e=ext(i.name);return ic(Object.keys(KIND).find(k=>KIND[k].split(' ').includes(e))||'file')};
 
 async function load(){
@@ -57,7 +58,7 @@ function preview(n){const p=join(n),u='/api/preview?path='+encodeURIComponent(p)
   if('.png .jpg .jpeg .gif .webp .bmp .ico'.includes(e)&&e)h=`<img class="pv" src="${u}">`;
   else if('.mp4 .webm .ogg .mov'.includes(e)&&e)h=`<video class="pv" controls src="${u}"></video>`;
   else if('.mp3 .wav .flac .m4a .aac'.includes(e)&&e)h=`<audio controls style="width:100%" src="${u}"></audio>`;
-  else if(e==='.pdf')h=`<iframe class="frame" src="${u}"></iframe>`;
+  else if(e==='.pdf'||OFFICE.has(e)){const d=dialog(n,`<div class="vw"><p class="muted">Cargando…</p></div><div class="row" style="margin-top:12px"><a class="btn sm" href="/api/download?path=${encodeURIComponent(p)}${cq()}">${ic('download')} Descargar</a></div>`,null,'','wide');return openViewer($('.vw',d),e,p,cq())}
   else if(EDIT.has(e))return editor(n);
   else h=`<p class="muted">Sin vista previa para este tipo de archivo.</p>`;
   dialog(n,`<div class="center">${h}</div><div class="row" style="margin-top:12px"><a class="btn sm" href="/api/download?path=${encodeURIComponent(p)}${cq()}">${ic('download')} Descargar</a></div>`,null,'','wide')}

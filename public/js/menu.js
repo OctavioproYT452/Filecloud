@@ -8,7 +8,7 @@ const toggler=()=>[$('#avBtn'),$('#burger')].filter(Boolean);
 function build(){const ai=$('#aiBtn');
   const G=[['Mis archivos',[['link','Enlaces compartidos','Revisa y elimina lo que has compartido',()=>shares()],...(ai?[['bot','Asistente IA','Pídele que organice tus archivos',()=>ai.click()]]:[])]],
     ['Personalización',[['palette','Apariencia','Temas, colores y tipografía',()=>appearance()],['globe','Comunidad de temas','Temas publicados por otros usuarios',null,'/themes.html']]],
-    ['Mi cuenta',[['user','Mi perfil','Usuario, contraseña y sesiones',()=>account()],['shield','Seguridad','Verificación en dos pasos y recuperación',()=>security().catch(x=>toast(x.message,1))],...(me.admin?[['settings','Administración','Usuarios, espacio y ajustes del servidor',null,'/admin/']]:[])]]];
+    ['Mi cuenta',[['user','Mi perfil','Usuario, contraseña y sesiones',()=>account()],['shield','Seguridad','Verificación en dos pasos y recuperación',()=>security().catch(x=>toast(x.message,1))],['folder','Acceso WebDAV','Monta tu carpeta como unidad de red',()=>webdavDialog()],...(me.admin?[['settings','Administración','Usuarios, espacio y ajustes del servidor',null,'/admin/']]:[])]]];
   acts=[];const item=(i,t,d,f,href,cls='')=>{const k=f?acts.push(f)-1:'',inner=`<span class="mic">${ic(i)}</span><span class="grow"><b>${t}</b>${d?`<small>${d}</small>`:''}</span>`;
     return href?`<a class="mi ${cls}" href="${href}" role="menuitem">${inner}</a>`:`<button type="button" class="mi ${cls}" role="menuitem" data-k="${k}">${inner}</button>`};
   const sp=$('#space')?.textContent||'',pc=$('#pct')?.textContent||'',w=$('#bar i')?.style.width||'0%',bc=$('#bar')?.className||'bar';
