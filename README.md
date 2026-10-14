@@ -11,7 +11,7 @@ Sube, organiza, edita y comparte archivos desde cualquier dispositivo, con usuar
 
 </div>
 
-> **Versión 2.7.5.** Qué ha cambiado en esta versión: consulta [RELEASE.md](RELEASE.md).
+> **Versión 2.7.6.** Qué ha cambiado en esta versión: consulta [RELEASE.md](RELEASE.md).
 
 ---
 
@@ -217,7 +217,7 @@ Notas:
 
 ## Temas y personalización
 
-Desde **Apariencia** puedes elegir un tema y retocar cada detalle. El cambio se ve al instante y se guarda en tu cuenta.
+Desde **Apariencia** puedes elegir un tema y retocar cada detalle. El cambio se ve al instante y se guarda en tu cuenta. El diálogo se organiza en tres pestañas: **Temas** (los incluidos), **Mis temas** (guardar, importar, exportar y publicar) y **Personalizar** (colores agrupados, redondeo, tipografía y densidad).
 
 Temas incluidos: Medianoche, Océano, Bosque, Atardecer, Neón, Dracula, Terminal, Alto contraste, Claro suave, Nórdico, Papel y Menta.
 
@@ -227,9 +227,9 @@ Personalizable: 10 colores (fondo, tarjetas, elementos, texto, texto suave, acen
 
 Cualquier usuario puede crear sus propios temas:
 
-1. En **Apariencia**, ajusta los colores con el selector o escribiendo el código hex (`#RRGGBB`; también acepta `#RGB`), además del redondeo, la tipografía y la densidad.
-2. Pulsa **Guardar como tema** para guardarlo en **Mis temas** (hasta 50 por usuario).
-3. **Exportar (.json)** descarga el tema actual como archivo; **Exportar todos** descarga un paquete con todos tus temas.
+1. En **Apariencia → Personalizar**, ajusta los colores con el selector o escribiendo el código hex (`#RRGGBB`; también acepta `#RGB`), además del redondeo, la tipografía y la densidad.
+2. En **Mis temas**, pulsa **Guardar el tema actual** para guardarlo en **Mis temas** (hasta 50 por usuario).
+3. **Exportar actual** descarga el tema actual como archivo; **Exportar todos** descarga un paquete con todos tus temas.
 4. **Importar (.json)** añade a Mis temas uno o varios archivos. Así puedes compartir temas por cualquier medio (GitHub, Discord, correo…).
 
 Formato del archivo (también se acepta un objeto con solo los valores del tema):
@@ -255,17 +255,17 @@ Formato del archivo (también se acepta un objeto con solo los valores del tema)
 
 ### Comunidad de temas
 
-Cada servidor tiene su propia comunidad de temas, accesible desde **Apariencia → Comunidad de temas** (`/themes.html`).
+Cada servidor tiene su propia comunidad de temas, accesible desde el menú de usuario → **Comunidad de temas** (`/themes.html`).
 
 - **Publicar:** en **Mis temas**, pulsa el icono del globo de un tema. Se mostrará con tu nombre de usuario; vuelve a pulsarlo para dejar de compartirlo. Es opcional: tus temas son privados por defecto.
-- **Explorar:** busca por nombre o autor y ordena por recientes, nombre o autor. Cada tema muestra una vista previa con sus colores.
-- **Probar, usar o guardar:** **Probar** lo aplica temporalmente en la página, **Usar** lo guarda en tus temas y lo activa, y **Guardar** solo lo añade a **Mis temas**.
+- **Explorar:** busca por nombre o autor, filtra entre **Todos** y **Míos** y ordena por recientes, nombre o autor. Cada tema muestra una vista previa con sus colores.
+- **Probar, usar o guardar:** **Probar** lo aplica temporalmente en la página, **Usar** lo guarda en tus temas y lo activa, y **Guardar en Mis temas** solo lo añade a **Mis temas**.
 - Si cambias o borras un tema publicado, la comunidad se actualiza al instante. Los temas de usuarios suspendidos no se muestran.
 - **Moderación:** los administradores pueden retirar cualquier tema de la comunidad (el autor lo conserva en su cuenta, pero deja de ser público).
 
 ## Panel de administración
 
-Disponible en `/admin/` solo para administradores.
+Disponible en `/admin/` solo para administradores. Usa el mismo menú de usuario que el panel (avatar arriba a la derecha) y cada sección explica qué hace: formularios con ayudas, opciones agrupadas y acciones principales destacadas.
 
 - **Resumen:** usuarios, almacenamiento total, enlaces activos, sesiones activas y estado del servidor (se actualiza cada 5 s).
 - **Usuarios:** alta, edición de cuota y rol, suspensión, cambio de contraseña, cierre de sesiones, explorador de archivos y eliminación.
@@ -278,7 +278,7 @@ Disponible en `/admin/` solo para administradores.
 - La versión instalada está en `data/version.json`:
 
   ```json
-  { "version": "2.7.5" }
+  { "version": "2.7.6" }
   ```
 
 - Cada 2 minutos el servidor lee ese archivo local y lo compara con el `data/version.json` publicado en GitHub. Si el de GitHub es más nuevo (se comparan los números: `2.10` es mayor que `2.9`), los **administradores** ven un aviso de nueva versión con instrucciones para actualizar.
@@ -404,7 +404,7 @@ El agente trabaja **únicamente dentro de la carpeta del usuario que lo usa** (p
 │   ├── panel.html         # Panel del usuario
 │   ├── themes.html        # Comunidad de temas
 │   ├── admin/             # Panel de administración
-│   ├── js/                # common.js, auth.js, bg.js, menu.js, security.js, panel.js, admin.js, ai.js
+│   ├── js/                # common.js, auth.js, bg.js, menu.js, nav.js, security.js, panel.js, admin.js, ai.js
 │   ├── auth.css           # Animaciones del inicio de sesión
 │   ├── style.css          # Sistema de diseño compartido
 │   └── icons.svg          # Iconos SVG

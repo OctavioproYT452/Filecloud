@@ -1,35 +1,32 @@
-# Versión 2.7.5
+# Versión 2.7.6
 
-Rediseño de la interfaz de usuario del panel: el perfil y el menú estaban demasiado amontonados y ahora están ordenados y explicados. Para la documentación completa, consulta el [README](README.md).
+Rediseño de la administración, del diálogo de Apariencia y de la comunidad de temas: más aire, menos cosas a la vez y cada opción explicada. Para la documentación completa, consulta el [README](README.md).
 
 ## Novedades
 
-### Menú de usuario
-- El botón de la esquina muestra ahora tu inicial y tu nombre. En escritorio abre un **desplegable**; en móvil, la hamburguesa abre un **panel lateral** con el mismo contenido.
-- Cabecera con avatar, nombre (y etiqueta ADMIN si procede) y barra de espacio usado.
-- Opciones agrupadas, cada una con una línea que explica qué hace:
-  - **Mis archivos**: Enlaces compartidos y Asistente IA (si está activado).
-  - **Personalización**: Apariencia y Comunidad de temas.
-  - **Mi cuenta**: Mi perfil, Seguridad y Administración (solo administradores).
-- **Cerrar sesión** separado al final y en rojo.
-- Se cierra con `Esc`, tocando fuera o al elegir una opción.
+### Menú común
+- Administración y Comunidad de temas usan ahora el mismo **menú de usuario** (avatar) que el panel, en lugar del antiguo menú hamburguesa. Incluye acceso a Mis archivos, Administración, Comunidad, Apariencia y Cerrar sesión.
 
-### Mi perfil
-- Sustituye al antiguo diálogo «Mi cuenta», que mezclaba todo en un solo bloque. Ahora son tarjetas:
-  - **Cabecera**: avatar grande, nombre y chip con el ID de la cuenta (se copia al pulsarlo).
-  - **Almacenamiento**: barra de uso y desglose por tipo de archivo desplegable.
-  - **Datos de acceso**: nombre de usuario y contraseña, cada uno con su botón «Cambiar» y su propio diálogo.
-  - **Seguridad**: estado del 2FA y códigos de recuperación disponibles, acceso a su gestión y cierre de otras sesiones (con confirmación).
-  - **Cerrar sesión**.
-- El cambio de contraseña pide **repetir la nueva**; el servidor también lo comprueba (`next2`).
+### Administración
+- Cabecera de sección con título y descripción en cada pestaña.
+- **Resumen**: tarjetas con icono y medidores de CPU, memoria y disco en columnas.
+- **Usuarios**: buscador, avatar, etiquetas de rol, espacio con barra y botones claros (*Archivos*, *Editar*, eliminar). El diálogo de edición se divide en Cuenta, Espacio, Asistente de IA y Sesiones, con ayudas bajo cada campo.
+- **Enlaces**: botones *Copiar* y *Revocar* y estado vacío explicado.
+- **IA** y **Ajustes**: tarjetas por tema en dos columnas y botón de guardado siempre visible.
+
+### Apariencia
+- Tres pestañas: **Temas**, **Mis temas** (guardar, importar, exportar, publicar) y **Personalizar** (colores agrupados en Fondo y tarjetas, Texto, Acento y estados; más forma, tipografía y densidad).
+- El botón *Aplicar* queda fijo al pie del diálogo.
+
+### Comunidad de temas
+- Cabecera, buscador, filtro **Todos / Míos**, orden y contador.
+- Tarjetas con vista previa más grande; acciones principales (*Probar*, *Usar*) destacadas y las secundarias (*Guardar en Mis temas*, *Dejar de compartir*, *Retirar*) discretas.
+- Estado vacío y explicación de cómo publicar un tema.
 
 ## Archivos modificados
-- Nuevo: `public/js/menu.js`.
-- Modificados: `public/panel.html`, `public/js/panel.js`, `public/style.css`, `src/routes/auth.js`.
-- Versión: `package.json` y `data/version.json` pasan a `2.7.5`.
+- Nuevo: `public/js/nav.js`.
+- Modificados: `public/admin/index.html`, `public/themes.html`, `public/js/admin.js`, `public/js/themes.js`, `public/js/common.js`, `public/style.css`.
+- Versión: `package.json` y `data/version.json` pasan a `2.7.6`.
 
 ## Actualizar
 Copia los archivos sobre tu instalación y reinicia el servidor. No hay cambios en la base de datos ni en los datos de los usuarios.
-
-## Nota
-Las páginas de la comunidad de temas y de administración conservan su menú hamburguesa anterior.

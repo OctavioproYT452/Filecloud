@@ -1,12 +1,14 @@
-let list=[],me={},saved=null,cur=null;
+let list=[],me={},saved=null,cur=null,filt='all';
 const prev=t=>{const g=k=>t[k]||'#888888',r=t.r??12;return `<div class="tprev" style="background:${g('bg')};border-radius:${r}px;font-family:${FONTS[t.font]||FONTS.system}"><div style="background:${g('card')};color:${g('text')};border-radius:${r*.8}px;padding:10px"><b>Título</b><div style="color:${g('muted')};font-size:12px;margin:2px 0 8px">Texto de ejemplo</div><span style="display:inline-block;background:${g('accent')};color:${g('on')};border-radius:${r*.6}px;padding:4px 10px;font-size:12px;margin-right:6px">Botón</span><span style="display:inline-block;background:${g('card2')};border-radius:${r*.6}px;padding:4px 10px;font-size:12px">Elemento</span></div></div>`};
 function render(){const q=$('#q').value.toLowerCase(),s=$('#s').value;
-  const v=list.filter(c=>(c.name+' '+c.author).toLowerCase().includes(q)).sort((a,b)=>s==='name'?a.name.localeCompare(b.name):s==='author'?a.author.localeCompare(b.author):b.id-a.id);
-  $('#g').innerHTML=v.map(c=>`<div class="tc" data-id="${c.id}">${prev(c.theme)}<div><b>${esc(c.name)}</b><br><small>por ${esc(c.author)}${c.mine?' (tú)':''}</small></div><div class="row"><button class="btn sm ghost" data-a="try">${ic('eye')} Probar</button><button class="btn sm" data-a="use">${ic('palette')} Usar</button><button class="btn sm ghost" data-a="save">${ic('plus')} Guardar</button>${c.mine?`<button class="btn sm ghost" data-a="unpub">${ic('x')} Dejar de compartir</button>`:''}${me.admin?`<button class="btn sm danger" data-a="rm" aria-label="Retirar">${ic('trash')}</button>`:''}</div></div>`).join('')
-    ||`<p class="muted">${list.length?'Sin resultados.':'Todavía no hay temas publicados en este servidor. Sé el primero: Apariencia → Mis temas → icono del globo.'}</p>`}
+  const v=list.filter(c=>(filt==='all'||c.mine)&&(c.name+' '+c.author).toLowerCase().includes(q)).sort((a,b)=>s==='name'?a.name.localeCompare(b.name):s==='author'?a.author.localeCompare(b.author):b.id-a.id);
+  $('#cnt').textContent=list.length?`${v.length} de ${list.length} tema${list.length===1?'':'s'}`:'';
+  $('#g').innerHTML=v.map(c=>`<article class="tc" data-id="${c.id}">${prev(c.theme)}<div class="tc-info"><b>${esc(c.name)}</b><small>por ${esc(c.author)}${c.mine?' <span class="badge ad">TÚ</span>':''}</small></div><div class="tc-main"><button class="btn sm ghost" data-a="try">${ic('eye')} Probar</button><button class="btn sm" data-a="use">${ic('check')} Usar</button></div><div class="tc-sec"><button class="lnk" data-a="save">${ic('plus')} Guardar en Mis temas</button>${c.mine?`<button class="lnk" data-a="unpub">${ic('x')} Dejar de compartir</button>`:''}${me.admin&&!c.mine?`<button class="lnk bad" data-a="rm">${ic('trash')} Retirar</button>`:''}</div></article>`).join('')
+    ||`<div class="empty">${ic('globe')}<b>${list.length?'Sin resultados':'Aún no hay temas publicados'}</b><p class="muted">${list.length?'Prueba con otra búsqueda o filtro.':'Sé el primero: Apariencia → Mis temas → icono del globo.'}</p></div>`}
 async function use(c){await api('/api/community/save',{id:c.id});await api('/api/theme',{theme:c.theme});saved=c.theme;applyTheme(c.theme);$('#tryBar').hidden=true;toast('Tema aplicado')}
 async function load(){list=(await api('/api/community')).themes;render()}
-$('#q').oninput=$('#s').onchange=render;$('#th').onclick=appearance;
+$('#q').oninput=$('#s').onchange=render;
+$('#seg').onclick=e=>{const b=e.target.closest('[data-f]');if(!b)return;filt=b.dataset.f;$$('#seg button').forEach(x=>x.classList.toggle('on',x===b));render()};
 $('#g').onclick=async e=>{const b=e.target.closest('[data-a]');if(!b)return;const c=list.find(x=>x.id===+b.closest('.tc').dataset.id);if(!c)return;
   try{const a=b.dataset.a;
     if(a==='try'){cur=c;applyTheme(c.theme);$('#tn').textContent=c.name;$('#tryBar').hidden=false}

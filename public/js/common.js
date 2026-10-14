@@ -44,14 +44,18 @@ const themeFile=(name,theme)=>({filecloud:'theme',version:1,name,theme});
 
 async function appearance(){
 const[{theme},{themes},ses]=await Promise.all([api('/api/theme'),api('/api/themes'),api('/api/session')]);let t={...(theme||{})},saved=false,mine=themes;
-const d=dialog('Apariencia',`<small>Elige un tema, crea el tuyo o importa uno. Todo se ve al instante; «Aplicar» lo guarda en tu cuenta.</small>
-<h4>Temas predeterminados</h4><div class="presets">${PRESETS.map((p,i)=>`<button type="button" class="pre" data-i="${i}" style="background:${p.bg};color:${p.text};border-color:${p.accent};border-radius:${p.r}px;font-family:${FONTS[p.font]}"><i style="background:${p.accent}"></i>${p.n}</button>`).join('')}<button type="button" class="pre" data-i="-1">${ic('refresh')} Predeterminado</button></div>
-<h4>Mis temas</h4><div class="mine" id="mine"></div>
-<div class="row"><button type="button" class="btn ghost sm" data-act="saveas">${ic('plus')} Guardar como tema</button><button type="button" class="btn ghost sm" data-act="export">${ic('download')} Exportar (.json)</button><button type="button" class="btn ghost sm" data-act="exportall">${ic('zip')} Exportar todos</button><label class="btn ghost sm" style="margin:0;cursor:pointer">${ic('upload')} Importar (.json)<input type="file" accept=".json,application/json" hidden multiple data-imp></label><a class="btn ghost sm" href="/themes.html">${ic('globe')} Comunidad de temas</a></div><small>El icono del globo publica un tema de «Mis temas» en la comunidad de este servidor (se mostrará tu nombre de usuario).</small>
-<h4>Colores (selector o código hex)</h4><div class="cgrid">${CK.map(([k,l])=>`<label>${l}<span class="chex"><input type="color" data-k="${k}"><input class="input" data-h="${k}" maxlength="7" spellcheck="false" autocomplete="off" placeholder="#rrggbb"></span></label>`).join('')}</div>
-<label>Redondeo de esquinas: <b data-rv></b><input type="range" min="0" max="28" data-r></label>
+const grp=(l,ks)=>`<h4>${l}</h4><div class="cgrid">${CK.filter(([k])=>ks.includes(k)).map(([k,l])=>`<label>${l}<span class="chex"><input type="color" data-k="${k}"><input class="input" data-h="${k}" maxlength="7" spellcheck="false" autocomplete="off" placeholder="#rrggbb"></span></label>`).join('')}</div>`;
+const d=dialog('Apariencia',`<small>Todo se ve al instante. «Aplicar» guarda el tema en tu cuenta; si cierras sin aplicar, no cambia nada.</small>
+<div class="seg atabs"><button type="button" class="on" data-tab="pre">${ic('palette')} Temas</button><button type="button" data-tab="mine">${ic('star')} Mis temas</button><button type="button" data-tab="cust">${ic('edit')} Personalizar</button></div>
+<div data-pane="pre"><div class="presets">${PRESETS.map((p,i)=>`<button type="button" class="pre" data-i="${i}" style="background:${p.bg};color:${p.text};border-color:${p.accent};border-radius:${p.r}px;font-family:${FONTS[p.font]}"><i style="background:${p.accent}"></i>${p.n}</button>`).join('')}<button type="button" class="pre" data-i="-1">${ic('refresh')} Predeterminado</button></div>
+<a class="btn ghost sm" href="/themes.html">${ic('globe')} Explorar la comunidad de temas</a></div>
+<div data-pane="mine" hidden><div class="mine" id="mine"></div>
+<div class="row" style="margin-top:12px"><button type="button" class="btn sm" data-act="saveas">${ic('plus')} Guardar el tema actual</button><label class="btn ghost sm" style="margin:0;cursor:pointer">${ic('upload')} Importar<input type="file" accept=".json,application/json" hidden multiple data-imp></label><button type="button" class="btn ghost sm" data-act="export">${ic('download')} Exportar actual</button><button type="button" class="btn ghost sm" data-act="exportall">${ic('zip')} Exportar todos</button></div>
+<small>El icono del globo publica un tema en la comunidad de este servidor con tu nombre de usuario.</small></div>
+<div data-pane="cust" hidden>${grp('Fondo y tarjetas',['bg','card','card2'])}${grp('Texto',['text','muted'])}${grp('Acento y estados',['accent','on','danger','ok','warn'])}
+<h4>Forma</h4><label>Redondeo de esquinas: <b data-rv></b><input type="range" min="0" max="28" data-r></label>
 <div class="row"><label class="grow">Tipografía<select data-f><option value="system">Moderna</option><option value="serif">Clásica</option><option value="mono">Monoespaciada</option><option value="rounded">Redondeada</option></select></label>
-<label class="grow">Densidad<select data-s><option value="0.8">Compacta</option><option value="1">Normal</option><option value="1.25">Amplia</option></select></label></div>`,
+<label class="grow">Densidad<select data-s><option value="0.8">Compacta</option><option value="1">Normal</option><option value="1.25">Amplia</option></select></label></div></div>`,
 async()=>{await api('/api/theme',{theme:t});saved=true;toast('Tema aplicado y guardado')},'Aplicar','wide');
 const cssNum=()=>{const v=parseInt(getComputedStyle(document.documentElement).getPropertyValue('--r'));return Number.isNaN(v)?14:v};
 const sync=skip=>{const cs=getComputedStyle(document.documentElement);CK.forEach(([k])=>{const h=normHex(cs.getPropertyValue('--'+k))||'#000000',c=$(`[data-k=${k}]`,d),x=$(`[data-h=${k}]`,d);if(c!==skip)c.value=h;if(x!==skip){x.value=h;x.classList.remove('bad')}});
@@ -62,6 +66,7 @@ const renderMine=()=>{$('#mine',d).innerHTML=mine.length?mine.map((m,i)=>{const 
 const reload=async()=>{mine=(await api('/api/themes')).themes;renderMine()};
 d.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;const ds=b.dataset;
   try{
+    if(ds.tab){$$('.atabs button',d).forEach(x=>x.classList.toggle('on',x===b));$$('[data-pane]',d).forEach(x=>x.hidden=x.dataset.pane!==ds.tab);return}
     if(ds.i!==undefined){const i=+ds.i;t=i<0?{}:{...PRESETS[i]};delete t.n;return set()}
     if(ds.m!==undefined){t={...mine[+ds.m].theme};return set()}
     if(ds.p!==undefined){const m=mine[+ds.p],v=!m.public;

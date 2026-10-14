@@ -1,13 +1,13 @@
 <!doctype html>
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Comunidad de temas | File Cloud</title><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/theme.css"></head>
-<body>
-<header class="top"><a class="brand" href="/panel.html"><span class="logo"><svg class="i "><use href="/icons.svg#cloud"/></svg></span><span>File Cloud</span></a><span class="spacer"></span><button class="btn ghost sm burger" id="burger" aria-label="Menú" aria-expanded="false"><svg class="i "><use href="/icons.svg#menu"/></svg></button>
-<nav class="nav" id="nav"><a class="btn ghost sm" href="/panel.html"><svg class="i "><use href="/icons.svg#back"/></svg> Mis archivos</a><button class="btn ghost sm" id="th"><svg class="i "><use href="/icons.svg#palette"/></svg> Apariencia</button></nav></header>
+<body data-page="themes">
+<header class="top"><a class="brand" href="/panel.html"><span class="logo"><svg class="i "><use href="/icons.svg#cloud"/></svg></span><span>File Cloud</span></a><span class="pgtag">Comunidad de temas</span><span class="spacer"></span><a class="btn ghost sm hide-sm" href="/panel.html"><svg class="i "><use href="/icons.svg#back"/></svg> Mis archivos</a><button class="btn ghost sm avbtn" id="avBtn" aria-haspopup="menu" aria-expanded="false" aria-label="Menú de usuario"><span class="uav">·</span></button></header>
 <main class="wrap">
-  <div class="card"><h2><svg class="i "><use href="/icons.svg#globe"/></svg> Comunidad de temas</h2>
-    <p class="muted">Temas publicados por los usuarios de este servidor. Pruébalos, guárdalos en «Mis temas» o aplícalos. Para publicar el tuyo: Apariencia → Mis temas → icono del globo.</p>
-    <div class="row"><input class="input grow" id="q" placeholder="Buscar por nombre o autor…" style="max-width:320px"><select id="s" style="width:auto"><option value="new">Más recientes</option><option value="name">Nombre</option><option value="author">Autor</option></select></div></div>
+  <div class="phero"><div><h2>Comunidad de temas</h2><p class="muted">Temas publicados por los usuarios de este servidor. Pruébalos sin compromiso y quédate con el que más te guste.</p></div></div>
+  <div class="ptool"><label class="psearch"><svg class="i "><use href="/icons.svg#search"/></svg><input class="input" id="q" placeholder="Buscar por nombre o autor…"></label><div class="seg" id="seg"><button class="on" data-f="all">Todos</button><button data-f="mine">Míos</button></div><select id="s" style="width:auto" aria-label="Ordenar"><option value="new">Más recientes</option><option value="name">Nombre</option><option value="author">Autor</option></select></div>
+  <p class="muted pcount" id="cnt"></p>
   <div class="tgrid" id="g"></div>
+  <details class="howto"><summary>¿Cómo publico mi tema?</summary><p class="muted">Abre el menú de tu cuenta → <b>Apariencia</b> → pestaña <b>Mis temas</b> y pulsa el icono del globo en el tema que quieras compartir. Se mostrará con tu nombre de usuario y podrás retirarlo cuando quieras.</p></details>
 </main>
 <div class="bulk card" id="tryBar" hidden><span>Probando: <b id="tn"></b></span><button class="btn sm" data-t="use"><svg class="i "><use href="/icons.svg#palette"/></svg> Usar</button><button class="btn sm ghost" data-t="cancel">Cancelar</button></div>
-<script src="/js/common.js"></script><script src="/js/themes.js"></script></body></html>
+<script src="/js/common.js"></script><script src="/js/nav.js"></script><script src="/js/themes.js"></script></body></html>
