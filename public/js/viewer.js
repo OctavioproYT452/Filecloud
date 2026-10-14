@@ -84,11 +84,11 @@ async function pptxView(host,buf){await loadScript('/vendor/jszip.min.js');const
 
 // ---------- punto de entrada ----------
 const FALL={'.docx':docxView,'.xlsx':xlsxView,'.pptx':pptxView};
-async function openViewer(host,e,p,cq){const base=encodeURIComponent(p)+cq;
+async function openViewer(host,e,p,cq,U){const base=U?'':encodeURIComponent(p)+cq,raw=U?.raw||'/api/preview?path='+base,conv=U?.conv||'/api/convert?path='+base;
   try{
-    if(e==='.pdf')return await pdfView(host,await getBuf('/api/preview?path='+base));
+    if(e==='.pdf')return await pdfView(host,await getBuf(raw));
     host.innerHTML='<p class="muted">Preparando vista previa…</p>';
-    try{return await pdfView(host,await getBuf('/api/convert?path='+base))}catch{}
+    try{return await pdfView(host,await getBuf(conv))}catch{}
     if(!FALL[e])throw Error('Este formato necesita LibreOffice instalado en el servidor para verse aquí. Puedes descargarlo.');
-    await FALL[e](host,await getBuf('/api/preview?path='+base))
+    await FALL[e](host,await getBuf(raw))
   }catch(x){host.innerHTML=`<p class="muted">${esc(x.message||'No se pudo mostrar el archivo')}</p>`}}

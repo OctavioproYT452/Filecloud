@@ -10,6 +10,9 @@ const { zipTo } = require("../lib/zip");
 const { locked, addFail, fails } = require("../services/auth");
 const { userTheme } = require("../services/themes");
 const { IC, page, bytes, kind, expTxt } = require("../views/share-helpers");
+const { convertToPdf, sendPdf } = require("./office");
+const VIEW = new Set(".pdf .doc .docx .xls .xlsx .ppt .pptx .odt .ods .odp .rtf".split(" "));
+const VSCRIPTS = '<script src="/js/common.js"></script><script src="/js/viewer.js"></script><script src="/js/share.js"></script>';
 
 function shareCtx(req) {
   const s = get("SELECT s.*,u.username,u.suspended,u.theme,u.uuid owner_uuid FROM shares s JOIN users u ON u.id=s.user_id WHERE s.token=?", req.params.token);
@@ -33,6 +36,12 @@ router.get("/s/:token/raw", (req, res) => {
   if (!c || fs.statSync(c.full).isDirectory()) return res.sendStatus(404);
   if (!unlocked(req, c.s)) return res.sendStatus(403);
   serve(res, c.full, req.query.dl);
+});
+router.get("/s/:token/convert", async (req, res) => { // vista previa de documentos de Office como PDF (si hay LibreOffice)
+  const c = shareCtx(req);
+  if (!c || fs.statSync(c.full).isDirectory()) return res.sendStatus(404);
+  if (!unlocked(req, c.s)) return res.sendStatus(403);
+  try { sendPdf(res, await convertToPdf(c.full)); } catch (e) { res.status(400).json({ error: e.message }); }
 });
 router.get("/s/:token/zip", async (req, res) => {
   const c = shareCtx(req);
@@ -58,9 +67,10 @@ router.get("/s/:token", (req, res) => {
     if ([".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".svg"].includes(ext)) pv = `<img class="pv" src="${raw}" alt="${esc(name)}">`;
     else if ([".mp4", ".webm", ".ogg", ".mov"].includes(ext)) pv = `<video class="pv" controls src="${raw}"></video>`;
     else if ([".mp3", ".wav", ".flac", ".aac", ".m4a"].includes(ext)) pv = `<audio controls style="width:100%" src="${raw}"></audio>`;
-    else if ([".pdf", ".html", ".htm"].includes(ext)) pv = `<iframe class="pv frame" src="${raw}" sandbox="allow-scripts"></iframe>`;
+    else if (VIEW.has(ext)) pv = `<div class="vw" id="vw" data-ext="${ext}" data-raw="${esc(raw)}" data-conv="${esc(`/s/${t}/convert${q(rel)}`)}"><p class="muted">Cargando…</p></div>`;
+    else if ([".html", ".htm"].includes(ext)) pv = `<iframe class="pv frame" src="${raw}" sandbox="allow-scripts"></iframe>`;
     else if ([".txt", ".md", ".json", ".log", ".csv", ".js", ".css", ".py", ".xml"].includes(ext) && st.size < 2e6) pv = `<pre class="code">${esc(fs.readFileSync(c.full, "utf8").slice(0, 20000))}</pre>`;
-    res.send(page(name, `<div class="card sh-hero"><div class="sh-ico">${IC(kind(ext))}</div><h2 class="sh-name">${esc(name)}</h2>${meta(`<span>${IC("file")} ${bytes(st.size)}</span>`)}<div class="row sh-act"><a class="btn" href="${raw}&dl=1">${IC("download")} Descargar</a>${c.s.is_dir ? `<a class="btn ghost" href="/s/${t}${q(up)}">${IC("back")} Volver</a>` : ""}</div></div><div class="card sh-pv">${c.s.is_dir ? crumbs() : ""}${pv}</div>`, c.th));
+    res.send(page(name, `<div class="card sh-hero"><div class="sh-ico">${IC(kind(ext))}</div><h2 class="sh-name">${esc(name)}</h2>${meta(`<span>${IC("file")} ${bytes(st.size)}</span>`)}<div class="row sh-act"><a class="btn" href="${raw}&dl=1">${IC("download")} Descargar</a>${c.s.is_dir ? `<a class="btn ghost" href="/s/${t}${q(up)}">${IC("back")} Volver</a>` : ""}</div></div><div class="card sh-pv">${c.s.is_dir ? crumbs() : ""}${pv}</div>`, c.th, VIEW.has(ext) ? VSCRIPTS : ""));
   } catch { res.status(500).send("Error al mostrar el enlace"); }
 });
 

@@ -1,3 +1,9 @@
+# Versión 2.8.1
+
+Los enlaces para compartir (`/s/<token>`) usan ahora los mismos visores de PDF y de Office que el panel, también para visitantes sin cuenta; si el enlace tiene contraseña, hay que desbloquearlo antes. Nuevos: `public/js/share.js` y la ruta `/s/<token>/convert`; modificados: `src/routes/share-page.js`, `src/routes/office.js`, `src/views/share-helpers.js`, `public/js/viewer.js`. Versión: `package.json` y `data/version.json` pasan a `2.8.1`.
+
+---
+
 # Versión 2.8.0
 
 Visor de documentos (PDF y Office) y acceso WebDAV por usuario. Para la documentación completa, consulta el [README](README.md).

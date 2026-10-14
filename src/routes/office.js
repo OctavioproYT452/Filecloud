@@ -27,12 +27,13 @@ async function sweep() { // borra conversiones con más de 6 horas
   for (const n of await fsp.readdir(CACHE).catch(() => [])) if (n.endsWith(".pdf")) { const f = path.join(CACHE, n), s = await fsp.stat(f).catch(() => null); if (s && Date.now() - s.mtimeMs > 216e5) await fsp.rm(f, { force: true }); }
 }
 
-router.get("/api/convert", need, wrap(async (req, res) => {
-  const sp = await space(req, "read"), f = fileOf(req, sp.root), st = await fsp.stat(f), ext = path.extname(f).toLowerCase();
+// Devuelve la ruta del PDF convertido (en caché) o null si LibreOffice no está instalado. Lo usan el panel y los enlaces compartidos.
+async function convertToPdf(f) {
+  const st = await fsp.stat(f), ext = path.extname(f).toLowerCase();
   if (!st.isFile() || !OFFICE.has(ext)) throw Error("Tipo de archivo no compatible");
   if (st.size > MAX) throw Error("El archivo es demasiado grande para la vista previa");
   const cmd = await find();
-  if (!cmd) return res.status(501).json({ error: "LibreOffice no está instalado en el servidor" });
+  if (!cmd) return null;
   await fsp.mkdir(CACHE, { recursive: true }); sweep();
   const out = path.join(CACHE, sha(f + "|" + st.size + "|" + st.mtimeMs).slice(0, 32) + ".pdf");
   if (!fs.existsSync(out)) await queue(async () => {
@@ -45,8 +46,16 @@ router.get("/api/convert", need, wrap(async (req, res) => {
       await fsp.rename(path.join(work, "in.pdf"), out);
     } finally { await fsp.rm(work, { recursive: true, force: true }); }
   }).catch(() => { throw Error("No se pudo convertir el documento"); });
+  return out;
+}
+const sendPdf = (res, out) => {
+  if (!out) return res.status(501).json({ error: "LibreOffice no está instalado en el servidor" });
   res.set({ "Content-Type": "application/pdf", "Content-Security-Policy": "sandbox", "Cache-Control": "private, max-age=300" });
   res.sendFile(out);
-}));
+};
+
+router.get("/api/convert", need, wrap(async (req, res) => { const sp = await space(req, "read"); sendPdf(res, await convertToPdf(fileOf(req, sp.root))); }));
 
 module.exports = router;
+module.exports.convertToPdf = convertToPdf;
+module.exports.sendPdf = sendPdf;
