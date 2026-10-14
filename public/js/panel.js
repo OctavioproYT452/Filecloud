@@ -73,9 +73,29 @@ async function shares(){const{shares}=await api('/api/shares');
   d.onclick=async e=>{const c=e.target.dataset?.c,r=e.target.dataset?.r;if(c){await navigator.clipboard?.writeText(location.origin+'/s/'+c);toast('Copiado')}if(r){await api('/api/share/revoke',{token:r});d.close();shares_()}}}
 const shares_=shares;
 
-function account(){const d=dialog('Mi cuenta',`<p>Sesión: <b>${esc(me.user)}</b> ${me.admin?'<span class="badge ad">ADMIN</span>':''}</p><p><small class="muted">ID de cuenta (permanente): <code>${esc(me.uuid)}</code></small></p><div class="row"><button type="button" class="btn ghost sm" data-rn>${ic('edit')} Cambiar nombre de usuario</button><button type="button" class="btn ghost sm" data-sec>${ic('shield')} Seguridad (2FA y recuperación)</button></div><label>Contraseña actual<input class="input" type="password" autocomplete="current-password"></label><label>Nueva contraseña (mín. 8)<input class="input" type="password" autocomplete="new-password"></label><div id="st" class="muted" style="margin:10px 0">Calculando uso…</div><div class="row"><button type="button" class="btn ghost sm" data-rv>Cerrar otras sesiones</button><button type="button" class="btn danger sm" data-out>Cerrar sesión</button></div>`,async d=>{const i=$$('input',d);
-  if(!i[1].value)return;await api('/api/password',{current:i[0].value,next:i[1].value});toast('Contraseña actualizada; las demás sesiones se cerraron')},'Cambiar contraseña');$('[data-out]',d).onclick=logout;$('[data-rn]',d).onclick=()=>renameUser(d);$('[data-sec]',d).onclick=()=>{d.close();security().catch(x=>toast(x.message,1))};$('[data-rv]',d).onclick=async()=>{await api('/api/sessions/revoke-others',{});toast('Otras sesiones cerradas')};
+function account(){
+  const d=dialog('Mi perfil',`
+  <div class="phead"><span class="uav xl">${esc(ini(me.user))}</span><div class="grow" style="min-width:0"><h3 class="pname">${esc(me.user)} ${me.admin?'<span class="badge ad">ADMIN</span>':''}</h3><button type="button" class="idchip" data-id title="Copiar el ID permanente de la cuenta">${ic('copy')} ID ${esc(me.uuid.slice(0,8))}…</button></div></div>
+  <section class="psec"><h4>Almacenamiento</h4><div class="row"><small class="grow" id="pspace"></small><small id="ppct"></small></div><div class="bar" id="pbar"><i></i></div>
+    <details class="pdet"><summary>Ver uso por tipo de archivo</summary><div id="st" class="muted" style="margin-top:8px">Calculando uso…</div></details></section>
+  <section class="psec"><h4>Datos de acceso</h4>
+    <div class="srow"><span class="si">${ic('user')}</span><div class="grow"><b>Nombre de usuario</b><small>${esc(me.user)}</small></div><button type="button" class="btn ghost sm" data-rn>Cambiar</button></div>
+    <div class="srow"><span class="si">${ic('lock')}</span><div class="grow"><b>Contraseña</b><small>Al cambiarla se cierran tus otras sesiones</small></div><button type="button" class="btn ghost sm" data-pw>Cambiar</button></div></section>
+  <section class="psec"><h4>Seguridad</h4>
+    <div class="srow"><span class="si">${ic('shield')}</span><div class="grow"><b>Verificación en dos pasos</b><small id="s2">Comprobando…</small></div><button type="button" class="btn ghost sm" data-sec>Gestionar</button></div>
+    <div class="srow"><span class="si">${ic('users')}</span><div class="grow"><b>Otras sesiones</b><small>Cierra tu cuenta en el resto de dispositivos</small></div><button type="button" class="btn ghost sm" data-rv>Cerrar</button></div></section>
+  <div class="row end"><button type="button" class="btn danger sm" data-out>${ic('logout')} Cerrar sesión</button></div>`,null,'','pro');
+  const sp=$('#space'),pc=$('#pct'),bar=$('#bar');$('#pspace',d).textContent=sp?.textContent||'';$('#ppct',d).textContent=pc?.textContent||'';
+  if(bar){$('#pbar',d).className=bar.className;$('#pbar i',d).style.width=$('i',bar).style.width}
+  $('[data-id]',d).onclick=async()=>{try{await navigator.clipboard.writeText(me.uuid);toast('ID copiado')}catch{toast(me.uuid)}};
+  $('[data-out]',d).onclick=logout;$('[data-rn]',d).onclick=()=>renameUser(d);$('[data-pw]',d).onclick=changePw;
+  $('[data-sec]',d).onclick=()=>{d.close();security().catch(x=>toast(x.message,1))};
+  $('[data-rv]',d).onclick=async()=>{if(await yes('Cerrar otras sesiones','Se cerrará tu cuenta en todos los demás dispositivos. Esta sesión seguirá abierta.')){await api('/api/sessions/revoke-others',{});toast('Otras sesiones cerradas')}};
+  api('/api/security').then(s=>{$('#s2',d).innerHTML=(s.totp?'<span class="badge ad">Activada</span>':'<span class="badge bad">Desactivada</span>')+` · ${s.codes} código${s.codes===1?'':'s'} de recuperación`}).catch(()=>{$('#s2',d).textContent='No disponible'});
   api('/api/stats').then(({stats})=>{const t=Object.values(stats).reduce((a,b)=>a+b,0)||1;$('#st',d).innerHTML=Object.entries(stats).map(([k,v])=>`<div class="row"><span class="grow">${k}</span><small>${fmt(v)}</small></div><div class="bar"><i style="width:${v/t*100}%"></i></div>`).join('')}).catch(()=>{})}
+function changePw(){dialog('Cambiar contraseña',`<label>Contraseña actual<input class="input" type="password" autocomplete="current-password"></label><label>Nueva contraseña (mín. 8)<input class="input" type="password" autocomplete="new-password"></label><label>Repite la nueva contraseña<input class="input" type="password" autocomplete="new-password"></label>`,
+  async d=>{const i=$$('input',d);if(!i[0].value||!i[1].value)throw Error('Completa todos los campos');if(i[1].value!==i[2].value)throw Error('Las contraseñas nuevas no coinciden');
+    await api('/api/password',{current:i[0].value,next:i[1].value,next2:i[2].value});toast('Contraseña actualizada; las demás sesiones se cerraron')},'Cambiar contraseña')}
 
 async function newDir(){const n=await ask('Nueva carpeta','Nombre');if(n)act('/api/mkdir',{name:n,path:cwd})}
 function newFile(){dialog('Nuevo archivo',`<label>Nombre<input class="input" placeholder="nota.txt"></label><textarea class="code" style="height:30vh" spellcheck="false"></textarea>`,async d=>{await api('/api/create-file',{name:$('input',d).value.trim(),content:$('textarea',d).value,path:cwd});toast('Creado');load()},'Crear')}
@@ -91,7 +111,7 @@ addEventListener('dragover',e=>e.preventDefault());addEventListener('drop',e=>{e
 
 document.addEventListener('click',e=>{const a=e.target.closest('[data-a]')?.dataset.a;if(!a)return;
   ({shares,account,newDir,newFile,favview:()=>showList('/api/favs','Favoritos'),recent:()=>showList('/api/recent','Recientes'),theme:appearance,select:()=>{selMode=!selMode;sel.clear();render()},view:()=>{list=!list;localStorage.fcList=list?'1':'0';render()}})[a]()});
-api('/api/session').then(s=>{if(!s.logged)return location.href='/';me=s;$('#me').textContent=s.user;$('#adminLink').hidden=!s.admin;if(s.ai)aiInit();load();loadCollabs();updateNotice(s);
+api('/api/session').then(s=>{if(!s.logged)return location.href='/';me=s;$('#me').textContent=s.user;userUI();$('#adminLink').hidden=!s.admin;if(s.ai)aiInit();load();loadCollabs();updateNotice(s);
   if(s.announcement&&localStorage.fcAnn!==s.announcement){const a=$('#ann');a.hidden=false;a.innerHTML=`${ic('info')}<span class="grow">${esc(s.announcement)}</span><button class="more" aria-label="Cerrar">${ic('x')}</button>`;$('button',a).onclick=()=>{localStorage.fcAnn=s.announcement;a.hidden=true}}});
 
 async function bulk(k){const ns=[...sel];if(!ns.length)return;let dest;
@@ -108,7 +128,7 @@ async function showList(url,title){try{const d=await api(url);items=d.items;sear
 
 async function renameUser(d){const n=await ask('Cambiar nombre de usuario','Nuevo nombre (3-32: letras, números, _ . -)',me.user);if(!n||n===me.user)return;
   const p=await ask('Confirma tu contraseña','Contraseña actual','','password');if(!p)return;
-  try{const r=await api('/api/username',{username:n,password:p});me.user=r.user;$('#me').textContent=r.user;d.close();toast('Ahora te llamas '+r.user)}catch(e){toast(e.message,1)}}
+  try{const r=await api('/api/username',{username:n,password:p});me.user=r.user;$('#me').textContent=r.user;userUI();d.close();toast('Ahora te llamas '+r.user)}catch(e){toast(e.message,1)}}
 
 // ---------- Carpetas compartidas conmigo ----------
 async function loadCollabs(){

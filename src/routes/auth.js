@@ -76,8 +76,9 @@ router.post("/api/username", need, wrap(async (req, res) => {
   res.json({ success: true, user: String(req.body.username).trim() });
 }));
 router.post("/api/password", need, wrap(async (req, res) => {
-  const { current, next } = req.body;
+  const { current, next, next2 } = req.body;
   confirmPw(req, current);
+  if (next2 !== undefined && next !== next2) throw Error("Las contraseñas nuevas no coinciden");
   checkPw(next);
   run("UPDATE users SET password_hash=? WHERE id=?", hash(next), req.user.id);
   run("DELETE FROM sessions WHERE user_id=? AND token<>?", req.user.id, req.sid); // cierra las demás sesiones

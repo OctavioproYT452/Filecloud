@@ -11,6 +11,8 @@ Sube, organiza, edita y comparte archivos desde cualquier dispositivo, con usuar
 
 </div>
 
+> **Versión 2.7.5.** Qué ha cambiado en esta versión: consulta [RELEASE.md](RELEASE.md).
+
 ---
 
 ## Índice
@@ -49,7 +51,11 @@ Sube, organiza, edita y comparte archivos desde cualquier dispositivo, con usuar
 - Cuota de almacenamiento por usuario con desglose por tipo (imágenes, vídeo, audio, documentos y otros).
 - **12 temas** y personalización completa (colores con selector o código hex, tipografía, redondeo y densidad), con **temas propios que se pueden exportar e importar como JSON** y una **comunidad de temas** para compartirlos con los demás usuarios del servidor.
 - Atajos de teclado: `/` filtra, `Supr` elimina la selección, `Ctrl+A` selecciona todo, `Esc` sale de la selección.
-- Diseño responsivo: menú hamburguesa en móvil y barra superior completa en pantallas grandes.
+- **Menú de usuario** ordenado por secciones (*Mis archivos*, *Personalización*, *Mi cuenta*): desplegable en escritorio y panel lateral (hamburguesa) en móvil.
+- **Perfil** con tarjetas separadas: almacenamiento, datos de acceso, seguridad y sesiones.
+- **Verificación en dos pasos (2FA/TOTP)** opcional para cada cuenta y **códigos de recuperación** para volver a entrar si olvidas el usuario o la contraseña.
+- Inicio de sesión animado (todo por código, sin imágenes) con fondo ligero que se adapta al dispositivo y respeta `prefers-reduced-motion`.
+- Diseño responsivo: barra superior completa en pantallas grandes y panel lateral en móvil.
 
 **Para el administrador**
 
@@ -62,7 +68,7 @@ Sube, organiza, edita y comparte archivos desde cualquier dispositivo, con usuar
 **Técnicas**
 
 - Base de datos **SQLite** local, sin servidor externo.
-- Contraseñas con `scrypt`, sesiones en base de datos y protección contra fuerza bruta.
+- Contraseñas con `scrypt`, sesiones en base de datos, 2FA (TOTP) opcional y protección contra fuerza bruta.
 - **Sin registros de actividad**, para no consumir disco ni memoria.
 - Iconos SVG propios, sin librerías de iconos ni de interfaz externas.
 
@@ -160,8 +166,11 @@ Ajustes desde el panel de administración: registro público (activar o desactiv
 | Descargar una carpeta | Menú **⋯** del elemento → **Descargar ZIP**. |
 | Descargar varios elementos | **Seleccionar** → marca elementos → **ZIP**. |
 | Compartir | Menú **⋯** → **Compartir**: elige caducidad y, si quieres, contraseña. |
-| Gestionar mis enlaces | **Enlaces** en el menú superior. |
-| Cambiar el aspecto | **Apariencia** en el menú superior. |
+| Gestionar mis enlaces | Menú de usuario → **Enlaces compartidos**. |
+| Cambiar el aspecto | Menú de usuario → **Apariencia**. |
+| Cambiar usuario o contraseña | Menú de usuario → **Mi perfil** → *Datos de acceso*. |
+| Activar el 2FA o crear códigos de recuperación | Menú de usuario → **Seguridad**. |
+| Recuperar mi cuenta | En el inicio de sesión: **¿Olvidaste tu usuario o contraseña?** |
 
 Los enlaces compartidos tienen la forma `https://tu-dominio/s/<token>`. Cualquier persona con el enlace puede ver el contenido (y la contraseña, si la configuraste), sin necesidad de cuenta.
 
@@ -170,7 +179,7 @@ Los enlaces compartidos tienen la forma `https://tu-dominio/s/<token>`. Cualquie
 El dueño de una carpeta puede invitar a otros usuarios de la instancia:
 
 1. En el menú de una carpeta (`⋯`), elige **Colaboración**.
-2. Escribe el **UUID** del usuario (lo encuentra en *Mi cuenta*), elige su rol y pulsa **Añadir**. Puedes cambiar el rol o quitar a alguien cuando quieras.
+2. Escribe el **UUID** del usuario (lo encuentra en *Mi perfil*, junto a su nombre), elige su rol y pulsa **Añadir**. Puedes cambiar el rol o quitar a alguien cuando quieras.
 3. El usuario añadido verá la carpeta en su panel, en la sección **Compartidas conmigo**, junto al nombre del **dueño** y su rol. Puede abandonar la colaboración con el botón de salida de esa tarjeta.
 
 | Rol | Ver y descargar | Editar contenido, renombrar y mover | Crear carpetas/archivos, subir y copiar | Borrar |
@@ -187,10 +196,23 @@ Notas:
 - No se puede compartir la carpeta raíz. Si el dueño renombra o mueve la carpeta, la colaboración la sigue; si la borra, se elimina.
 - Los permisos se comprueban siempre en el servidor, no solo en la interfaz.
 
+### Menú de usuario y perfil
+
+- El botón con tu inicial (en móvil, la hamburguesa) abre el menú: arriba tu nombre y el espacio usado, y debajo las opciones agrupadas con una breve explicación. Se cierra con `Esc`, tocando fuera o al elegir una opción.
+- **Mi perfil** reúne en tarjetas el almacenamiento (con desglose por tipo), los datos de acceso (cada cambio en su propio diálogo, con confirmación de contraseña), la seguridad (estado del 2FA y cierre de otras sesiones) y el cierre de sesión.
+
+### Registro, 2FA y recuperación de cuenta
+
+- **Registro**: la contraseña se escribe dos veces (con indicador de coincidencia y de fuerza) y se generan **10 códigos de recuperación** de un solo uso, que se muestran una única vez y se pueden copiar o descargar.
+- **2FA (TOTP)**: compatible con Google Authenticator, Aegis, Authy, 1Password… Cualquier cuenta, también las ya existentes, puede activarlo o desactivarlo en **Seguridad**. Se configura con la clave manual (o con el enlace `otpauth://` en el móvil). Desactivarlo pide la contraseña y un código.
+- **Recuperación**: en el inicio de sesión, **¿Olvidaste tu usuario o contraseña?** pide un código de recuperación, muestra el usuario de la cuenta y permite elegir una contraseña nueva; al terminar se cierran todas las sesiones. Cada código solo sirve una vez; en **Seguridad** se pueden generar códigos nuevos (invalidan los anteriores).
+- Con 2FA activado, el inicio de sesión también acepta un código de recuperación si no tienes la app a mano.
+- Si te quedas sin acceso, un administrador con acceso al servidor puede ejecutar `node tools/reset-password.js <usuario> <nueva-contraseña>`, que además desactiva el 2FA de esa cuenta.
+
 ### Cuentas: UUID y nombre de usuario
 
 - Cada usuario recibe al crearse un **UUID permanente** que nunca cambia. Sus archivos se guardan en `hosting/<uuid>/`, no con su nombre de usuario.
-- El **nombre de usuario** solo existe en la base de datos y se puede cambiar (en **Mi cuenta → Cambiar nombre de usuario**, pidiendo la contraseña; los administradores pueden hacerlo desde el panel de admin). El cambio se refleja al instante en todas partes, por ejemplo como autor en la comunidad de temas, y no mueve ni renombra ningún archivo.
+- El **nombre de usuario** solo existe en la base de datos y se puede cambiar (en **Mi perfil → Datos de acceso**, pidiendo la contraseña; los administradores pueden hacerlo desde el panel de admin). El cambio se refleja al instante en todas partes, por ejemplo como autor en la comunidad de temas, y no mueve ni renombra ningún archivo.
 - Al actualizar desde una versión anterior, las carpetas antiguas (`hosting/<usuario>/`) se renombran solas a su UUID al primer arranque.
 
 ## Temas y personalización
@@ -256,7 +278,7 @@ Disponible en `/admin/` solo para administradores.
 - La versión instalada está en `data/version.json`:
 
   ```json
-  { "version": "2.7" }
+  { "version": "2.7.5" }
   ```
 
 - Cada 2 minutos el servidor lee ese archivo local y lo compara con el `data/version.json` publicado en GitHub. Si el de GitHub es más nuevo (se comparan los números: `2.10` es mayor que `2.9`), los **administradores** ven un aviso de nueva versión con instrucciones para actualizar.
@@ -302,7 +324,9 @@ El agente trabaja **únicamente dentro de la carpeta del usuario que lo usa** (p
 
 - Contraseñas cifradas con `scrypt` y sal individual.
 - Sesiones aleatorias de 256 bits guardadas con hash en la base de datos; cookie `HttpOnly` y `SameSite=Lax` (y `Secure` bajo HTTPS).
-- Bloqueo temporal tras 5 intentos fallidos de acceso.
+- Bloqueo temporal tras 5 intentos fallidos de acceso, también en el segundo factor y en la recuperación de cuenta.
+- 2FA con TOTP (RFC 6238): cada código solo se acepta una vez y el paso intermedio del inicio de sesión caduca a los 5 minutos.
+- Los códigos de recuperación se guardan solo como hash y se gastan al usarse.
 - Protección CSRF mediante comprobación del origen.
 - Rutas validadas contra _path traversal_; los archivos de los usuarios nunca se sirven de forma pública sin un enlace.
 - Los archivos HTML o de script subidos se sirven aislados (`sandbox`) para que no puedan actuar con la sesión de nadie.
@@ -332,9 +356,11 @@ El agente trabaja **únicamente dentro de la carpeta del usuario que lo usa** (p
 │   ├── services/
 │   │   ├── auth.js        #   Sesiones, intentos fallidos y validaciones de cuenta
 │   │   ├── collab.js      #   Roles, permisos y espacio de cada petición
+│   │   ├── twofa.js       #   2FA (TOTP) y códigos de recuperación
 │   │   └── themes.js      #   Validación de temas y generación del CSS
 │   ├── routes/
 │   │   ├── auth.js        #   Registro, login, sesión, usuario y contraseña
+│   │   ├── security.js    #   2FA, códigos de recuperación y recuperación de cuenta
 │   │   ├── files.js       #   Archivos: listar, subir, editar, mover, copiar, ZIP…
 │   │   ├── shares.js      #   API de enlaces para compartir
 │   │   ├── collab.js      #   Carpetas colaborativas: colaboradores y roles
@@ -374,11 +400,12 @@ El agente trabaja **únicamente dentro de la carpeta del usuario que lo usa** (p
 │       └── lib/           #     common.ps1, node.ps1
 ├── get.sh / get.ps1       # Instalación en una línea (git + clonar + instalar)
 ├── public/
-│   ├── index.html         # Inicio de sesión y registro
+│   ├── index.html         # Inicio de sesión, registro y recuperación
 │   ├── panel.html         # Panel del usuario
 │   ├── themes.html        # Comunidad de temas
 │   ├── admin/             # Panel de administración
-│   ├── js/                # common.js, auth.js, panel.js, admin.js, ai.js
+│   ├── js/                # common.js, auth.js, bg.js, menu.js, security.js, panel.js, admin.js, ai.js
+│   ├── auth.css           # Animaciones del inicio de sesión
 │   ├── style.css          # Sistema de diseño compartido
 │   └── icons.svg          # Iconos SVG
 ├── hosting/               # Archivos de los usuarios (una carpeta por usuario, nombrada con su UUID)
@@ -484,7 +511,7 @@ Los enlaces antiguos (`/share/usuario/ruta` y `/files/...`) dejan de funcionar p
 | Las subidas grandes fallan tras un proxy | Aumenta `client_max_body_size` en Nginx o su equivalente. |
 | Todos los usuarios aparecen con la misma IP | Arranca con `TRUST_PROXY=1` si usas proxy inverso. |
 | «Credenciales inválidas» con cuentas de la versión 1 | Comprueba que `data/users.json` estaba en la carpeta al primer arranque (la consola indica cuántos usuarios se importaron). Si no, crea o recupera la cuenta con `node tools/reset-password.js <usuario> <contraseña> --admin`. |
-| Olvidé la contraseña o el usuario | En el login pulsa «¿Olvidaste tu usuario o contraseña?» e introduce uno de tus códigos de recuperación (Ajustes → Mi cuenta → Seguridad). Si no los tienes: Otro administrador puede restablecerla desde el panel, o ejecuta `node tools/reset-password.js <usuario> <nueva-contraseña>` en el servidor. Sin argumentos, el comando lista los usuarios existentes. |
+| Olvidé la contraseña o el usuario | En el login pulsa «¿Olvidaste tu usuario o contraseña?» e introduce uno de tus códigos de recuperación (Menú de usuario → Seguridad). Si no los tienes: Otro administrador puede restablecerla desde el panel, o ejecuta `node tools/reset-password.js <usuario> <nueva-contraseña>` en el servidor. Sin argumentos, el comando lista los usuarios existentes. |
 | El ZIP de una carpeta falla | El límite es 4 GB por ZIP y 65 000 archivos. |
 
 ## Créditos
@@ -497,12 +524,3 @@ Los enlaces antiguos (`/share/usuario/ruta` y `/files/...`) dejan de funcionar p
 ## Licencia
 
 Distribuido bajo la licencia [MIT](LICENSE).
-
-
-## Seguridad de la cuenta (v2.7)
-
-- **Registro**: la contraseña se escribe dos veces y se generan 10 códigos de recuperación de un solo uso (se muestran una vez).
-- **2FA (TOTP)**: compatible con Google Authenticator, Aegis, Authy, 1Password… Cada usuario, incluidas las cuentas ya existentes, puede activarlo o desactivarlo en *Mi cuenta → Seguridad*. Los códigos TOTP no se pueden reutilizar. Se configura con la clave manual (o el enlace `otpauth://` en el móvil).
-- **Recuperación**: con un código de recuperación se averigua el usuario y se elige una contraseña nueva; se cierran todas las sesiones.
-- `node tools/reset-password.js` (acceso al servidor) también desactiva el 2FA de esa cuenta.
-- El fondo del login es una animación en canvas limitada a ~30 fps que se adapta al dispositivo y respeta `prefers-reduced-motion`.
