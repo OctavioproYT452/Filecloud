@@ -23,10 +23,12 @@ module.exports = function createSchema(db) {
   CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY, value TEXT);
   CREATE TABLE IF NOT EXISTS ai_usage(user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, ts INTEGER);
   CREATE INDEX IF NOT EXISTS ai_usage_idx ON ai_usage(user_id, ts);
+  CREATE TABLE IF NOT EXISTS recovery_codes(hash TEXT PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, used INTEGER DEFAULT 0, created_at INTEGER);
+  CREATE INDEX IF NOT EXISTS recovery_user ON recovery_codes(user_id);
   INSERT OR IGNORE INTO settings VALUES('allow_registration','1'),('default_quota_mb','100');
   `);
 
-  for (const q of ["ALTER TABLE users ADD COLUMN theme TEXT", "ALTER TABLE shares ADD COLUMN pw TEXT", "ALTER TABLE user_themes ADD COLUMN public INTEGER DEFAULT 0", "ALTER TABLE users ADD COLUMN uuid TEXT", "ALTER TABLE users ADD COLUMN ai_limit INTEGER", "ALTER TABLE users ADD COLUMN ai_period TEXT"]) try { db.exec(q); } catch { }
+  for (const q of ["ALTER TABLE users ADD COLUMN theme TEXT", "ALTER TABLE shares ADD COLUMN pw TEXT", "ALTER TABLE user_themes ADD COLUMN public INTEGER DEFAULT 0", "ALTER TABLE users ADD COLUMN uuid TEXT", "ALTER TABLE users ADD COLUMN ai_limit INTEGER", "ALTER TABLE users ADD COLUMN ai_period TEXT", "ALTER TABLE users ADD COLUMN totp_secret TEXT", "ALTER TABLE users ADD COLUMN totp_pending TEXT", "ALTER TABLE users ADD COLUMN totp_on INTEGER DEFAULT 0", "ALTER TABLE users ADD COLUMN totp_last INTEGER DEFAULT 0"]) try { db.exec(q); } catch { }
 
   // UUID permanente por usuario (v4). Se genera solo al crear la cuenta y nunca cambia.
   const UUID = "lower(hex(randomblob(4))||'-'||hex(randomblob(2))||'-4'||substr(hex(randomblob(2)),2)||'-'||substr('89ab',abs(random())%4+1,1)||substr(hex(randomblob(2)),2)||'-'||hex(randomblob(6)))";

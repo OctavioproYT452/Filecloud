@@ -256,7 +256,7 @@ Disponible en `/admin/` solo para administradores.
 - La versión instalada está en `data/version.json`:
 
   ```json
-  { "version": "2.6" }
+  { "version": "2.7" }
   ```
 
 - Cada 2 minutos el servidor lee ese archivo local y lo compara con el `data/version.json` publicado en GitHub. Si el de GitHub es más nuevo (se comparan los números: `2.10` es mayor que `2.9`), los **administradores** ven un aviso de nueva versión con instrucciones para actualizar.
@@ -391,7 +391,9 @@ Todas las rutas `/api/*` devuelven JSON y requieren sesión, salvo `login`, `reg
 
 | Método | Ruta | Descripción |
 | --- | --- | --- |
-| `POST` | `/api/register`, `/api/login`, `/api/logout` | Cuenta y sesión. |
+| `POST` | `/api/register`, `/api/login`, `/api/login/2fa`, `/api/logout` | Cuenta y sesión (el registro pide la contraseña dos veces y devuelve los códigos de recuperación; `login/2fa` completa el inicio de sesión con el código TOTP). |
+| `GET`/`POST` | `/api/security`, `/api/2fa/setup`, `/api/2fa/enable`, `/api/2fa/disable`, `/api/recovery/regenerate` | 2FA (TOTP) y códigos de recuperación de la cuenta propia. |
+| `POST` | `/api/recover/check`, `/api/recover` | Recuperar usuario y contraseña con un código de recuperación (sin sesión). |
 | `GET` | `/api/session` | Estado de la sesión. |
 | `POST` | `/api/password`, `/api/username` | Cambiar contraseña y nombre de usuario. |
 | `GET` | `/api/list?path=` | Listar una carpeta. Con `collab=<id>` (también en las demás rutas de archivos) actúa dentro de una carpeta compartida contigo, según tu rol. |
@@ -482,7 +484,7 @@ Los enlaces antiguos (`/share/usuario/ruta` y `/files/...`) dejan de funcionar p
 | Las subidas grandes fallan tras un proxy | Aumenta `client_max_body_size` en Nginx o su equivalente. |
 | Todos los usuarios aparecen con la misma IP | Arranca con `TRUST_PROXY=1` si usas proxy inverso. |
 | «Credenciales inválidas» con cuentas de la versión 1 | Comprueba que `data/users.json` estaba en la carpeta al primer arranque (la consola indica cuántos usuarios se importaron). Si no, crea o recupera la cuenta con `node tools/reset-password.js <usuario> <contraseña> --admin`. |
-| Olvidé la contraseña | Otro administrador puede restablecerla desde el panel, o ejecuta `node tools/reset-password.js <usuario> <nueva-contraseña>` en el servidor. Sin argumentos, el comando lista los usuarios existentes. |
+| Olvidé la contraseña o el usuario | En el login pulsa «¿Olvidaste tu usuario o contraseña?» e introduce uno de tus códigos de recuperación (Ajustes → Mi cuenta → Seguridad). Si no los tienes: Otro administrador puede restablecerla desde el panel, o ejecuta `node tools/reset-password.js <usuario> <nueva-contraseña>` en el servidor. Sin argumentos, el comando lista los usuarios existentes. |
 | El ZIP de una carpeta falla | El límite es 4 GB por ZIP y 65 000 archivos. |
 
 ## Créditos
@@ -495,3 +497,12 @@ Los enlaces antiguos (`/share/usuario/ruta` y `/files/...`) dejan de funcionar p
 ## Licencia
 
 Distribuido bajo la licencia [MIT](LICENSE).
+
+
+## Seguridad de la cuenta (v2.7)
+
+- **Registro**: la contraseña se escribe dos veces y se generan 10 códigos de recuperación de un solo uso (se muestran una vez).
+- **2FA (TOTP)**: compatible con Google Authenticator, Aegis, Authy, 1Password… Cada usuario, incluidas las cuentas ya existentes, puede activarlo o desactivarlo en *Mi cuenta → Seguridad*. Los códigos TOTP no se pueden reutilizar. Se configura con la clave manual (o el enlace `otpauth://` en el móvil).
+- **Recuperación**: con un código de recuperación se averigua el usuario y se elige una contraseña nueva; se cierran todas las sesiones.
+- `node tools/reset-password.js` (acceso al servidor) también desactiva el 2FA de esa cuenta.
+- El fondo del login es una animación en canvas limitada a ~30 fps que se adapta al dispositivo y respeta `prefers-reduced-motion`.

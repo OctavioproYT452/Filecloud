@@ -1,10 +1,60 @@
 <!doctype html>
-<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>File Cloud</title><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/theme.css"></head>
-<body><main class="auth"><div class="card">
-  <div class="brand"><span class="logo"><svg class="i "><use href="/icons.svg#cloud"/></svg></span>File Cloud</div>
-  <p class="muted">Tus archivos, en tu propio servidor.</p>
-  <div class="tabs"><button class="tab on" data-m="login">Iniciar sesión</button><button class="tab" data-m="register" id="regTab">Registrarse</button></div>
-  <form id="f"><label>Usuario<input class="input" id="u" autocomplete="username" required></label>
-  <label>Contraseña<input class="input" id="p" type="password" autocomplete="current-password" required minlength="1"></label>
-  <div class="err" id="e"></div><button class="btn" style="width:100%" id="go">Entrar</button></form>
-</div></main><script src="/js/common.js"></script><script src="/js/auth.js"></script></body></html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>File Cloud</title><link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/auth.css"><link rel="stylesheet" href="/theme.css"></head>
+<body class="authpage">
+<div class="bg" aria-hidden="true"><i class="blob b1"></i><i class="blob b2"></i><i class="blob b3"></i><canvas id="bg"></canvas></div>
+<main class="auth"><div class="card authcard" id="card">
+  <div class="brand big"><span class="logo"><svg class="i"><use href="/icons.svg#cloud"/></svg></span><span>File Cloud</span></div>
+  <p class="muted sub" id="sub">Tus archivos, en tu propio servidor.</p>
+
+  <section class="pane" data-pane="main">
+    <div class="tabs" id="tabs"><i class="slider" id="slider"></i><button class="tab on" data-m="login" type="button">Iniciar sesión</button><button class="tab" data-m="register" id="regTab" type="button">Registrarse</button></div>
+    <form id="f" novalidate>
+      <label class="fld a" style="--d:1">Usuario<span class="in"><svg class="i"><use href="/icons.svg#user"/></svg><input class="input" id="u" autocomplete="username" autocapitalize="none" spellcheck="false" required></span></label>
+      <label class="fld a" style="--d:2">Contraseña<span class="in"><svg class="i"><use href="/icons.svg#lock"/></svg><input class="input" id="p" type="password" autocomplete="current-password" required><button type="button" class="eye" data-eye aria-label="Mostrar contraseña"><svg class="i"><use href="/icons.svg#eye"/></svg></button></span></label>
+      <div class="meter a" id="meter" hidden style="--d:3"><i></i><small id="mt"></small></div>
+      <label class="fld a" id="l2" style="--d:3" hidden>Repite la contraseña<span class="in"><svg class="i"><use href="/icons.svg#lock"/></svg><input class="input" id="p2" type="password" autocomplete="new-password"><button type="button" class="eye" data-eye aria-label="Mostrar contraseña"><svg class="i"><use href="/icons.svg#eye"/></svg></button></span><small id="match" class="hint"></small></label>
+      <div class="err" id="e" role="alert"></div>
+      <button class="btn go a" style="--d:4" id="go"><span class="lbl">Entrar</span><i class="spin"></i></button>
+      <p class="center a" style="--d:5;margin:14px 0 0"><a href="#" id="forgot">¿Olvidaste tu usuario o contraseña?</a></p>
+    </form>
+  </section>
+
+  <section class="pane" data-pane="twofa" hidden>
+    <h3 class="ph"><svg class="i"><use href="/icons.svg#shield"/></svg> Verificación en dos pasos</h3>
+    <form id="ft" novalidate>
+      <p class="muted a" style="--d:1;margin-top:0" id="tfHelp">Introduce el código de 6 dígitos de tu app de autenticación.</p>
+      <label class="fld a" style="--d:2"><span id="tfLbl">Código</span><span class="in"><svg class="i"><use href="/icons.svg#shield"/></svg><input class="input code6" id="tc" inputmode="numeric" autocomplete="one-time-code" maxlength="14" spellcheck="false" required></span></label>
+      <div class="err" id="e2" role="alert"></div>
+      <button class="btn go a" style="--d:3"><span class="lbl">Verificar</span><i class="spin"></i></button>
+      <p class="center a" style="--d:4;margin:14px 0 0"><a href="#" id="useRec">Usar un código de recuperación</a> · <a href="#" data-back>Volver</a></p>
+    </form>
+  </section>
+
+  <section class="pane" data-pane="recover" hidden>
+    <h3 class="ph"><svg class="i"><use href="/icons.svg#key"/></svg> Recuperar mi cuenta</h3>
+    <form id="fr" novalidate>
+      <div id="r1">
+        <p class="muted a" style="--d:1;margin-top:0">Introduce uno de los códigos de recuperación que guardaste. Te mostraremos tu usuario y podrás elegir una contraseña nueva.</p>
+        <label class="fld a" style="--d:2">Código de recuperación<span class="in"><svg class="i"><use href="/icons.svg#key"/></svg><input class="input code6" id="rc" maxlength="14" autocomplete="off" spellcheck="false" placeholder="XXXX-XXXX-XXXX"></span></label>
+      </div>
+      <div id="r2" hidden>
+        <div class="found a" style="--d:1"><svg class="i"><use href="/icons.svg#check"/></svg><span>Tu usuario es <b id="ru"></b></span></div>
+        <label class="fld a" style="--d:2">Nueva contraseña<span class="in"><svg class="i"><use href="/icons.svg#lock"/></svg><input class="input" id="rp" type="password" autocomplete="new-password" placeholder="Mínimo 8 caracteres"><button type="button" class="eye" data-eye aria-label="Mostrar contraseña"><svg class="i"><use href="/icons.svg#eye"/></svg></button></span></label>
+        <label class="fld a" style="--d:3">Repite la contraseña<span class="in"><svg class="i"><use href="/icons.svg#lock"/></svg><input class="input" id="rp2" type="password" autocomplete="new-password"><button type="button" class="eye" data-eye aria-label="Mostrar contraseña"><svg class="i"><use href="/icons.svg#eye"/></svg></button></span></label>
+      </div>
+      <div class="err" id="e3" role="alert"></div>
+      <button class="btn go a" style="--d:4"><span class="lbl" id="rgo">Continuar</span><i class="spin"></i></button>
+      <p class="center a" style="--d:5;margin:14px 0 0"><a href="#" data-back>Volver al inicio de sesión</a></p>
+    </form>
+  </section>
+
+  <section class="pane" data-pane="codes" hidden>
+    <h3 class="ph"><svg class="i"><use href="/icons.svg#key"/></svg> Tus códigos de recuperación</h3>
+    <p class="muted" style="margin-top:0">Guárdalos en un lugar seguro. Cada código sirve <b>una sola vez</b> para recuperar tu cuenta si olvidas tu usuario o contraseña. No volverán a mostrarse.</p>
+    <div class="codes" id="codes"></div>
+    <div class="row" style="margin:12px 0"><button type="button" class="btn ghost sm" id="cCopy"><svg class="i"><use href="/icons.svg#copy"/></svg> Copiar</button><button type="button" class="btn ghost sm" id="cDl"><svg class="i"><use href="/icons.svg#download"/></svg> Descargar .txt</button></div>
+    <label class="chk"><input type="checkbox" id="cOk"> He guardado mis códigos en un lugar seguro</label>
+    <button class="btn go" id="cGo" disabled><span class="lbl">Continuar</span></button>
+  </section>
+</div></main>
+<script src="/js/common.js"></script><script src="/js/bg.js"></script><script src="/js/auth.js"></script></body></html>

@@ -14,9 +14,9 @@ if (!user) {
 if (!pass || pass.length < 8) { console.log("La contraseña debe tener al menos 8 caracteres."); process.exit(1); }
 const u = get("SELECT * FROM users WHERE username=?", user), admin = flag === "--admin";
 if (u) {
-  run("UPDATE users SET password_hash=?,suspended=0" + (admin ? ",is_admin=1" : "") + " WHERE id=?", hash(pass), u.id);
+  run("UPDATE users SET password_hash=?,suspended=0,totp_on=0,totp_secret=NULL,totp_pending=NULL" + (admin ? ",is_admin=1" : "") + " WHERE id=?", hash(pass), u.id);
   run("DELETE FROM sessions WHERE user_id=?", u.id);
-  console.log("Contraseña actualizada para", u.username);
+  console.log("Contraseña actualizada para", u.username, "(el 2FA queda desactivado)");
 } else {
   run("INSERT INTO users(username,password_hash,is_admin,max_space_mb,created_at) VALUES(?,?,?,?,?)", user, hash(pass), admin ? 1 : 0, 100, now());
   fs.mkdirSync(path.join(__dirname, "..", "hosting", get("SELECT uuid FROM users WHERE username=?", user).uuid), { recursive: true });

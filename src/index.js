@@ -23,6 +23,7 @@ ai.init(); // Agente de IA: la configuración se lee de la base de datos al inic
 
 // ---------- rutas de la API y páginas públicas ----------
 app.use(require("./routes/auth"));
+app.use(require("./routes/security"));
 app.use(require("./routes/files"));
 app.use(require("./routes/shares"));
 app.use(require("./routes/collab"));
@@ -45,6 +46,7 @@ setInterval(() => {
   run("DELETE FROM shares WHERE expires_at IS NOT NULL AND expires_at<?", now());
   ai.purge();
   purgeFails();
+  require("./services/twofa").purgeTickets();
 }, 36e5).unref();
 
 if (!get("SELECT COUNT(*) n FROM users").n)

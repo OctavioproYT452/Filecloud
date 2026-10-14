@@ -76,3 +76,8 @@ code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.9em;overflow-w
 
 .cl{display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--card2)}.cl .grow{min-width:0;overflow:hidden;text-overflow:ellipsis}.cl select{width:auto;max-width:48%}
 #crumbs small{color:var(--muted);font-weight:400}
+
+/* códigos de recuperación (login y ajustes) */
+.codes{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.codes code{display:block;padding:9px 6px;text-align:center;border-radius:calc(var(--r)*.6);background:var(--card2);border:1px solid var(--line);font:600 13px ui-monospace,Menlo,Consolas,monospace;letter-spacing:.06em;animation:pop .45s calc(var(--d)*60ms) cubic-bezier(.3,1.5,.5,1) both}
+@keyframes pop{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
