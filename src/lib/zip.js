@@ -27,9 +27,22 @@ async function collect(items) {
 async function zipTo(res, items, name) {
   const files = await collect(items); // si falla, aún no se han enviado cabeceras
   res.set({ "Content-Type": "application/zip", "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(name)}.zip` });
+  try { await write(res, files); } catch { res.destroy(); }
+}
+// Comprime en un archivo del disco (se escribe en un temporal y se mueve al terminar). Devuelve el tamaño del ZIP.
+async function zipFile(items, dest) {
+  const files = await collect(items), tmp = dest + ".part", ws = fs.createWriteStream(tmp);
+  ws.set = () => { };
+  try {
+    const done = new Promise((ok, ko) => { ws.on("finish", ok); ws.on("error", ko); });
+    await write(ws, files); await done;
+    await fsp.rename(tmp, dest); return (await fsp.stat(dest)).size;
+  } catch (e) { ws.destroy(); await fsp.rm(tmp, { force: true }); throw e; }
+}
+async function write(res, files) {
   let off = 0; const cd = [];
   const w = b => new Promise((ok, ko) => { if (res.destroyed) return ko(Error("abort")); off += b.length; res.write(b) ? ok() : res.once("drain", ok); });
-  try {
+  {
     for (const f of files) {
       const nb = Buffer.from(f.rel, "utf8"), { t, d } = dos(f.mtime), start = off, flag = f.dir ? 0x0800 : 0x0808, method = f.dir ? 0 : 8;
       const h = Buffer.alloc(30);
@@ -60,6 +73,6 @@ async function zipTo(res, items, name) {
     end.writeUInt32LE(0x06054b50, 0); end.writeUInt16LE(cd.length, 8); end.writeUInt16LE(cd.length, 10);
     end.writeUInt32LE(size, 12); end.writeUInt32LE(cdStart, 16);
     await w(end); res.end();
-  } catch { res.destroy(); }
+  }
 }
-module.exports = { zipTo };
+module.exports = { zipTo, zipFile, crc };

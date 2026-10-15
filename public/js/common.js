@@ -32,7 +32,11 @@ P('Nórdico','#eceff4','#ffffff','#e1e6ee','#2e3440','#6b7690','#5e81ac','#fffff
 P('Papel','#fafafa','#ffffff','#f0f0f0','#111111','#666666','#111111','#ffffff',2,'serif'),
 P('Menta','#eefaf4','#ffffff','#dff3e9','#0f2a1d','#4f7a63','#10b981','#ffffff',22,'rounded','1.25')];
 function applyTheme(t){const s=document.documentElement.style;CK.forEach(([k])=>t[k]?s.setProperty('--'+k,t[k]):s.removeProperty('--'+k));
-t.r!=null?s.setProperty('--r',t.r+'px'):s.removeProperty('--r');t.font?s.setProperty('--font',FONTS[t.font]):s.removeProperty('--font');t.sp?s.setProperty('--sp',t.sp):s.removeProperty('--sp')}
+t.r!=null?s.setProperty('--r',t.r+'px'):s.removeProperty('--r');t.font?s.setProperty('--font',FONTS[t.font]):s.removeProperty('--font');t.sp?s.setProperty('--sp',t.sp):s.removeProperty('--sp');
+const u=f=>'/tm/'+t.mu+'/'+encodeURIComponent(f),FIT={cover:'cover',contain:'contain',fill:'100% 100%'},o=(k,v)=>s.setProperty('--'+k,v);
+if(t.mu&&t.bgf){o('bgs',JSON.stringify(u(t.bgf)));o('bgk',/\.(mp4|webm)$/i.test(t.bgf)?'video':'image');o('bgfit',t.bgfit||'cover');o('bgdim',(t.bgdim||0)/100);o('bgblur',(t.bgblur||0)+'px')}else['bgs','bgk','bgfit','bgdim','bgblur'].forEach(k=>o(k,' '));
+if(t.mu&&t.btf){o('btu',`url("${u(t.btf)}")`);o('btfit',FIT[t.btfit]||'cover');o('btdim',(t.btdim||0)/100)}else['btu','btfit','btdim'].forEach(k=>o(k,' '));
+window.fcBg&&fcBg()}
 const HEX=/^#[0-9a-f]{6}$/i;
 const normHex=v=>{v=String(v||'').trim();if(/^([0-9a-f]{3}|[0-9a-f]{6})$/i.test(v))v='#'+v;if(/^#[0-9a-f]{3}$/i.test(v))v='#'+[...v.slice(1)].map(c=>c+c).join('');return HEX.test(v)?v.toLowerCase():null};
 function cleanT(t){const o={};if(!t||typeof t!=='object')return o;CK.forEach(([k])=>{const h=normHex(t[k]);if(h)o[k]=h});const r=Number(t.r);if(t.r!==undefined&&Number.isFinite(r))o.r=Math.max(0,Math.min(28,Math.round(r)));if(FONTS[t.font])o.font=t.font;if(['0.8','1','1.25'].includes(String(t.sp)))o.sp=String(t.sp);return o}
@@ -46,7 +50,7 @@ async function appearance(){
 const[{theme},{themes},ses]=await Promise.all([api('/api/theme'),api('/api/themes'),api('/api/session')]);let t={...(theme||{})},saved=false,mine=themes;
 const grp=(l,ks)=>`<h4>${l}</h4><div class="cgrid">${CK.filter(([k])=>ks.includes(k)).map(([k,l])=>`<label>${l}<span class="chex"><input type="color" data-k="${k}"><input class="input" data-h="${k}" maxlength="7" spellcheck="false" autocomplete="off" placeholder="#rrggbb"></span></label>`).join('')}</div>`;
 const d=dialog('Apariencia',`<small>Todo se ve al instante. «Aplicar» guarda el tema en tu cuenta; si cierras sin aplicar, no cambia nada.</small>
-<div class="seg atabs"><button type="button" class="on" data-tab="pre">${ic('palette')} Temas</button><button type="button" data-tab="mine">${ic('star')} Mis temas</button><button type="button" data-tab="cust">${ic('edit')} Personalizar</button></div>
+<div class="seg atabs"><button type="button" class="on" data-tab="pre">${ic('palette')} Temas</button><button type="button" data-tab="mine">${ic('star')} Mis temas</button><button type="button" data-tab="cust">${ic('edit')} Personalizar</button><button type="button" data-tab="med">${ic('image')} Fondo y botones</button></div>
 <div data-pane="pre"><div class="presets">${PRESETS.map((p,i)=>`<button type="button" class="pre" data-i="${i}" style="background:${p.bg};color:${p.text};border-color:${p.accent};border-radius:${p.r}px;font-family:${FONTS[p.font]}"><i style="background:${p.accent}"></i>${p.n}</button>`).join('')}<button type="button" class="pre" data-i="-1">${ic('refresh')} Predeterminado</button></div>
 <a class="btn ghost sm" href="/themes.html">${ic('globe')} Explorar la comunidad de temas</a></div>
 <div data-pane="mine" hidden><div class="mine" id="mine"></div>
@@ -55,19 +59,41 @@ const d=dialog('Apariencia',`<small>Todo se ve al instante. «Aplicar» guarda e
 <div data-pane="cust" hidden>${grp('Fondo y tarjetas',['bg','card','card2'])}${grp('Texto',['text','muted'])}${grp('Acento y estados',['accent','on','danger','ok','warn'])}
 <h4>Forma</h4><label>Redondeo de esquinas: <b data-rv></b><input type="range" min="0" max="28" data-r></label>
 <div class="row"><label class="grow">Tipografía<select data-f><option value="system">Moderna</option><option value="serif">Clásica</option><option value="mono">Monoespaciada</option><option value="rounded">Redondeada</option></select></label>
-<label class="grow">Densidad<select data-s><option value="0.8">Compacta</option><option value="1">Normal</option><option value="1.25">Amplia</option></select></label></div></div>`,
+<label class="grow">Densidad<select data-s><option value="0.8">Compacta</option><option value="1">Normal</option><option value="1.25">Amplia</option></select></label></div></div>
+<div data-pane="med" hidden><small>Las imágenes, GIF y vídeos se guardan en tu carpeta «Temas» y ocupan tu espacio. Si compartes un tema, los medios se copian a quien lo guarde.</small>
+<h4>Fondo de la página (imagen, GIF o vídeo)</h4><div id="mbg"></div><h4>Botones (imagen o GIF)</h4><div id="mbt"></div></div>`,
 async()=>{await api('/api/theme',{theme:t});saved=true;toast('Tema aplicado y guardado')},'Aplicar','wide');
 const cssNum=()=>{const v=parseInt(getComputedStyle(document.documentElement).getPropertyValue('--r'));return Number.isNaN(v)?14:v};
 const sync=skip=>{const cs=getComputedStyle(document.documentElement);CK.forEach(([k])=>{const h=normHex(cs.getPropertyValue('--'+k))||'#000000',c=$(`[data-k=${k}]`,d),x=$(`[data-h=${k}]`,d);if(c!==skip)c.value=h;if(x!==skip){x.value=h;x.classList.remove('bad')}});
-  const r=cssNum();$('[data-r]',d).value=r;$('[data-rv]',d).textContent=r+'px';$('[data-f]',d).value=t.font||'system';$('[data-s]',d).value=t.sp||'1'};
+  const r=cssNum();$('[data-r]',d).value=r;$('[data-rv]',d).textContent=r+'px';$('[data-f]',d).value=t.font||'system';$('[data-s]',d).value=t.sp||'1';$$('[data-mr]',d).forEach(x=>{x.value=t[x.dataset.mr]??0});$$('[data-mv]',d).forEach(x=>x.textContent=(t[x.dataset.mv]??0)+(x.dataset.mv==='bgblur'?'px':'%'));$$('[data-ms]',d).forEach(x=>x.value=t[x.dataset.ms]||'cover')};
 const set=()=>{applyTheme(t);sync()};
-const full=()=>{const cs=getComputedStyle(document.documentElement),o={};CK.forEach(([k])=>{o[k]=normHex(cs.getPropertyValue('--'+k))||'#000000'});o.r=cssNum();o.font=t.font||'system';o.sp=t.sp||'1';return o};
+const full=()=>{const cs=getComputedStyle(document.documentElement),o={};CK.forEach(([k])=>{o[k]=normHex(cs.getPropertyValue('--'+k))||'#000000'});o.r=cssNum();o.font=t.font||'system';o.sp=t.sp||'1';return{...o,...mediaOf(t)}};
+const mediaOf=x=>{const o={};['bgf','bgfit','bgdim','bgblur','btf','btfit','btdim','mu'].forEach(k=>{if(x[k]!==undefined)o[k]=x[k]});return o};
+const MK={bg:{f:'bgf',fit:'bgfit',dim:'bgdim',blur:'bgblur',accept:'image/*,video/mp4,video/webm',def:{bgfit:'cover',bgdim:25,bgblur:0}},bt:{f:'btf',fit:'btfit',dim:'btdim',accept:'image/*',def:{btfit:'cover',btdim:20}}};
+const thumb=f=>/\.(mp4|webm)$/i.test(f)?`<video src="/tm/${ses.uuid}/${encodeURIComponent(f)}" muted preload="metadata" class="mth"></video>`:`<img src="/tm/${ses.uuid}/${encodeURIComponent(f)}" class="mth" alt="">`;
+const renderMedia=()=>['bg','bt'].forEach(k=>{const m=MK[k],f=t[m.f],box=$('#m'+k,d);if(!box)return;
+  const up=`<label class="btn sm${f?' ghost':''}" style="margin:0;cursor:pointer">${ic('upload')} ${f?'Subir otro':'Subir archivo'}<input type="file" hidden accept="${m.accept}" data-upk="${k}"></label><button type="button" class="btn sm ghost" data-med="pick" data-k2="${k}">${ic('folder')} Elegir de «Temas»</button>`;
+  box.innerHTML=f?`<div class="mcard"><div class="mhead">${thumb(f)}<div class="grow"><b class="mt-name">${esc(f)}</b><small>${k==='bg'?'Se ajusta a toda la pantalla':'Se ajusta dentro de cada botón'}</small></div></div>
+  <div class="fgrid"><label>Ajuste<select data-ms="${m.fit}"><option value="cover">Cubrir (recorta lo que sobre)</option><option value="contain">Contener (se ve entera)</option><option value="fill">Estirar</option></select></label>
+  <label>Oscurecer: <b data-mv="${m.dim}"></b><input type="range" min="0" max="80" data-mr="${m.dim}"></label>${k==='bg'?`<label>Desenfoque: <b data-mv="bgblur"></b><input type="range" min="0" max="20" data-mr="bgblur"></label>`:''}</div>
+  <div class="row">${up}<button type="button" class="btn sm ghost dng" data-med="rm" data-k2="${k}">${ic('trash')} Quitar</button></div></div>`
+  :`<div class="mcard empty-m"><span class="muted">${k==='bg'?'Sin fondo. Admite PNG, JPG, GIF, WebP, AVIF, MP4 y WebM.':'Sin imagen en los botones. Admite PNG, JPG, GIF, WebP y AVIF.'}</span><div class="row">${up}</div></div>`;sync()});
+const mediaAct=async(a,k)=>{const m=MK[k];
+  if(a==='rm'){[m.f,m.fit,m.dim,m.blur].forEach(x=>x&&delete t[x]);set();return renderMedia()}
+  if(a==='pick'){const{files}=await api('/api/theme-media'),vis=files.filter(x=>k==='bg'||!x.video);
+    const g=dialog('Mis archivos de «Temas»',vis.length?`<div class="mgal">${vis.map(x=>`<div class="mg"><button type="button" class="mgb" data-f="${esc(x.name)}">${thumb(x.name)}<span>${esc(x.name)}</span><small>${fmt(x.size)}</small></button><button type="button" class="more" data-del="${esc(x.name)}" aria-label="Eliminar">${ic('trash')}</button></div>`).join('')}</div>`:'<p class="muted">Aún no hay archivos. Sube uno desde «Subir archivo».</p>',null,'','wide');
+    g.addEventListener('click',async e=>{const del=e.target.closest('[data-del]')?.dataset.del,pk=e.target.closest('.mgb')?.dataset.f;
+      try{if(pk){t={...t,...(t[m.f]?{}:m.def),[m.f]:pk,mu:ses.uuid};g.close();set();renderMedia()}
+        else if(del&&await yes('Eliminar archivo',`«${del}» se borrará de tu carpeta «Temas» y se quitará de los temas que lo usen.`)){await api('/api/theme-media',{file:del},'DELETE');['bgf','btf'].forEach(x=>{if(t[x]===del)delete t[x]});g.close();set();renderMedia();toast('Archivo eliminado')}}catch(x){toast(x.message,1)}})}};
+const upload=async(k,file)=>{const m=MK[k];if(file.size>(/^video/.test(file.type)?150:20)*1048576)throw Error('Archivo demasiado grande (imágenes 20 MB, vídeos 150 MB)');
+  const fd=new FormData();fd.append('kind',k);fd.append('file',file);toast('Subiendo…');const r=await api('/api/theme-media',fd);t={...t,...(t[m.f]?{}:m.def),[m.f]:r.file,mu:ses.uuid};set();renderMedia();toast('Archivo añadido a «Temas»')};
 const renderMine=()=>{$('#mine',d).innerHTML=mine.length?mine.map((m,i)=>{const th=m.theme,c=k=>th[k]||'#888888';return `<div class="mt${m.public?' pub':''}"><div class="mt-head"><b class="mt-name">${esc(m.name)}</b>${m.public?`<span class="badge pub">${ic('globe')} Público</span>`:'<span class="badge">Privado</span>'}</div><div class="sw"><i style="background:${c('bg')}"></i><i style="background:${c('card')}"></i><i style="background:${c('card2')}"></i><i style="background:${c('accent')}"></i><i style="background:${c('text')}"></i></div><div class="row mt-act"><button type="button" class="btn sm" data-m="${i}">Aplicar</button><button type="button" class="btn sm ghost" data-p="${i}">${ic('globe')} ${m.public?'Dejar de compartir':'Publicar'}</button><button type="button" class="btn sm ghost" data-d="${i}" aria-label="Eliminar">${ic('trash')}</button></div></div>`}).join(''):'<small>Aún no tienes temas propios. Personaliza y pulsa «Guardar como tema», o importa un archivo .json.</small>'};
 const reload=async()=>{mine=(await api('/api/themes')).themes;renderMine()};
 d.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;const ds=b.dataset;
   try{
     if(ds.tab){$$('.atabs button',d).forEach(x=>x.classList.toggle('on',x===b));$$('[data-pane]',d).forEach(x=>x.hidden=x.dataset.pane!==ds.tab);return}
-    if(ds.i!==undefined){const i=+ds.i;t=i<0?{}:{...PRESETS[i]};delete t.n;return set()}
+    if(ds.i!==undefined){const i=+ds.i,md=i<0?{}:mediaOf(t);t=i<0?{}:{...PRESETS[i],...md};delete t.n;renderMedia();return set()}
+    if(ds.med)return mediaAct(ds.med,ds.k2);
     if(ds.m!==undefined){t={...mine[+ds.m].theme};return set()}
     if(ds.p!==undefined){const m=mine[+ds.p],v=!m.public;
       if(!await yes(v?'Publicar tema':'Dejar de compartir',v?`«${m.name}» será visible para todos los usuarios de este servidor y se mostrará con tu nombre de usuario (${ses.user}). Puedes dejar de compartirlo cuando quieras.`:`«${m.name}» dejará de aparecer en la comunidad. Seguirá en Mis temas.`))return;
@@ -80,12 +106,13 @@ d.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)re
 d.addEventListener('input',e=>{const x=e.target,ds=x.dataset;
   if(ds.k)t[ds.k]=x.value;
   else if(ds.h){const h=normHex(x.value);x.classList.toggle('bad',!h);if(!h)return;t[ds.h]=h}
+  else if(ds.mr)t[ds.mr]=+x.value;else if(ds.ms)t[ds.ms]=x.value;
   else if('r'in ds)t.r=+x.value;else if('f'in ds)t.font=x.value;else if('s'in ds)t.sp=x.value;else return;
   applyTheme(t);sync(x)});
-d.addEventListener('change',async e=>{if(!('imp'in e.target.dataset))return;const inp=e.target;
+d.addEventListener('change',async e=>{if(e.target.dataset.upk){const inp=e.target,f=inp.files[0];inp.value='';if(f)try{await upload(inp.dataset.upk,f)}catch(x){toast(x.message,1)}return}if(!('imp'in e.target.dataset))return;const inp=e.target;
   try{let last;for(const f of inp.files){if(f.size>2e5)throw Error('Archivo demasiado grande: '+f.name);for(const x of parseThemeFile(await f.text())){await api('/api/themes',{name:x.name,theme:x.theme});last=x}}
     await reload();if(last){t={...last.theme};set()}toast('Tema(s) importado(s) a Mis temas')}catch(x){toast(x.message,1)}inp.value=''});
-d.addEventListener('close',()=>{if(!saved)applyTheme(theme||{})});renderMine();sync()}
+d.addEventListener('close',()=>{if(!saved)applyTheme(theme||{})});renderMine();renderMedia();sync()}
 
 // Menú hamburguesa (solo visible en pantallas pequeñas)
 document.addEventListener('click',e=>{const b=$('#burger'),n=$('#nav');if(!b||!n)return;

@@ -11,7 +11,7 @@ Sube, organiza, edita y comparte archivos desde cualquier dispositivo, con usuar
 
 </div>
 
-> **Versión 2.8.1.** Qué ha cambiado en esta versión: consulta [RELEASE.md](RELEASE.md).
+> **Versión 2.9.0.** Qué ha cambiado en esta versión: consulta [RELEASE.md](RELEASE.md).
 
 ---
 
@@ -48,6 +48,8 @@ Sube, organiza, edita y comparte archivos desde cualquier dispositivo, con usuar
 - **Acceso WebDAV** opcional por usuario: monta tu carpeta como unidad de red con una clave aleatoria que tú generas.
 - Renombrar, mover, **duplicar** y eliminar, también en **selección múltiple**.
 - **Descarga en ZIP** de carpetas o de una selección de elementos.
+- **Comprimir en ZIP** (el archivo se guarda en la misma carpeta, dentro de tu espacio) y **descomprimir** un `.zip` en una carpeta nueva, desde el menú de cada elemento o en selección múltiple.
+- **Fondo con imagen, GIF o vídeo** y botones con imagen o GIF en los temas.
 - **Enlaces para compartir** con caducidad, **contraseña opcional**, revocables en cualquier momento y con descarga de carpetas en ZIP.
 - **Carpetas colaborativas**: comparte una carpeta con otros usuarios por su UUID y asigna a cada uno un rol (solo lectura, edición, creación o permisos totales).
 - Cuota de almacenamiento por usuario con desglose por tipo (imágenes, vídeo, audio, documentos y otros).
@@ -225,6 +227,16 @@ Temas incluidos: Medianoche, Océano, Bosque, Atardecer, Neón, Dracula, Termina
 
 Personalizable: 10 colores (fondo, tarjetas, elementos, texto, texto suave, acento, texto sobre acento, peligro, éxito y aviso), redondeo de esquinas, tipografía (moderna, clásica, monoespaciada o redondeada) y densidad (compacta, normal o amplia). Las páginas de enlaces compartidos usan el tema de quien comparte.
 
+### Imágenes, GIF y vídeos en el tema
+
+En **Apariencia → Fondo y botones**:
+
+- **Fondo de la página:** imagen, GIF animado o vídeo (PNG, JPG, GIF, WebP, AVIF, MP4 o WebM). Se puede ajustar (cubrir, contener o estirar), oscurecer (0–80 %) y desenfocar (0–20 px). Los vídeos van en bucle y sin sonido, y no se reproducen si el sistema pide «reducir movimiento».
+- **Botones:** solo imagen o GIF, con ajuste y oscurecido para que el texto se lea bien. Se aplica a los botones principales.
+- **Dónde se guardan:** en la carpeta **Temas** del propio usuario (la verás en *Mis archivos*). Ocupan su espacio como cualquier archivo, con un máximo de 20 MB por imagen y 150 MB por vídeo. El tema solo guarda el nombre del archivo y de ahí lo toma para dibujarlo. Puedes **subir** un archivo nuevo o **elegir** uno que ya esté en *Temas* (y borrarlo desde ahí).
+- **Al compartir un tema** en la comunidad, quien lo guarda o usa recibe una **copia** de los medios en su propia carpeta *Temas* (ocupa su espacio, y necesita tener sitio). Los medios de un tema publicado se pueden ver por otros usuarios; los de temas privados, no.
+- Al **exportar** un tema a `.json` no se incluyen los medios.
+
 ### Crear, exportar e importar temas
 
 Cualquier usuario puede crear sus propios temas:
@@ -304,7 +316,7 @@ Disponible en `/admin/` solo para administradores. Usa el mismo menú de usuario
 - La versión instalada está en `data/version.json`:
 
   ```json
-  { "version": "2.8.1" }
+  { "version": "2.9.0" }
   ```
 
 - Cada 2 minutos el servidor lee ese archivo local y lo compara con el `data/version.json` publicado en GitHub. Si el de GitHub es más nuevo (se comparan los números: `2.10` es mayor que `2.9`), los **administradores** ven un aviso de nueva versión con instrucciones para actualizar.
@@ -348,6 +360,9 @@ El agente trabaja **únicamente dentro de la carpeta del usuario que lo usa** (p
 
 ## Seguridad
 
+- **Descomprimir** rechaza ZIP con rutas peligrosas (`..`, absolutas), omite enlaces simbólicos, no admite ZIP con contraseña ni ZIP64, comprueba el CRC y limita lo extraído al espacio libre del usuario (protección contra bombas de compresión).
+- **Medios de temas**: se valida la extensión y el contenido real del archivo, se sirven aislados (`sandbox`) y solo desde la carpeta *Temas*.
+
 - Contraseñas cifradas con `scrypt` y sal individual.
 - Sesiones aleatorias de 256 bits guardadas con hash en la base de datos; cookie `HttpOnly` y `SameSite=Lax` (y `Secure` bajo HTTPS).
 - Bloqueo temporal tras 5 intentos fallidos de acceso, también en el segundo factor y en la recuperación de cuenta.
@@ -386,6 +401,7 @@ El agente trabaja **únicamente dentro de la carpeta del usuario que lo usa** (p
 │   │   ├── twofa.js       #   2FA (TOTP) y códigos de recuperación
 │   │   ├── themes.js      #   Validación de temas y generación del CSS
 │   │   └── webdav.js      #   Servidor WebDAV (/dav)
+│   ├── lib/unzip.js       #   Lector ZIP seguro (descomprimir)
 │   ├── routes/
 │   │   ├── auth.js        #   Registro, login, sesión, usuario y contraseña
 │   │   ├── security.js    #   2FA, códigos de recuperación y recuperación de cuenta
@@ -432,6 +448,7 @@ El agente trabaja **únicamente dentro de la carpeta del usuario que lo usa** (p
 ├── public/
 │   ├── index.html         # Inicio de sesión, registro y recuperación
 │   ├── panel.html         # Panel del usuario
+│   ├── js/bgmedia.js      # Capa de fondo con imagen/GIF/vídeo y botones con imagen
 │   ├── vendor/            # pdf.js y JSZip (incluidos, sin depender de Internet)
 │   ├── themes.html        # Comunidad de temas
 │   ├── admin/             # Panel de administración
@@ -465,6 +482,8 @@ Todas las rutas `/api/*` devuelven JSON y requieren sesión, salvo `login`, `reg
 | `GET` / `POST` | `/api/theme` | Tema activo del usuario. |
 | `GET` / `POST` / `DELETE` | `/api/themes` | Temas propios guardados (Mis temas). |
 | `POST` / `GET` | `/api/themes/publish`, `/api/community`, `/api/community/save`, `/api/community/unpublish` | Comunidad de temas. |
+| `POST` | `/api/compress`, `/api/extract` | Comprimir elementos en un ZIP dentro de la propia carpeta y descomprimir un ZIP en una carpeta nueva. |
+| `GET` / `POST` / `DELETE` | `/api/theme-media`, `/tm/<uuid>/<archivo>` | Medios del tema (carpeta *Temas*): listar, subir, borrar y servir. |
 | `GET` | `/api/convert` | Convierte un documento de Office a PDF con LibreOffice para la vista previa (501 si no está instalado). |
 | `GET` / `POST` | `/api/webdav`, `/api/webdav/enable`, `/api/webdav/disable` | Estado, activación (pide la contraseña y devuelve la clave una sola vez) y desactivación del acceso WebDAV. |
 | `*` | `/dav/*` | Servidor WebDAV (Basic: tu usuario y la clave WebDAV). |

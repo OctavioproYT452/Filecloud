@@ -152,3 +152,16 @@ dialog h4:first-child,dialog .h0{margin-top:0}
 .vsheet{max-height:65vh;overflow:auto;border:1px solid var(--line);border-radius:calc(var(--r)*.7)}.vtbl{border-collapse:collapse;font-size:13px;width:max-content;min-width:100%}.vtbl th,.vtbl td{padding:4px 10px;border:1px solid var(--line);white-space:nowrap;text-align:left}.vtbl th{position:sticky;top:0;background:var(--card2);color:var(--muted);font-weight:600;font-size:12px}.vtbl tbody th{position:static;left:0}
 .vslides{max-height:70vh;overflow:auto;padding:8px;border-radius:calc(var(--r)*.7);background:color-mix(in srgb,var(--text) 10%,var(--card2))}.vslab{font-size:12px;color:var(--muted);margin:6px 0 4px}.vslide{position:relative;container-type:inline-size;width:100%;background:#fff;color:#111;overflow:hidden;margin-bottom:10px;box-shadow:0 2px 10px rgba(0,0,0,.35)}
 .kv{margin:10px 0}.kv .row{flex-wrap:nowrap}.kv code{padding:8px 10px;border-radius:calc(var(--r)*.6);background:var(--card2);border:1px solid var(--line);min-width:0;overflow-wrap:anywhere;user-select:all}.keybig{font-size:18px;letter-spacing:.06em;font-weight:700;color:var(--accent)}
+
+/* ---- v2.9.0: fondo con imagen/GIF/vídeo, botones con imagen y gestión de medios del tema ---- */
+#fcbg{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
+#fcbg>img,#fcbg>video{position:absolute;inset:-24px;width:calc(100% + 48px);height:calc(100% + 48px);object-fit:var(--bgfit,cover);filter:blur(var(--bgblur,0px))}
+#fcbg>.fcdim{position:absolute;inset:0;background:rgba(0,0,0,var(--bgdim,0))}
+.hasbg .card:not(dialog){background:color-mix(in srgb,var(--card) 84%,transparent);backdrop-filter:blur(8px)}
+.hasbt .btn:not(.ghost):not(.danger),.hasbt .tab.on,.hasbt .seg button.on{background-color:var(--accent);background-image:linear-gradient(rgba(0,0,0,var(--btdim,0)),rgba(0,0,0,var(--btdim,0))),var(--btu);background-size:100% 100%,var(--btfit,cover);background-position:center;background-repeat:no-repeat;text-shadow:0 1px 3px rgba(0,0,0,.55);color:#fff}
+.mcard{display:grid;gap:10px;padding:12px;border:1px solid var(--line);border-radius:calc(var(--r)*.85);background:color-mix(in srgb,var(--card2) 55%,transparent)}.empty-m{justify-items:start}
+.mhead{display:flex;gap:12px;align-items:center}.mth{width:84px;height:56px;object-fit:cover;border-radius:calc(var(--r)*.5);border:1px solid var(--line);background:var(--card2);flex:none}
+.mgal{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}.mg{position:relative}.mgb{display:grid;gap:4px;width:100%;padding:8px;border:1px solid var(--line);border-radius:calc(var(--r)*.7);background:var(--card2);color:var(--text);font:inherit;text-align:left;cursor:pointer}.mgb:hover{border-color:var(--accent)}.mgb .mth{width:100%;height:84px}.mgb span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
+.mg .more{position:absolute;top:12px;right:12px;width:30px;height:30px;background:rgba(0,0,0,.55);color:#fff}
+@media(prefers-reduced-motion:reduce){#fcbg>video{display:none}}
+.mhead b{display:block}

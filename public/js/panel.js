@@ -4,7 +4,7 @@ const LVL={read:0,write:1,create:2,delete:3,full:3},ROLE_TXT={read:'Solo lectura
 const can=p=>!cx||LVL[cx.role]>=LVL[p];
 const cq=()=>cx?'&collab='+cx.id:'';
 const _api=api;api=(url,body,method)=>{ // dentro de una carpeta compartida, las acciones de archivos llevan su id
-  if(cx&&/^\/api\/(list|mkdir|create-file|edit|rename|move|delete|copy|file-content)\b/.test(url)){
+  if(cx&&/^\/api\/(list|mkdir|create-file|edit|rename|move|delete|copy|file-content|compress|extract)\b/.test(url)){
     if(body&&!(body instanceof FormData))body={...body,collab:cx.id};else if(!body)url+=(url.includes('?')?'&':'?')+'collab='+cx.id}
   return _api(url,body,method)};
 let favs=new Set(),viewTitle='Resultados',sel=new Set(),selMode=false,searching=false,cwd='',items=[],me=null,list=localStorage.fcList==='1';
@@ -28,7 +28,7 @@ async function load(){
 function gate(){ // muestra solo lo que el rol permite (el servidor lo vuelve a comprobar)
   const vis=(s,v)=>$$(s).forEach(x=>x.hidden=!v);
   vis('[data-a=newFile],[data-a=newDir]',can('create'));$('#up').parentElement.hidden=$('#upd').parentElement.hidden=!can('create');
-  vis('[data-a=favview],[data-a=recent]',!cx);vis('[data-b=cp]',can('create'));vis('[data-b=mv]',can('write'));vis('[data-b=del]',can('delete'));
+  vis('[data-a=favview],[data-a=recent]',!cx);vis('[data-b=cp]',can('create'));vis('[data-b=cz]',can('create'));vis('[data-b=mv]',can('write'));vis('[data-b=del]',can('delete'));
   $('#filter').placeholder=cx?'Filtrar esta carpeta…':'Filtrar… (Enter = buscar en todo)'}
 function render(){
   const parts=cwd?cwd.split('/'):[];
@@ -45,9 +45,9 @@ $('#filter').onkeydown=async e=>{if(e.key!=='Enter'||cx)return;try{const d=await
 $('#grid').onclick=e=>{const it=e.target.closest('.item');if(!it)return;const n=it.dataset.n,dir=!!it.dataset.d;
   if(e.target.closest('[data-m]'))return menu(n,dir);if(it.dataset.pa!==undefined){const p=it.dataset.pa.split('/');p.pop();cwd=dir?it.dataset.pa:p.join('/');$('#filter').value=dir?'':n;return load()}if(selMode){sel.has(n)?sel.delete(n):sel.add(n);return render()}if(dir){cwd=join(n);$('#filter').value='';load()}else preview(n)};
 
-function menu(n,dir){const ed=!dir&&EDIT.has(ext(n))&&can('write'),acts=[[ic(dir?'folder':'eye')+(dir?' Abrir':' Ver'),'open'],!dir&&[ic('download')+' Descargar','dl'],dir&&[ic('zip')+' Descargar ZIP','zip'],ed&&[ic('edit')+' Editar','edit'],!cx&&[ic('star')+(favs.has(join(n))?' Quitar de favoritos':' Añadir a favoritos'),'fav'],!cx&&[ic('link')+' Compartir','share'],dir&&!cx&&[ic('users')+' Colaboración','collab'],can('write')&&[ic('edit')+' Renombrar','ren'],can('create')&&[ic('copy')+' Duplicar','dup'],can('write')&&[ic('move')+' Mover a…','mv'],can('delete')&&[ic('trash')+' Eliminar','del']].filter(Boolean);
+function menu(n,dir){const ed=!dir&&EDIT.has(ext(n))&&can('write'),acts=[[ic(dir?'folder':'eye')+(dir?' Abrir':' Ver'),'open'],!dir&&[ic('download')+' Descargar','dl'],dir&&[ic('zip')+' Descargar ZIP','zip'],can('create')&&[ic('zip')+' Comprimir en ZIP','cz'],!dir&&ext(n)==='.zip'&&can('create')&&[ic('zip')+' Descomprimir aquí (nueva carpeta)','uz'],ed&&[ic('edit')+' Editar','edit'],!cx&&[ic('star')+(favs.has(join(n))?' Quitar de favoritos':' Añadir a favoritos'),'fav'],!cx&&[ic('link')+' Compartir','share'],dir&&!cx&&[ic('users')+' Colaboración','collab'],can('write')&&[ic('edit')+' Renombrar','ren'],can('create')&&[ic('copy')+' Duplicar','dup'],can('write')&&[ic('move')+' Mover a…','mv'],can('delete')&&[ic('trash')+' Eliminar','del']].filter(Boolean);
   const d=dialog(n,`<div class="menu">${acts.map(([l,k])=>`<button type="button" data-k="${k}">${l}</button>`).join('')}</div>`);
-  d.onclick=async e=>{const k=e.target.dataset?.k;if(!k)return;d.close();({open:()=>dir?(cwd=join(n),load()):preview(n),dl:()=>location.href='/api/download?path='+encodeURIComponent(join(n))+cq(),collab:()=>collabDialog(n),edit:()=>editor(n),share:()=>share(n),ren:()=>rename(n),mv:()=>moveTo(n),dup:()=>act('/api/copy',{path:join(n)}),zip:()=>location.href='/api/zip?path='+encodeURIComponent(join(n))+cq(),fav:()=>act('/api/fav',{path:join(n)}),del:()=>del(n)})[k]()}}
+  d.onclick=async e=>{const k=e.target.dataset?.k;if(!k)return;d.close();({open:()=>dir?(cwd=join(n),load()):preview(n),dl:()=>location.href='/api/download?path='+encodeURIComponent(join(n))+cq(),collab:()=>collabDialog(n),edit:()=>editor(n),share:()=>share(n),ren:()=>rename(n),mv:()=>moveTo(n),dup:()=>act('/api/copy',{path:join(n)}),zip:()=>location.href='/api/zip?path='+encodeURIComponent(join(n))+cq(),cz:()=>compress([n]),uz:()=>unzip(n),fav:()=>act('/api/fav',{path:join(n)}),del:()=>del(n)})[k]()}}
 
 async function rename(n){const v=await ask('Renombrar','Nuevo nombre',n);if(v&&v!==n)act('/api/rename',{path:join(n),newName:v})}
 async function moveTo(n){const v=await ask('Mover','Carpeta destino (vacío = inicio)','');if(v!==null)act('/api/move',{path:join(n),dest:v.replace(/^\/+/,'')})}
@@ -115,7 +115,10 @@ document.addEventListener('click',e=>{const a=e.target.closest('[data-a]')?.data
 api('/api/session').then(s=>{if(!s.logged)return location.href='/';me=s;$('#me').textContent=s.user;userUI();$('#adminLink').hidden=!s.admin;if(s.ai)aiInit();load();loadCollabs();updateNotice(s);
   if(s.announcement&&localStorage.fcAnn!==s.announcement){const a=$('#ann');a.hidden=false;a.innerHTML=`${ic('info')}<span class="grow">${esc(s.announcement)}</span><button class="more" aria-label="Cerrar">${ic('x')}</button>`;$('button',a).onclick=()=>{localStorage.fcAnn=s.announcement;a.hidden=true}}});
 
+async function compress(ns){const t=toast;try{toast('Comprimiendo…');const r=await api('/api/compress',{paths:ns.map(join)});toast('Creado '+r.name+' ('+fmt(r.size)+')');load()}catch(e){toast(e.message,1)}}
+async function unzip(n){try{toast('Descomprimiendo…');const r=await api('/api/extract',{path:join(n)});toast('Descomprimido en la carpeta «'+r.name+'»');load()}catch(e){toast(e.message,1)}}
 async function bulk(k){const ns=[...sel];if(!ns.length)return;let dest;
+  if(k==='cz'){selMode=false;return compress(ns)}
   if(k==='zip'){location.href='/api/zip?'+ns.map(n=>'path='+encodeURIComponent(join(n))).join('&')+cq();return}
   if(k==='del'&&!await yes('Eliminar',`¿Eliminar ${ns.length} elemento(s)? No se puede deshacer.`))return;
   if(k!=='del'){dest=await ask(k==='mv'?'Mover':'Copiar','Carpeta destino (vacío = inicio)','');if(dest===null)return;dest=dest.replace(/^\/+/,'')}

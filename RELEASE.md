@@ -1,3 +1,30 @@
+# Versión 2.9.0
+
+Comprimir y descomprimir ZIP, y fondos con imagen, GIF o vídeo en los temas. Para la documentación completa, consulta el [README](README.md).
+
+## Novedades
+
+### Comprimir y descomprimir
+- **Comprimir en ZIP** (menú de cada archivo o carpeta, y botón *Comprimir* en selección múltiple): el ZIP se crea en la misma carpeta, dentro del espacio del propio usuario, con nombre único. Respeta la cuota y los permisos de las carpetas compartidas.
+- **Descomprimir aquí** en los `.zip`: crea una carpeta nueva con el contenido. Protegido contra rutas peligrosas, enlaces simbólicos y bombas de compresión; comprueba el CRC; no admite ZIP con contraseña ni ZIP64.
+
+### Temas con medios
+- Nueva pestaña **Fondo y botones** en Apariencia:
+  - **Fondo:** imagen, GIF o vídeo (MP4/WebM), con ajuste, oscurecido y desenfoque.
+  - **Botones:** imagen o GIF, con ajuste y oscurecido.
+- Los archivos se guardan en la carpeta **Temas** del usuario y ocupan su espacio; el tema solo guarda el nombre y desde ahí los dibuja. Galería para elegir o borrar archivos ya subidos.
+- Al guardar o usar un tema de la comunidad, sus medios se **copian** a la carpeta Temas de quien lo guarda. Las páginas de enlaces compartidos también muestran el fondo del tema de quien comparte.
+
+## Archivos modificados
+- Nuevos: `src/lib/unzip.js`, `src/routes/tmedia.js`, `public/js/bgmedia.js`.
+- Modificados: `src/lib/zip.js`, `src/routes/files.js`, `src/routes/themes.js`, `src/services/themes.js`, `src/views/share-helpers.js`, `src/index.js`, `public/js/common.js`, `public/js/panel.js`, `public/js/themes.js`, `public/panel.html`, `public/index.html`, `public/themes.html`, `public/admin/index.html`, `public/style.css`.
+- Versión: `package.json` y `data/version.json` pasan a `2.9.0`. Sin cambios en la base de datos.
+
+## Actualizar
+Copia los archivos sobre tu instalación y reinicia el servidor.
+
+---
+
 # Versión 2.8.1
 
 Los enlaces para compartir (`/s/<token>`) usan ahora los mismos visores de PDF y de Office que el panel, también para visitantes sin cuenta; si el enlace tiene contraseña, hay que desbloquearlo antes. Nuevos: `public/js/share.js` y la ruta `/s/<token>/convert`; modificados: `src/routes/share-page.js`, `src/routes/office.js`, `src/views/share-helpers.js`, `public/js/viewer.js`. Versión: `package.json` y `data/version.json` pasan a `2.8.1`.

@@ -9,7 +9,8 @@ const { wrap, fix } = require("../lib/utils");
 const { safe, nm, limitB, fileOf } = require("../lib/paths");
 const { dirSize, usage, uniq, move } = require("../lib/storage");
 const { serve } = require("../lib/serve");
-const { zipTo } = require("../lib/zip");
+const { zipTo, zipFile } = require("../lib/zip");
+const { extract } = require("../lib/unzip");
 const { need } = require("../middleware/auth");
 const { space, relOf, moved, removed } = require("../services/collab");
 
@@ -113,6 +114,29 @@ router.get("/api/zip", need, wrap(async (req, res) => {
   const sp = await space(req, "read"), ps = [].concat(req.query.path || []).map(String), abs = ps.map(p => safe(sp.root, p));
   if (!abs.length || abs.includes(sp.root)) throw Error("Falta ruta");
   await zipTo(res, abs.map(a => ({ abs: a, name: path.basename(a) })), abs.length === 1 ? path.basename(abs[0]) : "archivos");
+}));
+
+// Comprimir en ZIP: el archivo resultante se guarda en la misma carpeta, dentro del espacio del propio usuario.
+router.post("/api/compress", need, wrap(async (req, res) => {
+  const sp = await space(req, "create"), u = sp.owner, ps = [].concat(req.body.paths ?? req.body.path ?? []).map(String);
+  const abs = ps.map(p => safe(sp.root, p));
+  if (!abs.length || abs.includes(sp.root)) throw Error("Falta ruta");
+  const dir = path.dirname(abs[0]);
+  if (abs.some(a => path.dirname(a) !== dir)) throw Error("Los elementos deben estar en la misma carpeta");
+  const name = abs.length === 1 ? path.basename(abs[0]).replace(/\.[^.]*$/, "") || path.basename(abs[0]) : "archivos";
+  const dest = path.join(dir, await uniq(dir, nm(name.slice(0, 190)) + ".zip"));
+  const size = await zipFile(abs.map(a => ({ abs: a, name: path.basename(a) })), dest);
+  if (await usage(u, true) > limitB(u)) { await fsp.rm(dest, { force: true }); await usage(u, true); throw Error(sp.collab ? "El dueño de la carpeta no tiene espacio suficiente" : "No hay espacio suficiente para guardar el ZIP"); }
+  res.json({ success: true, name: path.basename(dest), size });
+}));
+// Descomprimir: crea una carpeta nueva junto al ZIP con su contenido.
+router.post("/api/extract", need, wrap(async (req, res) => {
+  const sp = await space(req, "create"), u = sp.owner, f = fileOf(req, sp.root);
+  if (path.extname(f).toLowerCase() !== ".zip" || !(await fsp.stat(f)).isFile()) throw Error("No es un archivo ZIP");
+  const dir = path.dirname(f), dest = path.join(dir, await uniq(dir, nm(path.basename(f, path.extname(f)).slice(0, 190) || "descomprimido")));
+  const room = limitB(u) - await usage(u, true);
+  try { await extract(f, dest, room); } catch (e) { await fsp.rm(dest, { recursive: true, force: true }); throw e; }
+  await usage(u, true); res.json({ success: true, name: path.basename(dest) });
 }));
 
 module.exports = router;

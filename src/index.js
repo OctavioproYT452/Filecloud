@@ -32,6 +32,7 @@ app.use(require("./routes/share-page"));
 app.use(require("./routes/admin"));
 app.use(require("./routes/ai"));
 app.use(require("./routes/themes"));
+app.use(require("./routes/tmedia"));
 app.use(require("./routes/explore"));
 app.use(require("./routes/webdav"));
 app.use(require("./routes/office"));
