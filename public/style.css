@@ -165,3 +165,16 @@ dialog h4:first-child,dialog .h0{margin-top:0}
 .mg .more{position:absolute;top:12px;right:12px;width:30px;height:30px;background:rgba(0,0,0,.55);color:#fff}
 @media(prefers-reduced-motion:reduce){#fcbg>video{display:none}}
 .mhead b{display:block}
+
+/* ---- v2.9.1: diálogos y pestañas en móvil, aviso de dispositivo ---- */
+dialog{overflow-x:hidden}dialog form,dialog form>div,dialog .atabs{min-width:0}
+.tc-info .warn{color:var(--warn);font-weight:600}
+@media(max-width:560px){
+  dialog,dialog.wide,dialog.pro{width:calc(100vw - 16px);max-height:92vh;padding:14px}
+  dialog.wide form>.row.end:last-child{bottom:-14px;margin:14px -14px -14px!important;padding:10px 14px}
+  .atabs{display:grid;grid-template-columns:1fr 1fr}.atabs button{justify-content:center;padding:9px 6px;font-size:13px;white-space:nowrap}
+  .presets{grid-template-columns:1fr 1fr}.mine{grid-template-columns:1fr}.cgrid{grid-template-columns:1fr}.fgrid{grid-template-columns:1fr}
+  .mhead{align-items:flex-start}.mth{width:72px;height:48px}.mgal{grid-template-columns:1fr 1fr}
+  .ptool select,.ptool .seg{flex:1 1 auto}.ptool .psearch{max-width:none}
+}
+.pre[data-i="-1"]{grid-column:1/-1;justify-content:center}

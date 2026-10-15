@@ -34,8 +34,13 @@ router.post("/api/themes", need, wrap(async (req, res) => {
   run("INSERT INTO user_themes(user_id,name,data) VALUES(?,?,?) ON CONFLICT(user_id,name) DO UPDATE SET data=excluded.data", req.user.id, name, JSON.stringify(t)); res.json({ success: true });
 }));
 router.post("/api/themes/publish", need, wrap(async (req, res) => {
-  const r = run("UPDATE user_themes SET public=? WHERE user_id=? AND name=?", req.body.public ? 1 : 0, req.user.id, String(req.body.name || ""));
-  if (!r.changes) throw Error("Tema no encontrado"); res.json({ success: true });
+  const name = String(req.body.name || ""), row = get("SELECT data FROM user_themes WHERE user_id=? AND name=?", req.user.id, name);
+  if (!row) throw Error("Tema no encontrado");
+  if (["both", "mobile", "pc"].includes(req.body.dev)) { // dispositivo para el que está pensado el tema
+    const t = cleanTheme(JSON.parse(row.data)) || {}; delete t.dev; if (req.body.dev !== "both") t.dev = req.body.dev;
+    run("UPDATE user_themes SET data=? WHERE user_id=? AND name=?", JSON.stringify(t), req.user.id, name);
+  }
+  run("UPDATE user_themes SET public=? WHERE user_id=? AND name=?", req.body.public ? 1 : 0, req.user.id, name); res.json({ success: true });
 }));
 router.get("/api/community", need, (req, res) => res.json({ themes: all("SELECT t.rowid id,t.name,t.data,t.user_id,u.username author,u.uuid FROM user_themes t JOIN users u ON u.id=t.user_id WHERE t.public=1 AND u.suspended=0 ORDER BY t.rowid DESC LIMIT 300").map(r => ({ id: r.id, name: r.name, author: r.author, mine: r.user_id === req.user.id, theme: withMu(cleanTheme(JSON.parse(r.data)), r.uuid) })) }));
 router.post("/api/community/save", need, wrap(async (req, res) => {

@@ -1,3 +1,16 @@
+# Versión 2.9.1
+
+Arreglo de la interfaz en móvil y aviso de dispositivo en los temas. Para la documentación completa, consulta el [README](README.md).
+
+## Cambios
+- **Móvil:** el diálogo de Apariencia ya no se desborda a los lados. Las pestañas se reparten en dos filas, los diálogos ocupan el ancho de la pantalla con márgenes ajustados y las cuadrículas de colores, temas y medios pasan a una o dos columnas.
+- **Dispositivo del tema:** nueva opción «Este tema está pensado para» (Celular y PC / Solo celular / Solo PC) en *Fondo y botones*, y se pregunta al publicar el tema. La comunidad muestra una etiqueta en cada tema, permite filtrar por dispositivo y avisa cuando el fondo o los botones con imagen no son para tu dispositivo.
+
+## Archivos modificados
+`public/js/common.js`, `public/js/themes.js`, `public/themes.html`, `public/style.css`, `src/routes/themes.js`, `src/services/themes.js`. Versión: `package.json` y `data/version.json` pasan a `2.9.1`. Sin cambios en la base de datos.
+
+---
+
 # Versión 2.9.0
 
 Comprimir y descomprimir ZIP, y fondos con imagen, GIF o vídeo en los temas. Para la documentación completa, consulta el [README](README.md).

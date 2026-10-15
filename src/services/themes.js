@@ -14,6 +14,7 @@ function cleanTheme(t) {
   if (t.r !== undefined && Number.isFinite(Number(t.r))) o.r = Math.max(0, Math.min(28, Math.round(Number(t.r))));
   if (FONTS[t.font]) o.font = t.font;
   if (["0.8", "1", "1.25"].includes(String(t.sp))) o.sp = String(t.sp);
+  if (["mobile", "pc"].includes(t.dev)) o.dev = t.dev; // para qué dispositivo está pensado (por defecto, ambos)
   if (mediaOk(t.bgf, true)) { // fondo: imagen, GIF o vídeo
     o.bgf = t.bgf; o.bgfit = ["cover", "contain", "fill"].includes(t.bgfit) ? t.bgfit : "cover";
     o.bgdim = num(t.bgdim ?? 0, 0, 80) ?? 0; o.bgblur = num(t.bgblur ?? 0, 0, 20) ?? 0;

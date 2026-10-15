@@ -11,7 +11,7 @@ Sube, organiza, edita y comparte archivos desde cualquier dispositivo, con usuar
 
 </div>
 
-> **Versión 2.9.0.** Qué ha cambiado en esta versión: consulta [RELEASE.md](RELEASE.md).
+> **Versión 2.9.1.** Qué ha cambiado en esta versión: consulta [RELEASE.md](RELEASE.md).
 
 ---
 
@@ -234,6 +234,7 @@ En **Apariencia → Fondo y botones**:
 - **Fondo de la página:** imagen, GIF animado o vídeo (PNG, JPG, GIF, WebP, AVIF, MP4 o WebM). Se puede ajustar (cubrir, contener o estirar), oscurecer (0–80 %) y desenfocar (0–20 px). Los vídeos van en bucle y sin sonido, y no se reproducen si el sistema pide «reducir movimiento».
 - **Botones:** solo imagen o GIF, con ajuste y oscurecido para que el texto se lea bien. Se aplica a los botones principales.
 - **Dónde se guardan:** en la carpeta **Temas** del propio usuario (la verás en *Mis archivos*). Ocupan su espacio como cualquier archivo, con un máximo de 20 MB por imagen y 150 MB por vídeo. El tema solo guarda el nombre del archivo y de ahí lo toma para dibujarlo. Puedes **subir** un archivo nuevo o **elegir** uno que ya esté en *Temas* (y borrarlo desde ahí).
+- **Dispositivo:** cada tema puede marcarse como pensado para **celular**, **PC** o **ambos** (en *Fondo y botones* y al publicarlo). En la comunidad se muestra en cada tema, se puede filtrar por dispositivo y, si el tema usa fondo o botones con imagen y no coincide con tu dispositivo, aparece un aviso de que el fondo puede verse mal.
 - **Al compartir un tema** en la comunidad, quien lo guarda o usa recibe una **copia** de los medios en su propia carpeta *Temas* (ocupa su espacio, y necesita tener sitio). Los medios de un tema publicado se pueden ver por otros usuarios; los de temas privados, no.
 - Al **exportar** un tema a `.json` no se incluyen los medios.
 
@@ -316,7 +317,7 @@ Disponible en `/admin/` solo para administradores. Usa el mismo menú de usuario
 - La versión instalada está en `data/version.json`:
 
   ```json
-  { "version": "2.9.0" }
+  { "version": "2.9.1" }
   ```
 
 - Cada 2 minutos el servidor lee ese archivo local y lo compara con el `data/version.json` publicado en GitHub. Si el de GitHub es más nuevo (se comparan los números: `2.10` es mayor que `2.9`), los **administradores** ven un aviso de nueva versión con instrucciones para actualizar.
