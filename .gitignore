@@ -6,4 +6,5 @@ data/filecloud.db
 data/filecloud.db-shm
 data/filecloud.db-wal
 data/users.json.migrado
+data/discord-commands/*
 .env
