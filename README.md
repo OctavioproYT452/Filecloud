@@ -376,11 +376,12 @@ Un bot que se conecta a tu servidor de Discord con el token que pongas en el `.e
 - **Vinculación de cuentas** con un formulario que solo ve el usuario (nombre de usuario, contraseña y, si tiene 2FA, el código). La vinculación se guarda en la base de datos y aparece en **Mi perfil → Discord** en la web, donde también se puede desvincular.
 - **Registro de actividad** en un canal de Discord: qué hizo cada usuario (subidas, borrados, enlaces, cambios de cuenta, acciones de admin…). **No se guarda nada en el servidor**: los eventos esperan unos segundos en memoria (máximo 100) y se envían agrupados a Discord. Nunca se envían contraseñas, códigos, claves ni enlaces completos.
 - **Avisos de actualización** en otro canal: cuando se detecta una versión nueva en GitHub (cada 2 minutos) se anuncia una vez, con las notas de `RELEASE.md`.
-- **Comandos** de barra, unos para todos y otros solo para administradores. Todas las respuestas son privadas.
+- **Comandos** de barra, unos para todos y otros solo para administradores. Por defecto las respuestas son privadas, pero algunos comandos son **públicos** (los ve todo el canal) y otros te dejan elegir con la opción `publico` / `privado`.
+- **Bienvenidas** a los miembros nuevos, por servidor: canal, mensaje y título propios, con códigos como `{username}`, `{nickname}`, `{members}`. Se configuran en Discord (`/bienvenida`) y en la web (**Admin → Discord**); es el mismo ajuste.
 
 ### Puesta en marcha
 
-1. Crea una aplicación en <https://discord.com/developers/applications>, entra en **Bot**, pulsa **Reset Token** y copia el token. No hace falta activar ningún _intent_ privilegiado.
+1. Crea una aplicación en <https://discord.com/developers/applications>, entra en **Bot**, pulsa **Reset Token** y copia el token. Para las **bienvenidas** activa también **Server Members Intent** (en la misma página, _Privileged Gateway Intents_); sin él el bot funciona igual, pero no puede ver quién entra.
 2. Pégalo en el `.env`: `DISCORD_TOKEN=tu_token`. Opcional: `DISCORD_GUILD_ID` (comandos al instante en tu servidor), `PUBLIC_URL` y `DISCORD_UPDATE_ROLE_ID`.
 3. Reinicia File Cloud. En la consola aparece el enlace de invitación (también en **Admin → Discord**); invita al bot a tu servidor. Necesita ver los canales, enviar mensajes e insertar enlaces.
 4. En Discord, un administrador de File Cloud se vincula con `/vincular` y configura los canales: `/config registros #canal` y `/config actualizaciones #canal`. El bot comprueba que puede escribir en el canal antes de guardarlo.
@@ -393,21 +394,35 @@ Un bot que se conecta a tu servidor de Discord con el token que pongas en el `.e
 | --- | --- | --- |
 | `/vincular` | Todos | Formulario privado: usuario, contraseña y código 2FA (solo si la cuenta lo tiene; también vale un código de recuperación). |
 | `/desvincular` | Vinculados | Quita el enlace con tu cuenta. |
-| `/cuenta` | Vinculados | Tu espacio, 2FA, enlaces, carpetas compartidas y uso de la IA. |
+| `/cuenta [publico]` | Vinculados | Tu espacio, 2FA, enlaces, carpetas compartidas y uso de la IA. En público se ocultan el ID permanente y tu último acceso. |
 | `/archivos [ruta]` | Vinculados | Lista tu carpeta personal (solo lectura). |
 | `/buscar texto` | Vinculados | Busca archivos y carpetas por nombre. |
 | `/enlaces listar · crear · revocar` | Vinculados | Gestiona tus enlaces para compartir (`crear` y `/ia` se pueden desactivar en Admin → Discord). |
 | `/ia pregunta` | Vinculados | Habla con el asistente de IA (respeta tus límites de uso). |
-| `/version` | Todos | Versión instalada y si hay una nueva. |
-| `/ayuda` | Todos | Lista los comandos. |
+| `/version [privado]` | Todos | **Público.** Versión instalada y si hay una nueva. |
+| `/ping [privado]` | Todos | **Público.** Comprueba que el bot responde y su latencia. |
+| `/servidorinfo [privado]` | Todos | **Público.** Dueño, miembros, canales, roles y fecha de creación del servidor de Discord. |
+| `/usuarioinfo [usuario] [privado]` | Todos | **Público.** Cuenta creada, fecha de entrada y roles de un miembro. |
+| `/avatar [usuario] [privado]` | Todos | **Público.** La foto de perfil en grande. |
+| `/ayuda [publico]` | Todos | Lista los comandos. |
+| `/bienvenida ver · canal · mensaje · formato · activar · desactivar · probar · variables · restablecer` | Admins de File Cloud o quien pueda gestionar el servidor | Configura el mensaje de bienvenida de ese servidor (ver abajo). |
 | `/config ver · registros · actualizaciones · quitar` | Admins | Canales del bot. |
-| `/servidor` | Admins | CPU, memoria, disco y totales. |
+| `/servidor [publico]` | Admins | CPU, memoria, disco y totales. |
 | `/usuarios [buscar]` · `/usuario nombre` | Admins | Lista de cuentas y detalle de una. |
 | `/suspender` · `/reactivar` | Admins | Bloquea o devuelve el acceso (al suspender se cierran sus sesiones). |
 | `/anuncio [texto]` · `/registro activo` | Admins | Anuncio global y registro público. |
 | `/actualizar` | Admins | Comprueba ahora si hay una versión nueva y la anuncia. |
 
 Ser «admin» en el bot significa tener una cuenta vinculada que sea administradora en File Cloud: se comprueba en cada uso, así que quitar el rol o suspender la cuenta surte efecto al instante.
+
+### Bienvenidas
+
+Cuando alguien entra al servidor, el bot envía un mensaje al canal que elijas. Configuración, por servidor:
+
+- En Discord: `/bienvenida canal #canal`, `/bienvenida mensaje` (abre un formulario con título y mensaje), `/bienvenida formato` (tarjeta o texto), `/bienvenida activar`, `/bienvenida probar` (te saluda a ti como prueba) y `/bienvenida variables`.
+- En la web: **Admin → Discord → Bienvenidas**, con vista previa en vivo, botones para insertar códigos y envío de prueba.
+
+Códigos disponibles (en el mensaje y en el título): `{username}`, `{nickname}`, `{mention}`, `{tag}`, `{id}`, `{members}`, `{humans}`, `{server}`, `{created}` y `{date}`. Los nombres se escapan para que nadie cuele menciones masivas ni formato con su apodo; solo se menciona a la persona que entra.
 
 ### Ajustes en la web (Admin → Discord)
 

@@ -5,6 +5,7 @@ const { need, needAdmin } = require("../middleware/auth");
 const dc = require("../discord");
 const store = require("../discord/store");
 const logger = require("../discord/logger");
+const welcome = require("../discord/welcome");
 
 router.get("/api/discord", need, (req, res) => {
   const l = store.linkOf(req.user.id);
@@ -19,12 +20,44 @@ router.get("/api/admin/discord", needAdmin, wrap(async (req, res) => {
     log_channel: await ch("log"), update_channel: await ch("update"),
     events: Object.entries(store.EVENTS).map(([key, label]) => ({ key, label, on: store.eventOn(key) })),
     actions: store.actionsOn(), linked: store.countLinks(), public_url: !!process.env.PUBLIC_URL,
+    members_intent: s.members, guilds: dc.guildList(), welcome_vars: welcome.VARS, welcome_limits: { message: welcome.MAX_MSG, title: welcome.MAX_TITLE },
   });
 }));
 router.post("/api/admin/discord", needAdmin, wrap(async (req, res) => {
   const ev = req.body.events || {};
   for (const k of Object.keys(store.EVENTS)) if (ev[k] !== undefined) store.setEvent(k, !!ev[k]);
   if (req.body.actions !== undefined) store.setActions(!!req.body.actions);
+  res.json({ success: true });
+}));
+
+// Bienvenidas: se configuran por servidor de Discord (el mismo ajuste que /bienvenida en Discord)
+const guildOf = id => {
+  const g = dc.guildList().find(x => x.id === String(id || ""));
+  if (!g) throw Error("Ese servidor de Discord no existe o el bot no está en él");
+  return g;
+};
+router.post("/api/admin/discord/welcome", needAdmin, wrap(async (req, res) => {
+  const b = req.body || {}, g = guildOf(b.guild_id), patch = {};
+  if (b.channel_id !== undefined) {
+    const id = String(b.channel_id || "");
+    if (id && !g.channels.some(c => c.id === id)) throw Error("Ese canal no existe en el servidor o el bot no puede escribir en él");
+    patch.channel_id = id || null;
+  }
+  if (b.message !== undefined) patch.message = String(b.message);
+  if (b.title !== undefined) patch.title = String(b.title);
+  if (b.embed !== undefined) patch.embed = !!b.embed;
+  if (b.enabled !== undefined) patch.enabled = !!b.enabled;
+  if (patch.enabled && !dc.state.members) throw Error("El bot no tiene activado «Server Members Intent» (Developer Portal → Bot → Privileged Gateway Intents). Actívalo y reinicia File Cloud");
+  welcome.save(g.id, patch);
+  logger.log("admin", `**${logger.md(req.user.username)}** *(admin, por la web)* cambió las bienvenidas de **${logger.md(g.name)}**`);
+  res.json({ success: true });
+}));
+router.post("/api/admin/discord/welcome/test", needAdmin, wrap(async (req, res) => {
+  if (!dc.state.ready) throw Error("El bot no está conectado");
+  const g = guildOf(req.body?.guild_id), cfg = welcome.config(g.id);
+  if (!cfg.channel_id) throw Error("Elige primero el canal de bienvenidas y guarda");
+  const out = welcome.build(cfg, { username: req.user.username, nickname: req.user.username, server: g.name, members: g.members });
+  await logger.sendTo(cfg.channel_id, out).catch(e => { throw Error("No se pudo escribir en el canal: " + e.message); });
   res.json({ success: true });
 }));
 router.post("/api/admin/discord/clear", needAdmin, wrap(async (req, res) => {

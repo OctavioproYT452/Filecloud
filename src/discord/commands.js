@@ -1,6 +1,7 @@
 // Comandos de barra del bot de Discord. Unos son para todos los usuarios vinculados y otros solo para administradores
 // (se comprueba en cada uso contra la base de datos: si le quitas el rol de admin o suspendes la cuenta, el efecto es inmediato).
-// Todas las respuestas son privadas ("efímeras"): solo las ve quien usó el comando.
+// Por defecto las respuestas son privadas ("efímeras"): solo las ve quien usó el comando. Algunos comandos son públicos
+// (los ve todo el canal): los de información del servidor, y otros dejan elegir con la opción «publico» o «privado».
 const fsp = require("fs").promises, path = require("path"), crypto = require("crypto"), os = require("os");
 const si = require("systeminformation");
 const { get, all, run, now, verify } = require("../db");
@@ -10,6 +11,7 @@ const { errMsg } = require("../lib/utils");
 const { locked, addFail, fails } = require("../services/auth");
 const tf = require("../services/twofa");
 const ai = require("../ai");
+const welcome = require("./welcome");
 const ver = require("../version");
 const store = require("./store");
 const logger = require("./logger");
@@ -23,14 +25,20 @@ const unix = ms => Math.floor(ms / 1000);
 const GENERIC = e => /^(Type|Reference|Range|Syntax)Error$/.test(e.name) ? "Ocurrió un error inesperado" : errMsg(e);
 
 module.exports = function build(D) {
-  const { SlashCommandBuilder, ChannelType, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, MessageFlags } = D;
+  const { SlashCommandBuilder, ChannelType, EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, MessageFlags, PermissionFlagsBits } = D;
   const EPH = MessageFlags.Ephemeral, COLOR = 0x4f8cff;
 
   // ---------- ayudantes de respuesta ----------
   const emb = (title, desc) => { const e = new EmbedBuilder().setColor(COLOR).setFooter({ text: "File Cloud" }); if (title) e.setTitle(title); if (desc) e.setDescription(String(desc).slice(0, 4000)); return e; };
-  const reply = (i, p) => (i.deferred || i.replied) ? i.editReply(p) : i.reply({ ...p, flags: EPH });
+  // pub = respuesta pública (la ve todo el canal, sin menciones que avisen a nadie). Si no, privada.
+  const reply = (i, p, pub) => (i.deferred || i.replied) ? i.editReply(p) : pub ? i.reply({ allowedMentions: { parse: [] }, ...p }) : i.reply({ ...p, flags: EPH });
   const say = (i, text) => reply(i, { content: String(text).slice(0, 1900) });
-  const defer = i => i.deferReply({ flags: EPH });
+  const defer = (i, pub) => i.deferReply(pub ? {} : { flags: EPH });
+  // Opciones para elegir la visibilidad: «publico» (privado por defecto) y «privado» (público por defecto)
+  const pubOpt = b => b.addBooleanOption(o => o.setName("publico").setDescription("Mostrar la respuesta a todos en el canal (por defecto solo la ves tú)"));
+  const privOpt = b => b.addBooleanOption(o => o.setName("privado").setDescription("Que la respuesta la veas solo tú (por defecto la ve todo el canal)"));
+  const isPub = (i, byDefault) => byDefault ? !i.options.getBoolean("privado") : !!i.options.getBoolean("publico");
+  const guildOnly = b => b.setDMPermission(false);
   const bar = pct => { const n = Math.max(0, Math.min(10, Math.round(pct / 10))); return "▰".repeat(n) + "▱".repeat(10 - n) + ` ${Math.round(pct)}%`; };
   const adminLine = u => `**${md(u.username)}** *(admin, por Discord)*`;
 
@@ -41,8 +49,9 @@ module.exports = function build(D) {
   const adminCmd = (name, desc) => cmd(name, "(Admin) " + desc).setDMPermission(false);
 
   // ===== Para todos =====
-  add(cmd("ayuda", "Muestra lo que puede hacer el bot de File Cloud"), async (i, u) => {
-    const e = emb("Bot de File Cloud", "Todas las respuestas son privadas: solo las ves tú.")
+  add(pubOpt(cmd("ayuda", "Muestra lo que puede hacer el bot de File Cloud")), async (i, u) => {
+    const pub = isPub(i, false);
+    const e = emb("Bot de File Cloud", pub ? "Comandos del bot de File Cloud." : "Salvo los marcados como públicos, las respuestas son privadas: solo las ves tú.")
       .addFields({ name: "Para todos", value: [
         "**/vincular** · enlaza tu cuenta con usuario, contraseña y 2FA",
         "**/desvincular** · quita el enlace con tu cuenta",
@@ -51,9 +60,17 @@ module.exports = function build(D) {
         "**/buscar** · busca archivos por nombre",
         "**/enlaces** · lista, crea o revoca tus enlaces para compartir",
         "**/ia** · pide algo al asistente de IA (si está activado)",
-        "**/version** · versión instalada y si hay una nueva",
-      ].join("\n") });
-    if (u?.is_admin) e.addFields({ name: "Solo administradores", value: [
+        "**/version** · versión instalada y si hay una nueva *(público)*",
+      ].join("\n") })
+      .addFields({ name: "Información del servidor de Discord *(públicos)*", value: [
+        "**/ping** · latencia del bot",
+        "**/servidorinfo** · datos de este servidor",
+        "**/usuarioinfo** · datos de un miembro",
+        "**/avatar** · la foto de perfil de alguien",
+        "Añade `privado: sí` para verlos solo tú.",
+      ].join("\n") })
+      .addFields({ name: "Para quien gestiona el servidor", value: "**/bienvenida** · mensaje de bienvenida (canal, texto y códigos como {username})" });
+    if (u?.is_admin && !pub) e.addFields({ name: "Solo administradores", value: [
       "**/config** · canales de registros y de actualizaciones",
       "**/servidor** · CPU, memoria, disco y totales",
       "**/usuarios** · lista de cuentas  ·  **/usuario** · detalle de una cuenta",
@@ -61,7 +78,7 @@ module.exports = function build(D) {
       "**/anuncio** · mensaje para todos en el panel  ·  **/registro** · abre o cierra el registro",
       "**/actualizar** · comprueba y anuncia una versión nueva",
     ].join("\n") });
-    await reply(i, { embeds: [e] });
+    await reply(i, { embeds: [e] }, pub);
   }, "maybe");
 
   // Vincular: un formulario privado (solo lo ve quien lo usa) con usuario, contraseña y, si la cuenta lo tiene, el 2FA.
@@ -106,7 +123,8 @@ module.exports = function build(D) {
     await say(i, `Listo: tu Discord ya no está vinculado a **${md(u.username)}**.`);
   });
 
-  add(cmd("cuenta", "Tu cuenta: espacio, 2FA, enlaces y uso de la IA"), async (i, u) => {
+  add(pubOpt(cmd("cuenta", "Tu cuenta: espacio, 2FA, enlaces y uso de la IA")), async (i, u) => {
+    const pub = isPub(i, false);
     const used = await usage(u), lim = limitB(u), pct = Number.isFinite(lim) ? used / lim * 100 : 0;
     const e = emb("Tu cuenta de File Cloud").addFields(
       { name: "Usuario", value: `${md(u.username)}${u.is_admin ? " · administrador" : ""}`, inline: true },
@@ -115,10 +133,10 @@ module.exports = function build(D) {
       { name: "Enlaces activos", value: String(get("SELECT COUNT(*) n FROM shares WHERE user_id=? AND (expires_at IS NULL OR expires_at>?)", u.id, now()).n), inline: true },
       { name: "Carpetas que compartes", value: String(get("SELECT COUNT(DISTINCT path) n FROM collabs WHERE owner_id=?", u.id).n), inline: true },
       { name: "Compartidas contigo", value: String(get("SELECT COUNT(*) n FROM collabs WHERE user_id=?", u.id).n), inline: true },
-      { name: "Último acceso web", value: u.last_login ? `<t:${unix(u.last_login)}:R>` : "—", inline: true });
+      ...(pub ? [] : [{ name: "Último acceso web", value: u.last_login ? `<t:${unix(u.last_login)}:R>` : "—", inline: true }]));
     if (ai.enabled()) { const s = ai.status(u); e.addFields({ name: "Asistente de IA", value: s.limit < 0 ? "Sin límite de uso" : s.limit === 0 ? "Desactivado para tu cuenta" : `${s.used} de ${s.limit} usos por ${s.period === "day" ? "día" : "hora"}`, inline: true }); }
-    e.addFields({ name: "ID permanente", value: code(u.uuid) });
-    await reply(i, { embeds: [e] });
+    if (!pub) e.addFields({ name: "ID permanente", value: code(u.uuid) }); // el ID permanente nunca se muestra en público
+    await reply(i, { embeds: [e] }, pub);
   }, "user");
 
   add(cmd("archivos", "Mira los archivos de tu carpeta personal").addStringOption(o => o.setName("ruta").setDescription("Carpeta que quieres ver (vacío = inicio), por ejemplo: fotos/2024").setMaxLength(300)), async (i, u) => {
@@ -198,13 +216,53 @@ module.exports = function build(D) {
     await reply(i, { embeds: [e] });
   }, "user");
 
-  add(cmd("version", "Versión instalada de File Cloud y si hay una nueva"), async i => {
+  add(privOpt(cmd("version", "Versión instalada de File Cloud y si hay una nueva")), async i => {
     const v = ver.info();
     await reply(i, { embeds: [emb("File Cloud", v.url).addFields(
       { name: "Instalada", value: v.current, inline: true },
       { name: "Última publicada", value: v.latest || "sin comprobar", inline: true },
       { name: "Estado", value: v.available ? "Hay una versión nueva" : "Todo al día", inline: true },
-      { name: "Servidor activo desde hace", value: `${Math.floor(process.uptime() / 3600)} h ${Math.floor(process.uptime() / 60) % 60} min`, inline: true })] });
+      { name: "Servidor activo desde hace", value: `${Math.floor(process.uptime() / 3600)} h ${Math.floor(process.uptime() / 60) % 60} min`, inline: true })] }, isPub(i, true));
+  });
+
+  // ===== Información de Discord (públicos por defecto) =====
+  add(privOpt(cmd("ping", "Comprueba que el bot responde y cuánto tarda")), async i => {
+    const ws = Math.round(i.client.ws.ping);
+    await reply(i, { embeds: [emb("🏓 Pong").addFields({ name: "Respuesta", value: `${Math.max(0, Date.now() - i.createdTimestamp)} ms`, inline: true }, { name: "Conexión con Discord", value: ws >= 0 ? `${ws} ms` : "—", inline: true })] }, isPub(i, true));
+  });
+
+  add(privOpt(guildOnly(cmd("servidorinfo", "Datos de este servidor de Discord"))), async i => {
+    const g = i.guild; if (!g) throw Error("Este comando solo funciona dentro de un servidor");
+    const e = emb(md(g.name)).addFields(
+      { name: "Dueño", value: `<@${g.ownerId}>`, inline: true },
+      { name: "Miembros", value: String(g.memberCount), inline: true },
+      { name: "Creado", value: `<t:${unix(g.createdTimestamp)}:D> (<t:${unix(g.createdTimestamp)}:R>)` },
+      { name: "Canales", value: String(g.channels.cache.size), inline: true },
+      { name: "Roles", value: String(Math.max(0, g.roles.cache.size - 1)), inline: true },
+      { name: "Mejoras", value: `${g.premiumSubscriptionCount || 0} (nivel ${g.premiumTier || 0})`, inline: true },
+      { name: "ID", value: code(g.id) });
+    if (g.iconURL()) e.setThumbnail(g.iconURL({ size: 256 }));
+    if (g.description) e.setDescription(md(g.description).slice(0, 300));
+    await reply(i, { embeds: [e] }, isPub(i, true));
+  });
+
+  add(privOpt(guildOnly(cmd("usuarioinfo", "Datos de un miembro del servidor").addUserOption(o => o.setName("usuario").setDescription("De quién (vacío = tú)")))), async i => {
+    const user = i.options.getUser("usuario") || i.user, m = i.options.getMember("usuario") || (user.id === i.user.id ? i.member : null);
+    const e = emb(md(m?.displayName || user.globalName || user.username)).setThumbnail((m || user).displayAvatarURL({ size: 256 })).addFields(
+      { name: "Usuario", value: `@${md(user.username)}${user.bot ? " · bot" : ""}`, inline: true },
+      { name: "Mención", value: `<@${user.id}>`, inline: true },
+      { name: "Cuenta creada", value: `<t:${unix(user.createdTimestamp)}:D> (<t:${unix(user.createdTimestamp)}:R>)` });
+    if (m?.joinedTimestamp) e.addFields({ name: "Se unió al servidor", value: `<t:${unix(m.joinedTimestamp)}:D> (<t:${unix(m.joinedTimestamp)}:R>)` });
+    const roles = m ? [...m.roles.cache.values()].filter(r => r.id !== i.guildId).sort((a, b) => b.position - a.position) : [];
+    if (roles.length) e.addFields({ name: `Roles (${roles.length})`, value: roles.slice(0, 15).map(r => `<@&${r.id}>`).join(" ") + (roles.length > 15 ? " …" : "") });
+    e.addFields({ name: "ID", value: code(user.id) });
+    await reply(i, { embeds: [e] }, isPub(i, true));
+  });
+
+  add(privOpt(cmd("avatar", "La foto de perfil de alguien").addUserOption(o => o.setName("usuario").setDescription("De quién (vacío = tú)"))), async i => {
+    const user = i.options.getUser("usuario") || i.user, m = i.options.getMember("usuario");
+    const url = (m || user).displayAvatarURL({ size: 1024 });
+    await reply(i, { embeds: [emb(`Avatar de ${md(m?.displayName || user.globalName || user.username)}`).setImage(url).setDescription(`[Abrir en grande](${url})`)] }, isPub(i, true));
   });
 
   // ===== Solo administradores =====
@@ -239,8 +297,9 @@ module.exports = function build(D) {
     await say(i, `Canal de ${w === "log" ? "registros" : "actualizaciones"}: ${ch}.`);
   }, "admin");
 
-  add(adminCmd("servidor", "Estado del servidor: CPU, memoria, disco y totales"), async i => {
-    await defer(i);
+  add(pubOpt(adminCmd("servidor", "Estado del servidor: CPU, memoria, disco y totales")), async i => {
+    const pub = isPub(i, false);
+    await defer(i, pub);
     const [l, m, d] = await Promise.all([si.currentLoad(), si.mem(), si.fsSize()]), dk = d[0] || {};
     await reply(i, { embeds: [emb("Servidor de File Cloud").addFields(
       { name: "CPU", value: bar(l.currentLoad), inline: true },
@@ -250,7 +309,7 @@ module.exports = function build(D) {
       { name: "Almacenado", value: fmt(get("SELECT COALESCE(SUM(used_bytes),0) n FROM users").n), inline: true },
       { name: "Enlaces / sesiones", value: `${get("SELECT COUNT(*) n FROM shares").n} / ${get("SELECT COUNT(*) n FROM sessions WHERE expires_at>?", now()).n}`, inline: true },
       { name: "Versión", value: ver.info().current, inline: true },
-      { name: "Sistema encendido hace", value: `${Math.floor(os.uptime() / 3600)} h`, inline: true })] });
+      { name: "Sistema encendido hace", value: `${Math.floor(os.uptime() / 3600)} h`, inline: true })] }, pub);
   }, "admin");
 
   add(adminCmd("usuarios", "Lista las cuentas del servidor").addStringOption(o => o.setName("buscar").setDescription("Parte del nombre (vacío = todas)").setMaxLength(32)), async i => {
@@ -319,6 +378,89 @@ module.exports = function build(D) {
     await say(i, `Hay una versión nueva: **${v.latest}** (tienes la **${v.current}**). ${sent ? "Ya lo anuncié en el canal de actualizaciones." : store.channel("update") ? "No pude escribir en el canal de actualizaciones." : "Configura un canal con **/config actualizaciones** para recibir el aviso."}`);
   }, "admin");
 
+
+  // ===== Bienvenidas (administradores de File Cloud o quien pueda gestionar el servidor de Discord) =====
+  const who = (i, u) => u ? adminLine(u) : `**${md(i.user.username)}** *(Discord)*`;
+  const chName = id => id ? `<#${id}>` : "No configurado";
+  const showVars = () => welcome.VARS.map(([k, d]) => `\`${k}\` · ${d}`).join("\n");
+  const fmtTxt = t => String(t || "—").slice(0, 900);
+
+  add(guildOnly(cmd("bienvenida", "Mensaje de bienvenida para los miembros nuevos (también se configura en la web)"))
+    .addSubcommand(s => s.setName("ver").setDescription("Muestra la configuración actual"))
+    .addSubcommand(s => s.setName("canal").setDescription("Canal donde se envían las bienvenidas").addChannelOption(chOpt))
+    .addSubcommand(s => s.setName("mensaje").setDescription("Edita el mensaje y el título de la bienvenida (admite {username}, {members}…)"))
+    .addSubcommand(s => s.setName("formato").setDescription("Enviar la bienvenida como tarjeta o como texto normal")
+      .addStringOption(o => o.setName("tipo").setDescription("Cómo se muestra").setRequired(true).addChoices({ name: "Tarjeta (embed)", value: "embed" }, { name: "Texto normal", value: "texto" })))
+    .addSubcommand(s => s.setName("activar").setDescription("Activa las bienvenidas automáticas"))
+    .addSubcommand(s => s.setName("desactivar").setDescription("Desactiva las bienvenidas automáticas"))
+    .addSubcommand(s => s.setName("probar").setDescription("Envía una bienvenida de prueba contigo como si acabaras de entrar"))
+    .addSubcommand(s => s.setName("variables").setDescription("Lista los códigos que puedes usar en el mensaje"))
+    .addSubcommand(s => s.setName("restablecer").setDescription("Borra la configuración y vuelve al mensaje por defecto")), async (i, u) => {
+    const g = i.guild, sub = i.options.getSubcommand(), cfg = welcome.config(g.id);
+    if (sub === "variables") return reply(i, { embeds: [emb("Códigos para el mensaje de bienvenida", showVars() + "\n\nEjemplo: `¡Hola {mention}, ya somos {members} en {server}!`\nSirven en el mensaje y en el título.")] });
+    if (sub === "ver") {
+      const hasIntent = i.client.options.intents.has(D.GatewayIntentBits.GuildMembers);
+      const e = emb("Bienvenidas de " + md(g.name)).addFields(
+        { name: "Estado", value: cfg.enabled ? "Activadas" : "Desactivadas", inline: true },
+        { name: "Canal", value: chName(cfg.channel_id), inline: true },
+        { name: "Formato", value: cfg.embed ? "Tarjeta" : "Texto", inline: true },
+        { name: "Título", value: fmtTxt(cfg.title) },
+        { name: "Mensaje", value: fmtTxt(cfg.message) });
+      if (!hasIntent) e.addFields({ name: "⚠ Falta un permiso del bot", value: "Activa **Server Members Intent** en discord.com/developers/applications → Bot → Privileged Gateway Intents y reinicia File Cloud. Sin él no puedo ver quién entra." });
+      return reply(i, { embeds: [e.setFooter({ text: "File Cloud · también se edita en la web: Admin → Discord" })] });
+    }
+    if (sub === "mensaje") {
+      const tIn = new TextInputBuilder().setCustomId("t").setLabel("Título (opcional)").setStyle(TextInputStyle.Short).setRequired(false).setMaxLength(welcome.MAX_TITLE);
+      if (cfg.title) tIn.setValue(cfg.title.slice(0, welcome.MAX_TITLE));
+      await i.showModal(new ModalBuilder().setCustomId("fc-welcome").setTitle("Mensaje de bienvenida").addComponents(
+        new ActionRowBuilder().addComponents(tIn),
+        new ActionRowBuilder().addComponents(new TextInputBuilder().setCustomId("m").setLabel("Mensaje (usa {username}, {members}…)").setStyle(TextInputStyle.Paragraph).setRequired(true).setMaxLength(welcome.MAX_MSG).setValue(cfg.message.slice(0, welcome.MAX_MSG)))));
+      return;
+    }
+    if (sub === "canal") {
+      const ch = i.options.getChannel("canal");
+      try { await logger.sendTo(ch.id, { embeds: [{ color: 0x2ecc71, title: "Canal de bienvenidas configurado", description: `Configurado por ${md(i.user.username)}. Aquí se saludará a quien entre al servidor (cuando las bienvenidas estén activadas).`, footer: { text: "File Cloud" } }] }); }
+      catch (e) { throw Error(`No puedo escribir en ${ch}. Dale al bot permiso para ver el canal, enviar mensajes e insertar enlaces. (${e.message})`); }
+      welcome.save(g.id, { channel_id: ch.id });
+      logger.log("admin", `${who(i, u)} configuró el canal de bienvenidas de **${md(g.name)}**`);
+      return say(i, `Canal de bienvenidas: ${ch}.${cfg.enabled ? "" : " Cuando quieras, usa **/bienvenida activar**."}`);
+    }
+    if (sub === "formato") {
+      const embed = i.options.getString("tipo") === "embed"; welcome.save(g.id, { embed });
+      logger.log("admin", `${who(i, u)} cambió el formato de las bienvenidas de **${md(g.name)}**`);
+      return say(i, `Las bienvenidas se enviarán como ${embed ? "tarjeta" : "texto normal"}.`);
+    }
+    if (sub === "activar" || sub === "desactivar") {
+      const on = sub === "activar";
+      if (on && !i.client.options.intents.has(D.GatewayIntentBits.GuildMembers)) throw Error("El bot no tiene activado el permiso «Server Members Intent» (Developer Portal → Bot → Privileged Gateway Intents) y no puede ver quién entra. Actívalo y reinicia File Cloud");
+      welcome.save(g.id, { enabled: on });
+      logger.log("admin", `${who(i, u)} ${on ? "activó" : "desactivó"} las bienvenidas de **${md(g.name)}**`);
+      return say(i, on ? `Bienvenidas activadas en ${chName(welcome.config(g.id).channel_id)}. Pruébalo con **/bienvenida probar**.` : "Bienvenidas desactivadas.");
+    }
+    if (sub === "restablecer") {
+      welcome.remove(g.id);
+      logger.log("admin", `${who(i, u)} restableció las bienvenidas de **${md(g.name)}**`);
+      return say(i, "Listo: se borró la configuración de bienvenidas de este servidor.");
+    }
+    // probar
+    const out = welcome.build(cfg, welcome.ctxOf(i.member));
+    if (cfg.channel_id) {
+      await logger.sendTo(cfg.channel_id, out).catch(e => { throw Error(`No pude escribir en ${chName(cfg.channel_id)}: ${e.message}`); });
+      return say(i, `Bienvenida de prueba enviada a ${chName(cfg.channel_id)}.`);
+    }
+    await reply(i, { ...out, content: out.content ? "Vista previa (aún no hay canal):\n" + out.content : "Vista previa (aún no hay canal configurado):" });
+  }, "guildadmin");
+
+  async function submitWelcome(i) {
+    if (!i.inGuild() || !i.guild) return say(i, "Esto solo funciona dentro de un servidor.");
+    const user = store.userByDiscord(i.user.id), okUser = user && !user.suspended && user.is_admin;
+    if (!okUser && !i.memberPermissions?.has(PermissionFlagsBits.ManageGuild)) return say(i, "Necesitas ser administrador de File Cloud o poder gestionar el servidor.");
+    try { welcome.save(i.guild.id, { title: i.fields.getTextInputValue("t"), message: i.fields.getTextInputValue("m") }); }
+    catch (e) { return say(i, "No se guardó: " + GENERIC(e)); }
+    logger.log("admin", `${who(i, okUser ? user : null)} editó el mensaje de bienvenida de **${md(i.guild.name)}**`);
+    await say(i, "Mensaje de bienvenida guardado. Pruébalo con **/bienvenida probar**.");
+  }
+
   // ---------- ejecución ----------
   const byName = new Map(C.map(c => [c.b.name, c]));
   const last = new Map();
@@ -334,13 +476,21 @@ module.exports = function build(D) {
         if (user.suspended) return say(i, "Tu cuenta de File Cloud está suspendida.");
         if (c.need === "admin" && !user.is_admin) return say(i, "Este comando es solo para administradores de File Cloud.");
       }
+      if (c.need === "guildadmin") {
+        if (!i.inGuild() || !i.guild) return say(i, "Este comando solo funciona dentro de un servidor.");
+        const okUser = user && !user.suspended && user.is_admin;
+        if (!okUser && !i.memberPermissions?.has(PermissionFlagsBits.ManageGuild)) return say(i, "Este comando es para administradores de File Cloud o para quien pueda gestionar este servidor de Discord.");
+      }
       if (user?.suspended) user = null;
       await c.fn(i, user);
     } catch (e) {
       console.error(`[Discord] /${i.commandName}:`, e.message);
-      await Promise.resolve().then(() => say(i, "No se pudo completar: " + GENERIC(e))).catch(() => { });
+      const msg = "No se pudo completar: " + GENERIC(e);
+      // si la respuesta ya se había pospuesto como pública, el error no debe verlo todo el canal
+      if (i.deferred && !i.ephemeral) { await i.deleteReply().catch(() => { }); await i.followUp({ content: msg, flags: EPH }).catch(() => { }); return; }
+      await Promise.resolve().then(() => say(i, msg)).catch(() => { });
     }
   }
 
-  return { json: C.map(c => c.b.toJSON()), run: runCommand, submitLink };
+  return { json: C.map(c => c.b.toJSON()), run: runCommand, submitLink, submitWelcome };
 };
