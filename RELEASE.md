@@ -1,4 +1,4 @@
-# Versión 2.10.0
+# Versión 2.10.2
 
 Bot de Discord opcional: vinculación de cuentas, registro de actividad, avisos de actualización y comandos. Para la documentación completa, consulta el [README](README.md#bot-de-discord-opcional).
 
