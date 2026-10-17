@@ -6,10 +6,12 @@
 const logger = require("./logger");
 const updates = require("./updates");
 const welcome = require("./welcome");
+const custom = require("./custom");
 const ver = require("../version");
 
 let client = null, cmds = null, D = null;
-const state = { configured: false, ready: false, tag: null, error: null, invite: null, guilds: 0, members: false };
+const state = { configured: false, ready: false, tag: null, error: null, invite: null, guilds: 0, members: false, content: false };
+let lastSync = "", syncTimer = null;
 
 function start() {
   const token = String(process.env.DISCORD_TOKEN || "").trim();
@@ -19,30 +21,46 @@ function start() {
   catch { state.error = "Falta la librería discord.js: ejecuta «npm install» en la carpeta del proyecto"; console.warn("[Discord] " + state.error); return; }
   try { cmds = require("./commands")(D); }
   catch (e) { state.error = "No se pudo preparar el bot: " + e.message; console.error("[Discord] " + state.error); return; }
-  connect(token, true);
+  try { custom.init(D, cmds.names, () => { clearTimeout(syncTimer); syncTimer = setTimeout(() => syncSlash().catch(() => { }), 2500); }); }
+  catch (e) { console.error("[Discord] No se pudieron cargar los comandos propios:", e.message); }
+  connect(token, 0);
   ver.onCheck(() => { if (state.ready) updates.announce().catch(() => { }); }); // avisa de versiones nuevas
 }
 
-// Se intenta con el intent «Server Members» (necesario para las bienvenidas). Si el bot no lo tiene activado en el
-// Developer Portal, se conecta igualmente sin él: todo funciona salvo las bienvenidas automáticas.
-function connect(token, withMembers) {
-  try {
-    client = new D.Client({ intents: withMembers ? [D.GatewayIntentBits.Guilds, D.GatewayIntentBits.GuildMembers] : [D.GatewayIntentBits.Guilds] });
-  } catch (e) { state.error = "No se pudo preparar el bot: " + e.message; console.error("[Discord] " + state.error); return; }
-  state.members = withMembers;
+// Se intenta con todos los intents y, si Discord rechaza alguno de los privilegiados (Developer Portal → Bot → Privileged
+// Gateway Intents), se prueba sin ellos: «Server Members» solo sirve para las bienvenidas y «Message Content» para los
+// comandos propios de prefijo o de mensaje. Todo lo demás funciona igual.
+const TIERS = [{ m: true, c: true }, { m: true, c: false }, { m: false, c: true }, { m: false, c: false }];
+function connect(token, tier) {
+  const t = TIERS[tier], G = D.GatewayIntentBits, intents = [G.Guilds];
+  if (t.m) intents.push(G.GuildMembers);
+  if (t.c) intents.push(G.GuildMessages, G.MessageContent);
+  try { client = new D.Client({ intents }); }
+  catch (e) { state.error = "No se pudo preparar el bot: " + e.message; console.error("[Discord] " + state.error); return; }
+  state.members = t.m; state.content = t.c;
   client.once(D.Events.ClientReady, onReady);
   client.on(D.Events.InteractionCreate, handle);
-  if (withMembers) client.on(D.Events.GuildMemberAdd, m => welcome.onJoin(m));
+  if (t.m) client.on(D.Events.GuildMemberAdd, m => welcome.onJoin(m));
+  if (t.c) client.on(D.Events.MessageCreate, m => custom.onMessage(m).catch(e => console.error("[Discord]", e.message)));
   client.on(D.Events.Error, e => console.error("[Discord]", e.message));
   client.login(token).catch(e => {
-    if (withMembers && /disallowed/i.test(e.code + " " + e.message)) {
-      console.warn("[Discord] El intent «Server Members» no está activado: las bienvenidas automáticas no funcionarán hasta que lo actives (Developer Portal → Bot → Privileged Gateway Intents).");
+    if (tier < TIERS.length - 1 && /disallowed/i.test(e.code + " " + e.message)) {
+      if (tier === 0) console.warn("[Discord] Algún permiso especial del bot no está activado (Developer Portal → Bot → Privileged Gateway Intents): «Server Members» (bienvenidas) y «Message Content» (comandos de prefijo/mensaje). Se prueba sin ellos.");
       try { client.destroy(); } catch { }
-      return connect(token, false);
+      return connect(token, tier + 1);
     }
     state.error = "No se pudo iniciar sesión: " + (/token/i.test(e.code + " " + e.message) ? "el token no es válido" : e.message);
     console.error("[Discord] " + state.error);
   });
+}
+
+// Registra en Discord los comandos del bot y los propios (solo si cambiaron, para no gastar el límite diario de Discord)
+async function syncSlash() {
+  if (!client || !state.ready) return;
+  const json = [...cmds.json, ...custom.slashJson()], sig = JSON.stringify(json);
+  if (sig === lastSync) return;
+  await client.application.commands.set(json, String(process.env.DISCORD_GUILD_ID || "").trim() || undefined);
+  lastSync = sig;
 }
 
 async function onReady(c) {
@@ -53,7 +71,7 @@ async function onReady(c) {
     if (!ch || !ch.isTextBased()) throw Error("El canal no existe o no es de texto");
     return ch.send({ allowedMentions: { parse: [] }, ...payload }); // sin menciones, salvo el rol que el admin pida para las actualizaciones
   });
-  try { await c.application.commands.set(cmds.json, String(process.env.DISCORD_GUILD_ID || "").trim() || undefined); }
+  try { await syncSlash(); }
   catch (e) { console.error("[Discord] No se pudieron registrar los comandos:", e.message); }
   console.log(`Bot de Discord conectado como ${c.user.tag}. Invítalo con: ${state.invite}`);
   updates.announce().catch(() => { });
@@ -61,7 +79,7 @@ async function onReady(c) {
 
 async function handle(i) {
   try {
-    if (i.isChatInputCommand()) await cmds.run(i);
+    if (i.isChatInputCommand()) { if (!(custom.hasSlash(i.commandName) && await custom.runSlash(i))) await cmds.run(i); }
     else if (i.isModalSubmit() && i.customId === "fc-link") await cmds.submitLink(i);
     else if (i.isModalSubmit() && i.customId === "fc-welcome") await cmds.submitWelcome(i);
   } catch (e) {
@@ -93,4 +111,4 @@ async function channelName(id) {
   return ch?.name || null;
 }
 
-module.exports = { start, state, channelName, guildList, enabled: () => state.configured };
+module.exports = { start, state, channelName, guildList, syncSlash, enabled: () => state.configured };

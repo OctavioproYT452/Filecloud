@@ -20,7 +20,7 @@ router.get("/api/admin/discord", needAdmin, wrap(async (req, res) => {
     log_channel: await ch("log"), update_channel: await ch("update"),
     events: Object.entries(store.EVENTS).map(([key, label]) => ({ key, label, on: store.eventOn(key) })),
     actions: store.actionsOn(), linked: store.countLinks(), public_url: !!process.env.PUBLIC_URL,
-    members_intent: s.members, guilds: dc.guildList(), welcome_vars: welcome.VARS, welcome_limits: { message: welcome.MAX_MSG, title: welcome.MAX_TITLE },
+    members_intent: s.members, content_intent: s.content, prefix: require("../discord/custom").prefix(), guilds: dc.guildList(), welcome_vars: welcome.VARS, welcome_limits: { message: welcome.MAX_MSG, title: welcome.MAX_TITLE },
   });
 }));
 router.post("/api/admin/discord", needAdmin, wrap(async (req, res) => {

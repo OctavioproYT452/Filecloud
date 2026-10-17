@@ -1,0 +1,48 @@
+/* Editor de comandos de Discord (FCScript): lista, formulario, editor con resaltado, referencia y pruebas */
+.dce{display:grid;grid-template-columns:300px minmax(0,1fr);gap:14px;padding:14px;max-width:1500px;margin:0 auto;align-items:start}
+.dcs{position:sticky;top:64px;max-height:calc(100vh - 78px);overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px}
+.dcs .tools{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}.dcs input[type=search],.dcs input.mini{width:100%;margin:4px 0 8px}
+.dcs .st{font-size:12px;line-height:1.5;margin:6px 0 10px;color:var(--muted)}.dcs .st b{color:var(--text)}.dcs .warn{color:var(--danger)}
+.dct .fo{display:flex;align-items:center;gap:6px;padding:6px 6px;border-radius:8px;cursor:pointer;font-weight:600;user-select:none}.dct .fo:hover,.dct .cm:hover{background:var(--card2)}
+.dct .fo .fa{margin-left:auto;display:none;gap:2px}.dct .fo:hover .fa{display:flex}.dct .fo.over,.dct.over{outline:2px dashed var(--accent);outline-offset:-2px}
+.dct .kids{margin-left:12px;padding-left:8px;border-left:1px solid var(--line)}
+.dct .cm{display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:8px;cursor:pointer;font-size:14px}.dct .cm.on{background:color-mix(in srgb,var(--accent) 18%,var(--card2))}.dct .cm.off{opacity:.55}
+.dct .cm .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dct .bad{width:8px;height:8px;border-radius:50%;background:var(--danger);margin-left:auto;flex:none}
+.tg{display:inline-grid;place-items:center;min-width:24px;height:22px;padding:0 5px;border-radius:6px;font:700 12px ui-monospace,monospace;background:color-mix(in srgb,var(--accent) 20%,var(--card2));color:var(--accent);flex:none}
+.tg.p{background:color-mix(in srgb,#f59e0b 22%,var(--card2));color:#f59e0b}.tg.m{background:color-mix(in srgb,#10b981 22%,var(--card2));color:#10b981}
+.dcw{min-width:0}.dcw .card+.card{margin-top:12px}.dc-empty{text-align:center;padding:40px 16px}
+.dcf{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:10px}.dcf label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}.dcf .wide{grid-column:1/-1}
+.dcf input,.dcf select{width:100%}.dcf .ck{flex-direction:row;align-items:center;gap:8px;color:var(--text);font-size:14px}
+.opts{display:grid;gap:6px}.opt{display:grid;grid-template-columns:1fr 110px 90px 2fr 34px;gap:6px;align-items:center}
+@media(max-width:700px){.opt{grid-template-columns:1fr 1fr}.opt>:nth-child(4){grid-column:1/-1}}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}.bar .grow{flex:1}
+/* editor */
+.ed{display:flex;height:min(62vh,560px);min-height:300px;background:var(--bg);border:1px solid var(--line);border-radius:calc(var(--r)*.7);overflow:hidden;position:relative}
+.ed .gut,.ed pre,.ed textarea{font:13px/20px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;margin:0;padding:10px 0;tab-size:2}
+.ed .gut{width:46px;flex:none;text-align:right;color:var(--muted);overflow:hidden;user-select:none;background:var(--card2);padding-right:8px;white-space:pre}
+.ed .gut .er{color:var(--danger);font-weight:700}
+.ed .box{position:relative;flex:1;min-width:0}
+.ed pre,.ed textarea{position:absolute;inset:0;padding-left:10px;padding-right:10px;white-space:pre;border:0;width:100%;height:100%;box-sizing:border-box}
+.ed pre{overflow:hidden;pointer-events:none;color:var(--text);padding-bottom:60px}
+.ed textarea{background:transparent;color:transparent;caret-color:var(--text);resize:none;outline:0;overflow:auto}
+.ed textarea::selection{background:color-mix(in srgb,var(--accent) 35%,transparent);color:transparent}
+.hl .c{color:#7f8ea8;font-style:italic}.hl .f{color:#60a5fa;font-weight:600}.hl .k{color:#c084fc;font-weight:700}.hl .u{color:var(--danger);text-decoration:wavy underline}
+.hl .e{color:#f59e0b}.hl .n{color:#34d399}.hl .s{color:#f472b6}.hl .d0{color:#fbbf24}.hl .d1{color:#34d399}.hl .d2{color:#38bdf8}.hl .d3{color:#f472b6}
+@media(prefers-color-scheme:light){.hl .f{color:#1d4ed8}.hl .k{color:#7e22ce}.hl .n{color:#059669}.hl .d0{color:#b45309}.hl .d1{color:#047857}.hl .d2{color:#0369a1}.hl .d3{color:#be185d}.hl .e{color:#b45309}}
+.ac{position:absolute;z-index:5;min-width:260px;max-width:min(420px,90%);max-height:210px;overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.35);display:none}
+.ac div{padding:6px 10px;cursor:pointer;font-size:13px}.ac div.on,.ac div:hover{background:color-mix(in srgb,var(--accent) 20%,var(--card2))}.ac b{font-family:ui-monospace,monospace}.ac small{display:block}
+.errs{margin:8px 0 0;display:grid;gap:4px}.errs button{all:unset;cursor:pointer;color:var(--danger);font-size:13px}.errs button:hover{text-decoration:underline}.okmsg{color:var(--ok);font-size:13px;margin-top:8px}
+/* referencia */
+.ref input{width:100%;margin-bottom:8px}.ref .cat{font-weight:700;margin:10px 0 4px;color:var(--accent);font-size:13px}.ref .fn{display:block;width:100%;text-align:left;background:none;border:0;color:var(--text);padding:5px 6px;border-radius:6px;cursor:pointer;font-size:13px}.ref .fn:hover{background:var(--card2)}.ref .fn code{color:#60a5fa}.ref .fn small{display:block}
+.ref .list{max-height:340px;overflow:auto}
+/* vista previa de la prueba */
+.pv{background:#313338;color:#dbdee1;border-radius:10px;padding:12px;font:14px/1.4 system-ui,sans-serif;white-space:pre-wrap;word-break:break-word}
+.pv .emb{margin-top:8px;border-left:4px solid #4f8cff;background:#2b2d31;border-radius:4px;padding:8px 12px;max-width:460px}.pv .emb h5{margin:0 0 4px;font-size:15px;color:#fff}.pv .emb .fl{margin-top:6px;font-size:13px}.pv .emb .fl b{display:block;color:#fff}.pv .emb img{max-width:100%;border-radius:4px;margin-top:6px}
+.pv .eph{display:block;font-size:12px;color:#949ba4;margin-top:6px}.sim{margin:8px 0 0;padding-left:18px;color:var(--muted);font-size:13px}
+@media(max-width:900px){.dce{grid-template-columns:1fr}.dcs{position:static;max-height:none}.dcs.fold .tree{display:none}.ed{height:56vh}}
+
+@media(min-width:901px){.hide-lg{display:none!important}}
+
+.dcw>.card:first-child>.bar{position:sticky;top:56px;z-index:6;background:var(--card);padding:8px 0;margin-top:-8px;border-bottom:1px solid var(--line)}
+.dcw .sticky-act{z-index:6}
+#dty{color:#f59e0b;font-size:13px}

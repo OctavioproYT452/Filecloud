@@ -11,7 +11,7 @@ Sube, organiza, edita y comparte archivos desde cualquier dispositivo, con usuar
 
 </div>
 
-> **Versión 2.10.0.** Qué ha cambiado en esta versión: consulta [RELEASE.md](RELEASE.md).
+> **Versión 2.10.3.** Qué ha cambiado en esta versión: consulta [RELEASE.md](RELEASE.md).
 
 ---
 
@@ -327,7 +327,7 @@ Disponible en `/admin/` solo para administradores. Usa el mismo menú de usuario
 - La versión instalada está en `data/version.json`:
 
   ```json
-  { "version": "2.10.2" }
+  { "version": "2.10.3" }
   ```
 
 - Cada 2 minutos el servidor lee ese archivo local y lo compara con el `data/version.json` publicado en GitHub. Si el de GitHub es más nuevo (se comparan los números: `2.10` es mayor que `2.9`), los **administradores** ven un aviso de nueva versión con instrucciones para actualizar.
@@ -404,9 +404,14 @@ Un bot que se conecta a tu servidor de Discord con el token que pongas en el `.e
 | `/servidorinfo [privado]` | Todos | **Público.** Dueño, miembros, canales, roles y fecha de creación del servidor de Discord. |
 | `/usuarioinfo [usuario] [privado]` | Todos | **Público.** Cuenta creada, fecha de entrada y roles de un miembro. |
 | `/avatar [usuario] [privado]` | Todos | **Público.** La foto de perfil en grande. |
+| `/dado [caras] [cantidad] [privado]` · `/moneda` · `/elegir opciones` | Todos | **Público.** Dados, moneda y elección al azar. |
+| `/encuesta pregunta opcion1…4` | Todos (en servidores) | Encuesta con reacciones numeradas. |
+| `/recientes` · `/favoritos` | Vinculados | Tus archivos modificados más recientemente y tus favoritos. |
+| `/comandos [publico]` | Todos | Lista los comandos propios del servidor (los creados en el editor web). |
+| `/limpiar cantidad` | Quien tenga «Gestionar mensajes» | Borra de 1 a 100 mensajes recientes del canal. |
 | `/ayuda [publico]` | Todos | Lista los comandos. |
 | `/bienvenida ver · canal · mensaje · formato · activar · desactivar · probar · variables · restablecer` | Admins de File Cloud o quien pueda gestionar el servidor | Configura el mensaje de bienvenida de ese servidor (ver abajo). |
-| `/config ver · registros · actualizaciones · quitar` | Admins | Canales del bot. |
+| `/config ver · registros · actualizaciones · prefijo · quitar` | Admins | Canales del bot y prefijo de los comandos propios. |
 | `/servidor [publico]` | Admins | CPU, memoria, disco y totales. |
 | `/usuarios [buscar]` · `/usuario nombre` | Admins | Lista de cuentas y detalle de una. |
 | `/suspender` · `/reactivar` | Admins | Bloquea o devuelve el acceso (al suspender se cierran sus sesiones). |
@@ -414,6 +419,36 @@ Un bot que se conecta a tu servidor de Discord con el token que pongas en el `.e
 | `/actualizar` | Admins | Comprueba ahora si hay una versión nueva y la anuncia. |
 
 Ser «admin» en el bot significa tener una cuenta vinculada que sea administradora en File Cloud: se comprueba en cada uso, así que quitar el rol o suspender la cuenta surte efecto al instante.
+
+### Comandos propios (FCScript)
+
+Desde **Admin → Discord → Abrir el editor de comandos** (`/admin/discord.html`, solo administradores) puedes crear tus propios comandos con **FCScript**, un lenguaje sencillo inspirado en BDScript de BDFD.
+
+- **Tipos:** *slash* (`/comando`, con opciones de texto, número, usuario, canal, rol…), *prefijo* (`!comando`, con alias; el prefijo se cambia en el editor o con `/config prefijo`) y *mensaje* (responde cuando alguien escribe un texto: exacto, que lo contenga o que empiece así).
+- **Acceso por comando:** todos, solo cuentas vinculadas, solo admins de File Cloud, o admins y gestores del servidor.
+- **Carpetas:** organiza los comandos en carpetas (hasta 3 niveles), arrastra un comando a una carpeta para moverlo, renómbralas o bórralas.
+- **Archivos:** al guardar, cada comando se escribe como un archivo `.fcs` en `data/discord-commands/<carpeta>/`. Se compilan una sola vez y se ejecutan desde la memoria; puedes hacer copia de seguridad de esa carpeta o editar los archivos a mano (se leen al reiniciar).
+- **Editor:** resaltado de sintaxis (funciones, bloques, corchetes por niveles, errores en rojo), autocompletado al escribir `$`, números de línea con errores marcados, panel de funciones con buscador y **prueba en vivo** que no envía nada a Discord (las acciones como dar roles o expulsar solo se describen).
+- **Comandos de prefijo y de mensaje** necesitan el permiso especial «Message Content Intent» (Developer Portal → Bot → Privileged Gateway Intents). Sin él, el bot arranca igual y los comandos slash funcionan.
+
+```text
+//@ tipo: slash            (estas líneas //@ las rellena el editor; no hace falta escribirlas)
+$title[¡Hola $nickname!]
+$color[#4f8cff]
+$setUserVar[usos;$calc[$getUserVar[usos;0]+1]]
+$if[$option[texto]==]
+  No escribiste nada. Llevas $getUserVar[usos] usos.
+$else
+  Dijiste: $option[texto]
+$endif
+$footer[Tu espacio: $fcSpace de $fcQuota]
+```
+
+**Sintaxis:** `$funcion` o `$funcion[arg1;arg2]` (se pueden anidar). Escapes: `\$ \; \[ \]`. Comentarios: líneas que empiezan por `//` o `$c[texto]`. Bloques: `$if / $elseif / $else / $endif`, `$for[var;desde;hasta] … $endfor` y `$while[cond] … $endwhile` (máx. 200 vueltas). Operadores: `== != > < >= <= ~=` (contiene), `&&`, `||`.
+
+**Funciones (más de 90):** contexto (`$username`, `$message[1]`, `$option[x]`, `$mentioned`, `$serverName`, `$hasRole`…), respuesta (`$title`, `$description`, `$color`, `$addField`, `$ephemeral`, `$sendMessage`, `$sendDM`, `$addReaction`…), lógica (`$onlyIf`, `$onlyAdmin`, `$onlyPerms`, `$onlyRoles`, `$onlyLinked`, `$cooldown`, `$stop`, `$set/$get`), variables guardadas por usuario, servidor o globales (`$setUserVar`, `$getServerVar`, `$topUserVar`…), matemáticas (`$calc`, `$random`, `$round`…), texto (`$upper`, `$replace`, `$split`, `$contains`, `$choose`…), tiempo (`$date`, `$discordTime`, `$duration`), File Cloud (`$fcUser`, `$fcSpace`, `$fcQuota`, `$fcUsers`, `$fcVersion`) y moderación (`$giveRole`, `$takeRole`, `$kick`, `$ban`, `$timeout`, `$deleteMessages`). La lista completa, con descripción de cada una, está en el panel *Funciones* del editor.
+
+**Seguridad:** lo que escribe un usuario nunca se interpreta como código; los operadores de las condiciones solo cuentan si los escribió el autor; hay límites de pasos (4000), de tiempo (4 s), de bucles, de tamaño (20 000 caracteres por comando, 200 comandos, 60 slash) y de variables guardadas (20 000). Las funciones de moderación comprueban que **quien usa el comando** tenga el permiso de Discord correspondiente. Las menciones masivas (`@everyone` y roles) están desactivadas en las respuestas.
 
 ### Bienvenidas
 
@@ -428,7 +463,7 @@ Códigos disponibles (en el mensaje y en el título): `{username}`, `{nickname}`
 
 ### Ajustes en la web (Admin → Discord)
 
-Estado del bot, enlace de invitación, canales configurados (con botón para quitarlos), qué categorías de eventos se registran (cuentas, inicios de sesión, archivos, borrados, enlaces, carpetas colaborativas, acciones de admin), si se permiten acciones sobre archivos desde Discord y un botón de mensaje de prueba.
+Estado del bot, enlace de invitación, canales de registros y de actualizaciones (se **eligen desde la web** o con `/config`, y se pueden quitar), qué categorías de eventos se registran (cuentas, inicios de sesión, archivos, borrados, enlaces, carpetas colaborativas, acciones de admin), si se permiten acciones sobre archivos desde Discord y un botón de mensaje de prueba.
 
 ### Privacidad y seguridad del bot
 
@@ -467,6 +502,7 @@ Estado del bot, enlace de invitación, canales configurados (con botón para qui
 │   ├── index.js           # Arranque: Express, middleware, rutas y tareas periódicas
 │   ├── config.js          # Rutas (data, hosting, public), puerto y duración de sesión
 │   ├── version.js         # Comprobación de nuevas versiones
+│   ├── discord/script/    # FCScript: analizador (parser.js), intérprete (runtime.js) y funciones (functions.js)
 │   ├── db/                # Base de datos SQLite
 │   │   ├── index.js       #   Ayudantes get / all / run / now
 │   │   ├── connection.js  #   Apertura (node:sqlite o better-sqlite3)

@@ -16,6 +16,7 @@ const ver = require("../version");
 const store = require("./store");
 const logger = require("./logger");
 const updates = require("./updates");
+const custom = require("./custom");
 const { md, code, fmt } = logger;
 
 const P = v => "/" + String(v ?? "").replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
@@ -61,12 +62,15 @@ module.exports = function build(D) {
         "**/enlaces** · lista, crea o revoca tus enlaces para compartir",
         "**/ia** · pide algo al asistente de IA (si está activado)",
         "**/version** · versión instalada y si hay una nueva *(público)*",
+        "**/recientes** · **/favoritos** · tus archivos recientes y favoritos",
+        "**/comandos** · comandos propios de este servidor",
       ].join("\n") })
       .addFields({ name: "Información del servidor de Discord *(públicos)*", value: [
         "**/ping** · latencia del bot",
         "**/servidorinfo** · datos de este servidor",
         "**/usuarioinfo** · datos de un miembro",
         "**/avatar** · la foto de perfil de alguien",
+        "**/dado** · **/moneda** · **/elegir** · **/encuesta** · juegos y votaciones",
         "Añade `privado: sí` para verlos solo tú.",
       ].join("\n") })
       .addFields({ name: "Para quien gestiona el servidor", value: "**/bienvenida** · mensaje de bienvenida y rol automático (canal, texto y códigos como {username})" });
@@ -271,6 +275,7 @@ module.exports = function build(D) {
     .addSubcommand(s => s.setName("ver").setDescription("Muestra la configuración actual"))
     .addSubcommand(s => s.setName("registros").setDescription("Canal donde se publica lo que hace cada usuario").addChannelOption(chOpt))
     .addSubcommand(s => s.setName("actualizaciones").setDescription("Canal donde se avisa de las versiones nuevas").addChannelOption(chOpt))
+    .addSubcommand(s => s.setName("prefijo").setDescription("Prefijo de los comandos propios de texto (por ejemplo !)").addStringOption(o => o.setName("texto").setDescription("1 a 3 caracteres, sin espacios").setRequired(true).setMaxLength(3)))
     .addSubcommand(s => s.setName("quitar").setDescription("Deja de usar uno de los canales").addStringOption(o => o.setName("cual").setDescription("Qué canal quitar").setRequired(true).addChoices({ name: "Registros", value: "log" }, { name: "Actualizaciones", value: "update" }))), async (i, u) => {
     const sub = i.options.getSubcommand();
     if (sub === "ver") {
@@ -279,10 +284,12 @@ module.exports = function build(D) {
         { name: "Canal de registros", value: ch("log"), inline: true },
         { name: "Canal de actualizaciones", value: ch("update"), inline: true },
         { name: "Cuentas vinculadas", value: String(store.countLinks()), inline: true },
+        { name: "Prefijo de comandos propios", value: md(custom.prefix()), inline: true },
         { name: "Se registra", value: Object.entries(store.EVENTS).map(([k, l]) => `${store.eventOn(k) ? "✓" : "✗"} ${l}`).join("\n") },
         { name: "Acciones sobre archivos desde Discord (enlaces e IA)", value: store.actionsOn() ? "Permitidas" : "Desactivadas" })
         .setFooter({ text: "File Cloud · los eventos y las acciones se cambian en la web: Admin → Discord" })] });
     }
+    if (sub === "prefijo") { custom.setPrefix(i.options.getString("texto")); logger.log("admin", `${adminLine(u)} cambió el prefijo de los comandos propios`); return say(i, `Prefijo de los comandos propios: **${md(custom.prefix())}**`); }
     if (sub === "quitar") {
       const w = i.options.getString("cual"); store.setChannel(w, null);
       logger.log("admin", `${adminLine(u)} quitó el canal de ${w === "log" ? "registros" : "actualizaciones"}`);
@@ -471,6 +478,47 @@ module.exports = function build(D) {
     await say(i, "Mensaje de bienvenida guardado. Pruébalo con **/bienvenida probar**.");
   }
 
+  // ===== Más comandos (v2.10.3) =====
+  add(privOpt(cmd("dado", "Tira uno o varios dados").addIntegerOption(o => o.setName("caras").setDescription("Caras del dado (por defecto 6)").setMinValue(2).setMaxValue(1000)).addIntegerOption(o => o.setName("cantidad").setDescription("Cuántos dados (por defecto 1)").setMinValue(1).setMaxValue(10))), async i => {
+    const f = i.options.getInteger("caras") || 6, n = i.options.getInteger("cantidad") || 1, r = Array.from({ length: n }, () => 1 + crypto.randomInt(f));
+    await reply(i, { embeds: [emb(`🎲 ${n}d${f}`, `**${r.join(" + ")}**${n > 1 ? ` = **${r.reduce((a, b) => a + b, 0)}**` : ""}`)] }, isPub(i, true));
+  });
+  add(privOpt(cmd("moneda", "Lanza una moneda")), async i => reply(i, { embeds: [emb("🪙 Moneda", `Ha salido **${crypto.randomInt(2) ? "cara" : "cruz"}**`)] }, isPub(i, true)));
+  add(privOpt(cmd("elegir", "Elige una opción al azar").addStringOption(o => o.setName("opciones").setDescription("Opciones separadas por comas: pizza, tacos, sushi").setRequired(true).setMaxLength(500))), async i => {
+    const o = i.options.getString("opciones").split(",").map(x => x.trim()).filter(Boolean);
+    if (o.length < 2) throw Error("Escribe al menos dos opciones separadas por comas");
+    await reply(i, { embeds: [emb("🤔 Elijo…", `**${md(o[crypto.randomInt(o.length)])}**`).setFooter({ text: `File Cloud · entre ${o.length} opciones` })] }, isPub(i, true));
+  });
+  add(guildOnly(cmd("encuesta", "Crea una encuesta con reacciones")).addStringOption(o => o.setName("pregunta").setDescription("La pregunta").setRequired(true).setMaxLength(200))
+    .addStringOption(o => o.setName("opcion1").setDescription("Opción 1").setRequired(true).setMaxLength(80)).addStringOption(o => o.setName("opcion2").setDescription("Opción 2").setRequired(true).setMaxLength(80))
+    .addStringOption(o => o.setName("opcion3").setDescription("Opción 3").setMaxLength(80)).addStringOption(o => o.setName("opcion4").setDescription("Opción 4").setMaxLength(80)), async i => {
+    const ops = [1, 2, 3, 4].map(n => i.options.getString("opcion" + n)).filter(Boolean), E = ["1️⃣", "2️⃣", "3️⃣", "4️⃣"];
+    await i.reply({ allowedMentions: { parse: [] }, embeds: [emb("📊 " + i.options.getString("pregunta"), ops.map((o, k) => `${E[k]} ${md(o)}`).join("\n")).setFooter({ text: `Encuesta de ${i.user.globalName || i.user.username}` })] });
+    const msg = await i.fetchReply().catch(() => null);
+    for (let k = 0; k < ops.length; k++) await msg?.react(E[k]).catch(() => { });
+  });
+  add(cmd("recientes", "Tus archivos modificados más recientemente"), async (i, u) => {
+    await defer(i); const root = base(u), out = []; let seen = 0;
+    const walk = async (dir, d) => { if (seen > 5000 || d > 8) return; let es; try { es = await fsp.readdir(dir, { withFileTypes: true }); } catch { return; } for (const e of es) { if (++seen > 5000) return; const f = path.join(dir, e.name); if (e.isDirectory()) await walk(f, d + 1); else { const s = await fsp.stat(f).catch(() => null); if (s) out.push({ rel: path.relative(root, f).split(path.sep).join("/"), t: s.mtimeMs, size: s.size }); } } };
+    await walk(root, 0); out.sort((a, b) => b.t - a.t);
+    await reply(i, { embeds: [emb("Archivos recientes", out.slice(0, 10).map(f => `${md(P(f.rel))} — ${fmt(f.size)} · <t:${unix(f.t)}:R>`).join("\n") || "*Aún no tienes archivos.*")] });
+  }, "user");
+  add(cmd("favoritos", "Tus archivos y carpetas favoritos"), async (i, u) => {
+    const f = all("SELECT path FROM favs WHERE user_id=? LIMIT 25", u.id);
+    await reply(i, { embeds: [emb("Tus favoritos", f.map(x => md(P(x.path))).join("\n") || "*No tienes favoritos todavía.*")] });
+  }, "user");
+  add(pubOpt(cmd("comandos", "Comandos propios de este servidor (creados desde la web)")), async i => {
+    const l = custom.list().commands.filter(c => c.activo && c.acceso !== "admin"), pf = custom.prefix();
+    const line = c => `${c.tipo === "slash" ? "**/" + c.name + "**" : c.tipo === "prefijo" ? "**" + pf + c.name + "**" : "*" + md(c.name) + "* (responde a un mensaje)"}${c.descripcion ? " · " + md(c.descripcion) : ""}`;
+    await reply(i, { embeds: [emb("Comandos propios", l.slice(0, 40).map(line).join("\n") || "*Todavía no hay comandos propios.*")] }, isPub(i, false));
+  });
+  add(guildOnly(cmd("limpiar", "Borra mensajes recientes de este canal").addIntegerOption(o => o.setName("cantidad").setDescription("Cuántos (1-100, no más de 14 días de antigüedad)").setRequired(true).setMinValue(1).setMaxValue(100))), async i => {
+    if (!i.memberPermissions?.has(PermissionFlagsBits.ManageMessages)) return say(i, "Necesitas el permiso «Gestionar mensajes» de Discord.");
+    const r = await i.channel.bulkDelete(i.options.getInteger("cantidad"), true).catch(() => { throw Error("No pude borrar: el bot necesita «Gestionar mensajes» en este canal"); });
+    logger.log("admin", `**${md(i.user.username)}** borró ${r.size} mensaje(s) en <#${i.channel.id}> con /limpiar`);
+    await say(i, `Borrados ${r.size} mensaje(s).`);
+  });
+
   // ---------- ejecución ----------
   const byName = new Map(C.map(c => [c.b.name, c]));
   const last = new Map();
@@ -502,5 +550,5 @@ module.exports = function build(D) {
     }
   }
 
-  return { json: C.map(c => c.b.toJSON()), run: runCommand, submitLink, submitWelcome };
+  return { json: C.map(c => c.b.toJSON()), names: C.map(c => c.b.name), run: runCommand, submitLink, submitWelcome };
 };
