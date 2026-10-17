@@ -1,4 +1,5 @@
 // Punto de arranque: crea la app de Express, monta middleware y rutas, y escucha en el puerto.
+require("./lib/env"); // lee el archivo .env (PORT, DISCORD_TOKEN…) antes que nada
 const express = require("express"), fs = require("fs"), path = require("path");
 const { get, run, now } = require("./db");
 const { PORT, HOSTING, TMP, PUBLIC } = require("./config");
@@ -7,6 +8,7 @@ const ai = require("./ai");
 const security = require("./middleware/security");
 const { session } = require("./middleware/auth");
 const { purgeFails } = require("./services/auth");
+const discord = require("./discord");
 
 fs.mkdirSync(HOSTING, { recursive: true }); fs.mkdirSync(TMP, { recursive: true });
 
@@ -20,6 +22,7 @@ app.use("/dav", require("./routes/webdav").dav); // WebDAV antes del lector de c
 app.use(security.body);
 app.use(security.csrf); // protección CSRF: el origen debe coincidir con el host
 app.use(session);
+app.use(require("./discord/activity")); // registro de actividad hacia Discord (no hace nada si el bot no está configurado)
 ai.init(); // Agente de IA: la configuración se lee de la base de datos al iniciar (y cuando el admin la cambia)
 
 // ---------- rutas de la API y páginas públicas ----------
@@ -31,6 +34,7 @@ app.use(require("./routes/collab"));
 app.use(require("./routes/share-page"));
 app.use(require("./routes/admin"));
 app.use(require("./routes/ai"));
+app.use(require("./routes/discord"));
 app.use(require("./routes/themes"));
 app.use(require("./routes/tmedia"));
 app.use(require("./routes/explore"));
@@ -56,4 +60,5 @@ setInterval(() => {
 if (!get("SELECT COUNT(*) n FROM users").n)
   console.warn("AVISO: no hay usuarios en la base de datos. Si vienes de la versión anterior, copia tu users.json a data/ y reinicia; o crea un usuario con: node tools/reset-password.js <usuario> <contraseña> --admin");
 ver.start();
+discord.start(); // bot de Discord opcional: solo arranca si hay DISCORD_TOKEN en .env
 app.listen(PORT, () => { console.log(`File Cloud corriendo en http://localhost:${PORT}`); console.log("Agente de IA: " + ai.describe()); });

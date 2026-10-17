@@ -11,6 +11,7 @@ Write-Host "==> Sistema detectado: $([System.Environment]::OSVersion.VersionStri
 Ensure-Node
 Install-Dependencies
 New-Item -ItemType Directory -Force data, hosting | Out-Null
+if (-not (Test-Path .env) -and (Test-Path .env.example)) { Copy-Item .env.example .env; Write-Host "==> Creado .env (opcional: pon DISCORD_TOKEN para activar el bot de Discord)." -ForegroundColor Cyan }
 
 Write-Host "==> Configuración del agente de IA..." -ForegroundColor Cyan
 node tools/setup-ai.js   # pregunta si quieres IA (Grok, OpenAI, Gemini u Ollama); nunca interrumpe la instalación

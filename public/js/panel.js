@@ -85,6 +85,8 @@ function account(){
   <section class="psec"><h4>Seguridad</h4>
     <div class="srow"><span class="si">${ic('shield')}</span><div class="grow"><b>Verificación en dos pasos</b><small id="s2">Comprobando…</small></div><button type="button" class="btn ghost sm" data-sec>Gestionar</button></div>
     <div class="srow"><span class="si">${ic('users')}</span><div class="grow"><b>Otras sesiones</b><small>Cierra tu cuenta en el resto de dispositivos</small></div><button type="button" class="btn ghost sm" data-rv>Cerrar</button></div></section>
+  <section class="psec" id="dcsec" hidden><h4>Discord</h4>
+    <div class="srow"><span class="si">${ic('chat')}</span><div class="grow"><b>Cuenta de Discord</b><small id="dcs">Comprobando…</small></div><button type="button" class="btn ghost sm" data-dcu hidden>Desvincular</button></div></section>
   <div class="row end"><button type="button" class="btn danger sm" data-out>${ic('logout')} Cerrar sesión</button></div>`,null,'','pro');
   const sp=$('#space'),pc=$('#pct'),bar=$('#bar');$('#pspace',d).textContent=sp?.textContent||'';$('#ppct',d).textContent=pc?.textContent||'';
   if(bar){$('#pbar',d).className=bar.className;$('#pbar i',d).style.width=$('i',bar).style.width}
@@ -92,6 +94,10 @@ function account(){
   $('[data-out]',d).onclick=logout;$('[data-rn]',d).onclick=()=>renameUser(d);$('[data-pw]',d).onclick=changePw;
   $('[data-sec]',d).onclick=()=>{d.close();security().catch(x=>toast(x.message,1))};
   $('[data-rv]',d).onclick=async()=>{if(await yes('Cerrar otras sesiones','Se cerrará tu cuenta en todos los demás dispositivos. Esta sesión seguirá abierta.')){await api('/api/sessions/revoke-others',{});toast('Otras sesiones cerradas')}};
+  api('/api/discord').then(r=>{if(!r.enabled&&!r.linked)return;const sec=$('#dcsec',d),t=$('#dcs',d),b=$('[data-dcu]',d);sec.hidden=false;
+    if(r.linked){t.innerHTML=`Vinculada con <b>${esc(r.linked.name||'Discord')}</b>${r.linked.since?' · desde el '+new Date(r.linked.since).toLocaleDateString():''}`;b.hidden=false;
+      b.onclick=async()=>{if(await yes('Desvincular Discord','Dejarás de poder usar tu cuenta desde el bot de Discord. Podrás vincularla de nuevo cuando quieras.')){try{await api('/api/discord/unlink',{});toast('Discord desvinculado');d.close();account()}catch(x){toast(x.message,1)}}}}
+    else t.innerHTML='Sin vincular. En el servidor de Discord escribe <code>/vincular</code> e introduce tu usuario, contraseña y 2FA.'}).catch(()=>{});
   api('/api/security').then(s=>{$('#s2',d).innerHTML=(s.totp?'<span class="badge ad">Activada</span>':'<span class="badge bad">Desactivada</span>')+` · ${s.codes} código${s.codes===1?'':'s'} de recuperación`}).catch(()=>{$('#s2',d).textContent='No disponible'});
   api('/api/stats').then(({stats})=>{const t=Object.values(stats).reduce((a,b)=>a+b,0)||1;$('#st',d).innerHTML=Object.entries(stats).map(([k,v])=>`<div class="row"><span class="grow">${k}</span><small>${fmt(v)}</small></div><div class="bar"><i style="width:${v/t*100}%"></i></div>`).join('')}).catch(()=>{})}
 function changePw(){dialog('Cambiar contraseña',`<label>Contraseña actual<input class="input" type="password" autocomplete="current-password"></label><label>Nueva contraseña (mín. 8)<input class="input" type="password" autocomplete="new-password"></label><label>Repite la nueva contraseña<input class="input" type="password" autocomplete="new-password"></label>`,

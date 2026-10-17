@@ -1,3 +1,26 @@
+# Versión 2.10.0
+
+Bot de Discord opcional: vinculación de cuentas, registro de actividad, avisos de actualización y comandos. Para la documentación completa, consulta el [README](README.md#bot-de-discord-opcional).
+
+## Novedades
+- **Bot de Discord (opcional):** se activa solo si pones `DISCORD_TOKEN` en el archivo `.env`; sin él, File Cloud no cambia en nada.
+- **Vincular cuenta:** `/vincular` abre un formulario que solo ve el usuario (usuario, contraseña y código 2FA si lo tiene). El vínculo se guarda en la base de datos y aparece en *Mi perfil → Discord*, con botón para desvincular. Con bloqueo por intentos, una cuenta por Discord y viceversa.
+- **Registro de actividad en Discord:** un canal recibe lo que hace cada usuario (archivos, borrados, enlaces, cuenta, carpetas colaborativas y acciones de admin), agrupado y **sin guardar nada en el servidor**. Nunca se envían contraseñas, códigos ni enlaces completos.
+- **Avisos de actualización:** al detectar una versión nueva en GitHub se anuncia una vez en otro canal, con las notas de `RELEASE.md` (y mención opcional de un rol).
+- **Comandos:** para todos (`/cuenta`, `/archivos`, `/buscar`, `/enlaces`, `/ia`, `/version`, `/ayuda`) y solo para admins (`/config`, `/servidor`, `/usuarios`, `/usuario`, `/suspender`, `/reactivar`, `/anuncio`, `/registro`, `/actualizar`). Respuestas privadas; el rol de admin se comprueba en cada uso.
+- **Admin → Discord:** estado del bot, invitación, canales, qué eventos se registran, permitir o no las acciones sobre archivos desde Discord y mensaje de prueba.
+- **Archivo `.env`:** nueva lectura de `.env` (sin dependencias) para `PORT`, `TRUST_PROXY` y las variables del bot. Los instaladores crean uno desde `.env.example`.
+
+## Archivos modificados
+- Nuevos: `src/discord/` (`index.js`, `commands.js`, `activity.js`, `logger.js`, `updates.js`, `store.js`), `src/routes/discord.js`, `src/lib/env.js`, `.env.example`.
+- Modificados: `src/index.js`, `src/version.js`, `src/db/schema.js`, `src/lib/utils.js`, `public/js/panel.js`, `public/js/admin.js`, `public/admin/index.html`, `public/icons.svg`, `scripts/unix/install.sh`, `scripts/windows/install.ps1`, `package.json`, `README.md`.
+- Versión: `package.json` y `data/version.json` pasan a `2.10.0`. Base de datos: nueva tabla `discord_links` (se crea sola).
+
+## Actualizar
+Copia los archivos sobre tu instalación, ejecuta `npm install` (añade `discord.js` como dependencia opcional) y reinicia el servidor.
+
+---
+
 # Versión 2.9.1
 
 Arreglo de la interfaz en móvil y aviso de dispositivo en los temas. Para la documentación completa, consulta el [README](README.md).

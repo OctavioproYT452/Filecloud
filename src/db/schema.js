@@ -25,6 +25,7 @@ module.exports = function createSchema(db) {
   CREATE INDEX IF NOT EXISTS ai_usage_idx ON ai_usage(user_id, ts);
   CREATE TABLE IF NOT EXISTS recovery_codes(hash TEXT PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, used INTEGER DEFAULT 0, created_at INTEGER);
   CREATE INDEX IF NOT EXISTS recovery_user ON recovery_codes(user_id);
+  CREATE TABLE IF NOT EXISTS discord_links(user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE, discord_id TEXT NOT NULL UNIQUE, discord_name TEXT, linked_at INTEGER);
   INSERT OR IGNORE INTO settings VALUES('allow_registration','1'),('default_quota_mb','100');
   `);
 

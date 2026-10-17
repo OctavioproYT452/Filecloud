@@ -9,4 +9,4 @@ const wrap = fn => (req, res) => Promise.resolve(fn(req, res)).catch(e => res.st
 const cookies = req => Object.fromEntries((req.headers.cookie || "").split(";").map(c => c.trim().split(/=(.*)/s).slice(0, 2)).filter(a => a[0]));
 const fix = n => { const d = Buffer.from(n, "latin1").toString("utf8"); return d.includes("\ufffd") ? n : d; };
 
-module.exports = { sha, esc, wrap, cookies, fix };
+module.exports = { sha, esc, wrap, cookies, fix, errMsg };

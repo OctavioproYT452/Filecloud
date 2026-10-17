@@ -11,7 +11,7 @@ Sube, organiza, edita y comparte archivos desde cualquier dispositivo, con usuar
 
 </div>
 
-> **Versión 2.9.1.** Qué ha cambiado en esta versión: consulta [RELEASE.md](RELEASE.md).
+> **Versión 2.10.0.** Qué ha cambiado en esta versión: consulta [RELEASE.md](RELEASE.md).
 
 ---
 
@@ -27,15 +27,16 @@ Sube, organiza, edita y comparte archivos desde cualquier dispositivo, con usuar
 8. [Panel de administración](#panel-de-administración)
    - Relacionado: [Visor de documentos](#visor-de-documentos) y [Acceso WebDAV](#acceso-webdav)
 9. [Agente de IA (opcional)](#agente-de-ia-opcional)
-10. [Seguridad](#seguridad)
-11. [Estructura del proyecto](#estructura-del-proyecto)
-12. [API](#api)
-13. [Despliegue en producción](#despliegue-en-producción)
-14. [Copias de seguridad](#copias-de-seguridad)
-15. [Migrar desde la versión 1](#migrar-desde-la-versión-1)
-16. [Solución de problemas](#solución-de-problemas)
-17. [Créditos](#créditos)
-18. [Licencia](#licencia)
+10. [Bot de Discord (opcional)](#bot-de-discord-opcional)
+11. [Seguridad](#seguridad)
+12. [Estructura del proyecto](#estructura-del-proyecto)
+13. [API](#api)
+14. [Despliegue en producción](#despliegue-en-producción)
+15. [Copias de seguridad](#copias-de-seguridad)
+16. [Migrar desde la versión 1](#migrar-desde-la-versión-1)
+17. [Solución de problemas](#solución-de-problemas)
+18. [Créditos](#créditos)
+19. [Licencia](#licencia)
 
 ## Características
 
@@ -68,12 +69,13 @@ Sube, organiza, edita y comparte archivos desde cualquier dispositivo, con usuar
 - Explorador de los archivos de cualquier usuario.
 - Listado y revocación de todos los enlaces compartidos.
 - Ajustes: registro público, cuota por defecto y **anuncio** visible para todos los usuarios.
+- **Bot de Discord opcional** (con un token en `.env`): vincula cuentas, registra la actividad y avisa de las actualizaciones en tus canales, y ofrece comandos para usuarios y administradores. Ver [Bot de Discord](#bot-de-discord-opcional).
 
 **Técnicas**
 
 - Base de datos **SQLite** local, sin servidor externo.
 - Contraseñas con `scrypt`, sesiones en base de datos, 2FA (TOTP) opcional y protección contra fuerza bruta.
-- **Sin registros de actividad**, para no consumir disco ni memoria.
+- **Sin registros de actividad en el servidor**, para no consumir disco ni memoria (si activas el bot de Discord, la actividad se envía a Discord sin guardarse aquí).
 - Iconos SVG propios, sin librerías de iconos ni de interfaz externas.
 
 ## Requisitos
@@ -151,12 +153,20 @@ Variables de entorno:
 | --- | --- | --- |
 | `PORT` | `3001` | Puerto en el que escucha el servidor. |
 | `TRUST_PROXY` | _(vacío)_ | Pon `1` si estás detrás de un proxy inverso (Nginx, Caddy, Cloudflare…) para obtener la IP real y las cookies `Secure`. |
+| `DISCORD_TOKEN` | _(vacío)_ | Token del bot de Discord. Sin él, el bot no se activa. Ver [Bot de Discord](#bot-de-discord-opcional). |
+| `DISCORD_GUILD_ID` | _(vacío)_ | (Opcional) ID de tu servidor de Discord: los comandos aparecen al instante solo en él. |
+| `PUBLIC_URL` | _(vacío)_ | (Opcional) Dirección pública de tu File Cloud, sin barra final (ej. `https://nube.ejemplo.com`). El bot la usa para dar enlaces completos. |
+| `DISCORD_UPDATE_ROLE_ID` | _(vacío)_ | (Opcional) ID de un rol de Discord al que se menciona cuando hay una versión nueva. |
 
-Ejemplo:
+Puedes definirlas en el entorno o, más cómodo, en un archivo **`.env`** en la raíz del proyecto (los instaladores lo crean a partir de `.env.example`; no se sube a GitHub). Las variables del entorno tienen prioridad sobre el `.env`.
 
 ```bash
-PORT=8080 TRUST_PROXY=1 npm start
+# .env
+PORT=8080
+TRUST_PROXY=1
 ```
+
+o bien: `PORT=8080 TRUST_PROXY=1 npm start`.
 
 Ajustes desde el panel de administración: registro público (activar o desactivar), cuota por defecto para nuevos usuarios y anuncio global. Una cuota de `-1` significa almacenamiento ilimitado.
 
@@ -317,7 +327,7 @@ Disponible en `/admin/` solo para administradores. Usa el mismo menú de usuario
 - La versión instalada está en `data/version.json`:
 
   ```json
-  { "version": "2.9.1" }
+  { "version": "2.10.0" }
   ```
 
 - Cada 2 minutos el servidor lee ese archivo local y lo compara con el `data/version.json` publicado en GitHub. Si el de GitHub es más nuevo (se comparan los números: `2.10` es mayor que `2.9`), los **administradores** ven un aviso de nueva versión con instrucciones para actualizar.
@@ -359,6 +369,58 @@ El agente trabaja **únicamente dentro de la carpeta del usuario que lo usa** (p
 - La API key se guarda en la base de datos (`data/filecloud.db`) y nunca se devuelve al navegador. Protege esa carpeta y sus copias de seguridad.
 - Con Grok, OpenAI o Gemini, lo que el usuario escriba y el contenido de los archivos que el agente lea se envían a xAI, OpenAI o Google respectivamente; con Ollama todo queda en tu servidor. Tenlo en cuenta al elegir proveedor.
 
+## Bot de Discord (opcional)
+
+Un bot que se conecta a tu servidor de Discord con el token que pongas en el `.env`. **Sin `DISCORD_TOKEN` no se carga nada** y File Cloud funciona exactamente igual que siempre. Con él obtienes:
+
+- **Vinculación de cuentas** con un formulario que solo ve el usuario (nombre de usuario, contraseña y, si tiene 2FA, el código). La vinculación se guarda en la base de datos y aparece en **Mi perfil → Discord** en la web, donde también se puede desvincular.
+- **Registro de actividad** en un canal de Discord: qué hizo cada usuario (subidas, borrados, enlaces, cambios de cuenta, acciones de admin…). **No se guarda nada en el servidor**: los eventos esperan unos segundos en memoria (máximo 100) y se envían agrupados a Discord. Nunca se envían contraseñas, códigos, claves ni enlaces completos.
+- **Avisos de actualización** en otro canal: cuando se detecta una versión nueva en GitHub (cada 2 minutos) se anuncia una vez, con las notas de `RELEASE.md`.
+- **Comandos** de barra, unos para todos y otros solo para administradores. Todas las respuestas son privadas.
+
+### Puesta en marcha
+
+1. Crea una aplicación en <https://discord.com/developers/applications>, entra en **Bot**, pulsa **Reset Token** y copia el token. No hace falta activar ningún _intent_ privilegiado.
+2. Pégalo en el `.env`: `DISCORD_TOKEN=tu_token`. Opcional: `DISCORD_GUILD_ID` (comandos al instante en tu servidor), `PUBLIC_URL` y `DISCORD_UPDATE_ROLE_ID`.
+3. Reinicia File Cloud. En la consola aparece el enlace de invitación (también en **Admin → Discord**); invita al bot a tu servidor. Necesita ver los canales, enviar mensajes e insertar enlaces.
+4. En Discord, un administrador de File Cloud se vincula con `/vincular` y configura los canales: `/config registros #canal` y `/config actualizaciones #canal`. El bot comprueba que puede escribir en el canal antes de guardarlo.
+
+> `npm install` instala `discord.js` como dependencia opcional. Si falta, el servidor arranca igualmente y **Admin → Discord** lo indica.
+
+### Comandos
+
+| Comando | Quién | Qué hace |
+| --- | --- | --- |
+| `/vincular` | Todos | Formulario privado: usuario, contraseña y código 2FA (solo si la cuenta lo tiene; también vale un código de recuperación). |
+| `/desvincular` | Vinculados | Quita el enlace con tu cuenta. |
+| `/cuenta` | Vinculados | Tu espacio, 2FA, enlaces, carpetas compartidas y uso de la IA. |
+| `/archivos [ruta]` | Vinculados | Lista tu carpeta personal (solo lectura). |
+| `/buscar texto` | Vinculados | Busca archivos y carpetas por nombre. |
+| `/enlaces listar · crear · revocar` | Vinculados | Gestiona tus enlaces para compartir (`crear` y `/ia` se pueden desactivar en Admin → Discord). |
+| `/ia pregunta` | Vinculados | Habla con el asistente de IA (respeta tus límites de uso). |
+| `/version` | Todos | Versión instalada y si hay una nueva. |
+| `/ayuda` | Todos | Lista los comandos. |
+| `/config ver · registros · actualizaciones · quitar` | Admins | Canales del bot. |
+| `/servidor` | Admins | CPU, memoria, disco y totales. |
+| `/usuarios [buscar]` · `/usuario nombre` | Admins | Lista de cuentas y detalle de una. |
+| `/suspender` · `/reactivar` | Admins | Bloquea o devuelve el acceso (al suspender se cierran sus sesiones). |
+| `/anuncio [texto]` · `/registro activo` | Admins | Anuncio global y registro público. |
+| `/actualizar` | Admins | Comprueba ahora si hay una versión nueva y la anuncia. |
+
+Ser «admin» en el bot significa tener una cuenta vinculada que sea administradora en File Cloud: se comprueba en cada uso, así que quitar el rol o suspender la cuenta surte efecto al instante.
+
+### Ajustes en la web (Admin → Discord)
+
+Estado del bot, enlace de invitación, canales configurados (con botón para quitarlos), qué categorías de eventos se registran (cuentas, inicios de sesión, archivos, borrados, enlaces, carpetas colaborativas, acciones de admin), si se permiten acciones sobre archivos desde Discord y un botón de mensaje de prueba.
+
+### Privacidad y seguridad del bot
+
+- El token **solo vive en el `.env`**: no se guarda en la base de datos ni se envía al navegador.
+- Discord no permite ocultar los campos de un formulario: la contraseña que escribes en `/vincular` **pasa por los servidores de Discord** (la ve el bot, que la comprueba y la descarta; nunca se guarda ni se registra). Si te preocupa, no uses la vinculación o hazla solo desde una cuenta de Discord segura.
+- La vinculación limita los intentos como el inicio de sesión (5 fallos = 15 minutos, por persona de Discord y por cuenta) y no revela si un usuario existe. Una cuenta solo puede vincularse a un Discord y viceversa.
+- Quien controle una cuenta de Discord vinculada puede usar sus comandos. Por eso `/archivos` y `/buscar` son de solo lectura y las acciones sobre archivos (`/enlaces crear`, `/ia`) se pueden desactivar.
+- El canal de registros muestra nombres de archivos y de usuarios: dale acceso solo a quien deba verlos.
+
 ## Seguridad
 
 - **Descomprimir** rechaza ZIP con rutas peligrosas (`..`, absolutas), omite enlaces simbólicos, no admite ZIP con contraseña ni ZIP64, comprueba el CRC y limita lo extraído al espacio libre del usuario (protección contra bombas de compresión).
@@ -373,6 +435,7 @@ El agente trabaja **únicamente dentro de la carpeta del usuario que lo usa** (p
 - Rutas validadas contra _path traversal_; los archivos de los usuarios nunca se sirven de forma pública sin un enlace.
 - Los archivos HTML o de script subidos se sirven aislados (`sandbox`) para que no puedan actuar con la sesión de nadie.
 - **WebDAV**: la clave se genera al azar (≈100 bits), solo se guarda su hash, cada usuario solo ve su carpeta (también se comprueban los enlaces simbólicos), hay bloqueo tras 5 intentos fallidos y la cuota se respeta.
+- **Bot de Discord** (opcional): token solo en `.env`, vinculación con bloqueo por intentos, comandos de admin comprobados en cada uso, respuestas privadas y registro de actividad sin escribir en disco. Detalles en [Bot de Discord](#bot-de-discord-opcional).
 - Cabeceras `Content-Security-Policy`, `X-Content-Type-Options` y `X-Frame-Options`.
 - Los enlaces compartidos usan tokens aleatorios, pueden caducar y se pueden proteger con contraseña.
 
@@ -403,6 +466,7 @@ El agente trabaja **únicamente dentro de la carpeta del usuario que lo usa** (p
 │   │   ├── themes.js      #   Validación de temas y generación del CSS
 │   │   └── webdav.js      #   Servidor WebDAV (/dav)
 │   ├── lib/unzip.js       #   Lector ZIP seguro (descomprimir)
+│   ├── lib/env.js         #   Lectura del archivo .env (sin dependencias)
 │   ├── routes/
 │   │   ├── auth.js        #   Registro, login, sesión, usuario y contraseña
 │   │   ├── security.js    #   2FA, códigos de recuperación y recuperación de cuenta
@@ -415,7 +479,8 @@ El agente trabaja **únicamente dentro de la carpeta del usuario que lo usa** (p
 │   │   ├── explore.js     #   Búsqueda, estadísticas, favoritos y recientes
 │   │   ├── themes.js      #   Apariencia y comunidad de temas
 │   │   ├── admin.js       #   Panel de administración
-│   │   └── ai.js          #   API del agente de IA
+│   │   ├── ai.js          #   API del agente de IA
+│   │   └── discord.js     #   Cuenta vinculada y ajustes del bot de Discord
 │   ├── views/
 │   │   └── share-helpers.js # HTML y formato de la página compartida
 │   ├── lib/
@@ -425,6 +490,13 @@ El agente trabaja **únicamente dentro de la carpeta del usuario que lo usa** (p
 │   │   ├── storage.js     #   Tamaños, cuota, nombres únicos y mover archivos
 │   │   ├── serve.js       #   Envío y vista previa aislada de archivos
 │   │   └── zip.js         #   Generador ZIP en streaming (sin dependencias)
+│   ├── discord/           # Bot de Discord (opcional, solo con DISCORD_TOKEN)
+│   │   ├── index.js       #   Conexión, registro de comandos y estado
+│   │   ├── commands.js    #   Comandos de barra y formulario de vinculación
+│   │   ├── activity.js    #   Middleware: qué hizo cada usuario (sin guardar nada)
+│   │   ├── logger.js      #   Cola en memoria y envío agrupado al canal de registros
+│   │   ├── updates.js     #   Aviso de versiones nuevas
+│   │   └── store.js       #   Vínculos y ajustes en la base de datos
 │   └── ai/                # Agente de IA (Grok/OpenAI/Gemini/Ollama)
 │       ├── index.js       #   API pública del módulo
 │       ├── config.js      #   Configuración guardada en la base de datos
@@ -446,6 +518,7 @@ El agente trabaja **únicamente dentro de la carpeta del usuario que lo usa** (p
 │       ├── install.bat    #     Doble clic
 │       └── lib/           #     common.ps1, node.ps1
 ├── get.sh / get.ps1       # Instalación en una línea (git + clonar + instalar)
+├── .env.example           # Plantilla de configuración (se copia a .env, que no se sube a GitHub)
 ├── public/
 │   ├── index.html         # Inicio de sesión, registro y recuperación
 │   ├── panel.html         # Panel del usuario
@@ -490,7 +563,8 @@ Todas las rutas `/api/*` devuelven JSON y requieren sesión, salvo `login`, `reg
 | `*` | `/dav/*` | Servidor WebDAV (Basic: tu usuario y la clave WebDAV). |
 | `GET` | `/api/stats` | Uso de espacio por tipo. |
 | `GET` / `POST` | `/api/ai/status`, `/api/ai/chat` | Agente de IA (404 si está desactivada). |
-| `*` | `/api/admin/*` | Administración (solo admins), incluida `/api/admin/ai`. |
+| `GET` / `POST` | `/api/discord`, `/api/discord/unlink` | Estado de tu cuenta de Discord vinculada y desvinculación. |
+| `*` | `/api/admin/*` | Administración (solo admins), incluidas `/api/admin/ai` y `/api/admin/discord` (ajustes, quitar canal, mensaje de prueba). |
 
 ## Despliegue en producción
 

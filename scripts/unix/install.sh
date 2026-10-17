@@ -14,6 +14,7 @@ source "$SCRIPT_DIR/lib/node.sh"
 ensure_node
 install_dependencies
 mkdir -p data hosting
+if [ ! -f .env ] && [ -f .env.example ]; then cp .env.example .env; info "Creado .env (opcional: pon DISCORD_TOKEN para activar el bot de Discord)."; fi
 
 info "Configuración del agente de IA…"
 node tools/setup-ai.js || true   # pregunta si quieres IA (Grok, OpenAI, Gemini u Ollama); nunca interrumpe la instalación
