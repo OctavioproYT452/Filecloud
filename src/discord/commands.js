@@ -69,7 +69,7 @@ module.exports = function build(D) {
         "**/avatar** · la foto de perfil de alguien",
         "Añade `privado: sí` para verlos solo tú.",
       ].join("\n") })
-      .addFields({ name: "Para quien gestiona el servidor", value: "**/bienvenida** · mensaje de bienvenida (canal, texto y códigos como {username})" });
+      .addFields({ name: "Para quien gestiona el servidor", value: "**/bienvenida** · mensaje de bienvenida y rol automático (canal, texto y códigos como {username})" });
     if (u?.is_admin && !pub) e.addFields({ name: "Solo administradores", value: [
       "**/config** · canales de registros y de actualizaciones",
       "**/servidor** · CPU, memoria, disco y totales",
@@ -389,6 +389,8 @@ module.exports = function build(D) {
     .addSubcommand(s => s.setName("ver").setDescription("Muestra la configuración actual"))
     .addSubcommand(s => s.setName("canal").setDescription("Canal donde se envían las bienvenidas").addChannelOption(chOpt))
     .addSubcommand(s => s.setName("mensaje").setDescription("Edita el mensaje y el título de la bienvenida (admite {username}, {members}…)"))
+    .addSubcommand(s => s.setName("rol").setDescription("Rol que se da automáticamente a quien entra (sin indicar rol = no dar ninguno)")
+      .addRoleOption(o => o.setName("rol").setDescription("El rol a dar")))
     .addSubcommand(s => s.setName("formato").setDescription("Enviar la bienvenida como tarjeta o como texto normal")
       .addStringOption(o => o.setName("tipo").setDescription("Cómo se muestra").setRequired(true).addChoices({ name: "Tarjeta (embed)", value: "embed" }, { name: "Texto normal", value: "texto" })))
     .addSubcommand(s => s.setName("activar").setDescription("Activa las bienvenidas automáticas"))
@@ -403,6 +405,7 @@ module.exports = function build(D) {
       const e = emb("Bienvenidas de " + md(g.name)).addFields(
         { name: "Estado", value: cfg.enabled ? "Activadas" : "Desactivadas", inline: true },
         { name: "Canal", value: chName(cfg.channel_id), inline: true },
+        { name: "Rol automático", value: cfg.role_id ? `<@&${cfg.role_id}>` : "Ninguno", inline: true },
         { name: "Formato", value: cfg.embed ? "Tarjeta" : "Texto", inline: true },
         { name: "Título", value: fmtTxt(cfg.title) },
         { name: "Mensaje", value: fmtTxt(cfg.message) });
@@ -425,6 +428,13 @@ module.exports = function build(D) {
       logger.log("admin", `${who(i, u)} configuró el canal de bienvenidas de **${md(g.name)}**`);
       return say(i, `Canal de bienvenidas: ${ch}.${cfg.enabled ? "" : " Cuando quieras, usa **/bienvenida activar**."}`);
     }
+    if (sub === "rol") {
+      const role = i.options.getRole("rol");
+      if (role) { const why = welcome.roleProblem(g, g.roles.cache.get(role.id)); if (why) throw Error(why); }
+      welcome.save(g.id, { role_id: role ? role.id : null });
+      logger.log("admin", `${who(i, u)} ${role ? "puso el rol automático de bienvenida de" : "quitó el rol automático de bienvenida de"} **${md(g.name)}**`);
+      return say(i, role ? `A quien entre se le dará el rol **${md(role.name)}**.${cfg.enabled ? "" : " Falta activar las bienvenidas con **/bienvenida activar**."}` : "Ya no se dará ningún rol al entrar.");
+    }
     if (sub === "formato") {
       const embed = i.options.getString("tipo") === "embed"; welcome.save(g.id, { embed });
       logger.log("admin", `${who(i, u)} cambió el formato de las bienvenidas de **${md(g.name)}**`);
@@ -435,7 +445,7 @@ module.exports = function build(D) {
       if (on && !i.client.options.intents.has(D.GatewayIntentBits.GuildMembers)) throw Error("El bot no tiene activado el permiso «Server Members Intent» (Developer Portal → Bot → Privileged Gateway Intents) y no puede ver quién entra. Actívalo y reinicia File Cloud");
       welcome.save(g.id, { enabled: on });
       logger.log("admin", `${who(i, u)} ${on ? "activó" : "desactivó"} las bienvenidas de **${md(g.name)}**`);
-      return say(i, on ? `Bienvenidas activadas en ${chName(welcome.config(g.id).channel_id)}. Pruébalo con **/bienvenida probar**.` : "Bienvenidas desactivadas.");
+      return say(i, on ? `Bienvenidas activadas${welcome.config(g.id).channel_id ? " en " + chName(welcome.config(g.id).channel_id) : ""}. Pruébalo con **/bienvenida probar**.` : "Bienvenidas desactivadas.");
     }
     if (sub === "restablecer") {
       welcome.remove(g.id);

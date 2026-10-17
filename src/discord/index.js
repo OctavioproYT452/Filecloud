@@ -47,7 +47,7 @@ function connect(token, withMembers) {
 
 async function onReady(c) {
   state.ready = true; state.error = null; state.tag = c.user.tag; state.guilds = c.guilds.cache.size;
-  state.invite = `https://discord.com/oauth2/authorize?client_id=${c.user.id}&scope=bot%20applications.commands&permissions=19456`; // ver canal + enviar mensajes + insertar enlaces
+  state.invite = `https://discord.com/oauth2/authorize?client_id=${c.user.id}&scope=bot%20applications.commands&permissions=268454912`; // ver canal + enviar mensajes + insertar enlaces + gestionar roles (para el rol automático de bienvenida)
   logger.setSender(async (id, payload) => {
     const ch = await client.channels.fetch(id);
     if (!ch || !ch.isTextBased()) throw Error("El canal no existe o no es de texto");
@@ -79,6 +79,8 @@ function guildList() {
       id: g.id, name: g.name, members: g.memberCount,
       channels: [...g.channels.cache.values()].filter(c => (c.type === D.ChannelType.GuildText || c.type === D.ChannelType.GuildAnnouncement) && (!me || c.permissionsFor(me)?.has(["ViewChannel", "SendMessages"])))
         .sort((a, b) => a.rawPosition - b.rawPosition).map(c => ({ id: c.id, name: c.name })),
+      can_roles: !!me?.permissions.has("ManageRoles"),
+      roles: [...g.roles.cache.values()].filter(r => !welcome.roleProblem(g, r)).sort((a, b) => b.position - a.position).map(r => ({ id: r.id, name: r.name })),
       welcome: welcome.config(g.id),
     };
   }).sort((a, b) => a.name.localeCompare(b.name));

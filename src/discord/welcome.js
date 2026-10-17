@@ -23,7 +23,7 @@ const VARS = [
 
 const getCfg = gid => get("SELECT * FROM discord_welcome WHERE guild_id=?", String(gid));
 const publicCfg = r => ({
-  enabled: !!r?.enabled, channel_id: r?.channel_id || null,
+  enabled: !!r?.enabled, channel_id: r?.channel_id || null, role_id: r?.role_id || null,
   message: r?.message ?? DEFAULT_MSG, title: r?.title ?? DEFAULT_TITLE, embed: r ? !!r.embed : true,
 });
 const config = gid => publicCfg(getCfg(gid));
@@ -35,9 +35,9 @@ function save(gid, patch) {
   if (n.message.length > MAX_MSG) throw Error(`El mensaje es demasiado largo (máximo ${MAX_MSG} caracteres)`);
   n.title = String(n.title ?? "").trim();
   if (n.title.length > MAX_TITLE) throw Error(`El título es demasiado largo (máximo ${MAX_TITLE} caracteres)`);
-  if (n.enabled && !n.channel_id) throw Error("Elige primero el canal donde se enviarán las bienvenidas");
-  run("INSERT OR REPLACE INTO discord_welcome(guild_id,enabled,channel_id,message,title,embed,updated_at) VALUES(?,?,?,?,?,?,?)",
-    String(gid), n.enabled ? 1 : 0, n.channel_id || null, n.message, n.title, n.embed ? 1 : 0, now());
+  if (n.enabled && !n.channel_id && !n.role_id) throw Error("Elige primero el canal de bienvenidas o el rol que se dará");
+  run("INSERT OR REPLACE INTO discord_welcome(guild_id,enabled,channel_id,message,title,embed,updated_at,role_id) VALUES(?,?,?,?,?,?,?,?)",
+    String(gid), n.enabled ? 1 : 0, n.channel_id || null, n.message, n.title, n.embed ? 1 : 0, now(), n.role_id || null);
   return n;
 }
 const remove = gid => run("DELETE FROM discord_welcome WHERE guild_id=?", String(gid));
@@ -68,13 +68,33 @@ function build(cfg, c) {
   return { content: undefined, allowedMentions, embeds: [{ color: 0x2ecc71, title: title || undefined, description: body, footer: { text: c.server + " · File Cloud" } }] };
 }
 
-// Cuando entra alguien nuevo
-async function onJoin(m) {
-  try {
-    if (m.user.bot) return;
-    const cfg = getCfg(m.guild.id); if (!cfg || !cfg.enabled || !cfg.channel_id) return;
-    await logger.sendTo(cfg.channel_id, build(publicCfg(cfg), ctxOf(m)));
-  } catch (e) { console.warn("[Discord] No se pudo enviar la bienvenida:", e.message); }
+// ¿Puede el bot dar este rol? (no es @everyone, no es de una integración, el bot tiene «Gestionar roles» y el rol queda por debajo del suyo)
+function roleProblem(guild, role) {
+  const me = guild.members.me;
+  if (!role || role.id === guild.id) return "Ese rol no es válido";
+  if (role.managed) return "Ese rol lo gestiona una integración y no se puede dar a mano";
+  if (!me?.permissions.has("ManageRoles")) return "El bot no tiene el permiso «Gestionar roles» en este servidor";
+  if (role.position >= me.roles.highest.position) return "El rol está por encima del rol del bot: en Ajustes del servidor → Roles, arrastra el rol del bot por encima de ese";
+  return null;
 }
 
-module.exports = { VARS, DEFAULT_MSG, DEFAULT_TITLE, MAX_MSG, MAX_TITLE, config, save, remove, render, build, ctxOf, onJoin };
+// Cuando entra alguien nuevo: primero el rol (aunque no haya canal) y luego el mensaje
+async function onJoin(m) {
+  if (m.user.bot) return;
+  let cfg;
+  try { cfg = getCfg(m.guild.id); } catch (e) { return console.warn("[Discord] Bienvenida:", e.message); }
+  if (!cfg || !cfg.enabled) return;
+  if (cfg.role_id) {
+    try {
+      const role = m.guild.roles.cache.get(cfg.role_id), why = roleProblem(m.guild, role);
+      if (why) throw Error(role ? why : "El rol ya no existe");
+      await m.roles.add(role, "Rol automático de bienvenida (File Cloud)");
+    } catch (e) { console.warn(`[Discord] No se pudo dar el rol de bienvenida en ${m.guild.name}:`, e.message); }
+  }
+  if (cfg.channel_id) {
+    try { await logger.sendTo(cfg.channel_id, build(publicCfg(cfg), ctxOf(m))); }
+    catch (e) { console.warn("[Discord] No se pudo enviar la bienvenida:", e.message); }
+  }
+}
+
+module.exports = { roleProblem, VARS, DEFAULT_MSG, DEFAULT_TITLE, MAX_MSG, MAX_TITLE, config, save, remove, render, build, ctxOf, onJoin };

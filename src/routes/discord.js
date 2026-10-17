@@ -43,6 +43,11 @@ router.post("/api/admin/discord/welcome", needAdmin, wrap(async (req, res) => {
     if (id && !g.channels.some(c => c.id === id)) throw Error("Ese canal no existe en el servidor o el bot no puede escribir en él");
     patch.channel_id = id || null;
   }
+  if (b.role_id !== undefined) {
+    const id = String(b.role_id || "");
+    if (id && !g.roles.some(r => r.id === id)) throw Error("Ese rol no existe o el bot no puede darlo (debe estar por debajo del rol del bot y el bot necesita «Gestionar roles»)");
+    patch.role_id = id || null;
+  }
   if (b.message !== undefined) patch.message = String(b.message);
   if (b.title !== undefined) patch.title = String(b.title);
   if (b.embed !== undefined) patch.embed = !!b.embed;

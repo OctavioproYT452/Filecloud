@@ -82,6 +82,7 @@ function welcomeHtml(s){
  const cards=s.guilds.length?s.guilds.map(g=>{const w=g.welcome;return `<div class="card" data-g="${esc(g.id)}"><h4 class="h0">${esc(g.name)} <small class="muted">· ${g.members} miembros</small></h4>
   ${chk('wen-'+g.id,'Dar la bienvenida a los miembros nuevos','',w.enabled)}
   ${fld('Canal de bienvenidas','',`<select class="input" id="wch-${esc(g.id)}"><option value="">— Sin canal —</option>${g.channels.map(c=>`<option value="${esc(c.id)}"${c.id===w.channel_id?' selected':''}>#${esc(c.name)}</option>`).join('')}</select>`)}
+  ${fld('Rol automático',g.can_roles?'Se da a cada miembro nuevo. Solo salen roles que el bot puede dar (por debajo del suyo).':'El bot no tiene el permiso «Gestionar roles» en este servidor: dáselo para poder usar esta opción.',`<select class="input" id="wro-${esc(g.id)}"><option value="">— Ninguno —</option>${g.roles.map(r=>`<option value="${esc(r.id)}"${r.id===w.role_id?' selected':''}>${esc(r.name)}</option>`).join('')}</select>`)}
   ${chk('wem-'+g.id,'Enviar como tarjeta','Si lo desmarcas se envía como texto normal.',w.embed)}
   ${fld('Título','Opcional. Admite los mismos códigos.',`<input class="input" id="wti-${esc(g.id)}" maxlength="${s.welcome_limits.title}" value="${esc(w.title)}">`)}
   ${fld('Mensaje','Pulsa un código para insertarlo donde tengas el cursor.',`<textarea class="input" id="wms-${esc(g.id)}" rows="5" maxlength="${s.welcome_limits.message}">${esc(w.message)}</textarea>`)}
@@ -94,7 +95,7 @@ function wireWelcome(s){
  $$('[data-g]').forEach(c=>{const id=c.dataset.g,g=s.guilds.find(x=>x.id===id),ms=$('#wms-'+id),ti=$('#wti-'+id);if(!g||!ms)return;
   const upd=()=>{$('#wpt-'+id).innerHTML=wpreview(ti.value,g);$('#wpm-'+id).innerHTML=wpreview(ms.value,g)};ms.oninput=ti.oninput=upd;upd();
   c.querySelectorAll('[data-ins]').forEach(b=>b.onclick=()=>{const t=(document.activeElement===ti?ti:ms),a=t.selectionStart??t.value.length,e=t.selectionEnd??a;t.setRangeText(b.dataset.ins,a,e,'end');t.focus();upd()});
-  const save=async()=>api('/api/admin/discord/welcome',{guild_id:id,enabled:$('#wen-'+id).checked,channel_id:$('#wch-'+id).value,embed:$('#wem-'+id).checked,title:ti.value,message:ms.value});
+  const save=async()=>api('/api/admin/discord/welcome',{guild_id:id,enabled:$('#wen-'+id).checked,channel_id:$('#wch-'+id).value,role_id:$('#wro-'+id).value,embed:$('#wem-'+id).checked,title:ti.value,message:ms.value});
   c.querySelector('[data-wsave]').onclick=async()=>{try{await save();toast('Bienvenida guardada')}catch(e){toast(e.message,1)}};
   c.querySelector('[data-wtest]').onclick=async()=>{try{await save();await api('/api/admin/discord/welcome/test',{guild_id:id});toast('Prueba enviada al canal')}catch(e){toast(e.message,1)}}})}
 

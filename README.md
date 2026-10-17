@@ -419,8 +419,10 @@ Ser «admin» en el bot significa tener una cuenta vinculada que sea administrad
 
 Cuando alguien entra al servidor, el bot envía un mensaje al canal que elijas. Configuración, por servidor:
 
-- En Discord: `/bienvenida canal #canal`, `/bienvenida mensaje` (abre un formulario con título y mensaje), `/bienvenida formato` (tarjeta o texto), `/bienvenida activar`, `/bienvenida probar` (te saluda a ti como prueba) y `/bienvenida variables`.
+- En Discord: `/bienvenida canal #canal`, `/bienvenida mensaje` (abre un formulario con título y mensaje), `/bienvenida rol @rol` (rol que se da automáticamente a quien entra; sin rol = ninguno), `/bienvenida formato` (tarjeta o texto), `/bienvenida activar`, `/bienvenida probar` (te saluda a ti como prueba) y `/bienvenida variables`.
 - En la web: **Admin → Discord → Bienvenidas**, con vista previa en vivo, botones para insertar códigos y envío de prueba.
+
+**Rol automático:** el bot necesita el permiso «Gestionar roles» (el enlace de invitación nuevo ya lo incluye; si ya lo tenías invitado, dáselo en Ajustes del servidor) y su rol debe estar **por encima** del rol que va a dar. Funciona aunque no haya canal de bienvenidas.
 
 Códigos disponibles (en el mensaje y en el título): `{username}`, `{nickname}`, `{mention}`, `{tag}`, `{id}`, `{members}`, `{humans}`, `{server}`, `{created}` y `{date}`. Los nombres se escapan para que nadie cuele menciones masivas ni formato con su apodo; solo se menciona a la persona que entra.
 
