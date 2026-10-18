@@ -85,3 +85,6 @@ body[data-page=dcwiki]{overflow:auto}
 .dc-fcard{border:1px solid var(--line);background:var(--card);border-radius:12px;padding:14px 16px;margin:10px 0}.dc-fcard h4{margin:0 0 4px;font:700 15px ui-monospace,Menlo,monospace;color:#60a5fa;word-break:break-word}.dc-fcard p{margin:4px 0 8px;color:var(--muted)}
 .dc-fcard .dc-res{color:var(--ok);font-size:13px;margin:-4px 0 0}.dc-cp{position:absolute;top:6px;right:6px}
 @media(max-width:800px){.dc-wiki{grid-template-columns:1fr}.dc-wnav{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line);max-height:34vh}.dc-wbody{padding:16px}}
+
+.dc-wclose{position:fixed;right:16px;bottom:16px;z-index:90;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.dc-fnp{z-index:56}.dc-scrim.dc-open{z-index:55}

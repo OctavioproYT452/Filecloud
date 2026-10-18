@@ -9,7 +9,9 @@ const slug=s=>String(s||'').trim().toLowerCase().normalize('NFD').replace(/[\u03
 const fslug=v=>String(v||'').split('/').map(slug).filter(Boolean).join('/');
 const guard=async()=>!S.dirty||await yes('Cambios sin guardar','Perderás los cambios del comando actual. ¿Continuar?');
 window.addEventListener('beforeunload',e=>{if(S.dirty){e.preventDefault();e.returnValue=''}});
-const closeSide=()=>{side.classList.remove('dc-open');scrim.classList.remove('dc-open')};scrim.onclick=closeSide;
+const closeSide=()=>{side.classList.remove('dc-open');scrim.classList.remove('dc-open')};scrim.onclick=()=>{closeSide();setFn(false)};
+function setFn(on){S.fnOpen=on;const r=$('#ref');if(r){r.hidden=!on;if(on)refList($('#rq').value)}scrim.classList.toggle('dc-open',on&&innerWidth<=900)}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&S.fnOpen&&document.activeElement?.id!=='code'){setFn(false);closeSide()}else if(e.key==='Escape'&&S.fnOpen&&document.querySelector('.dc-ac[style*=block]')==null&&document.activeElement?.id==='code'&&innerWidth<=900)setFn(false)});
 const btn=(i,t,c='')=>`<button class="btn ${c}" ${''}>${ic(i)} ${t}</button>`;
 
 async function load(keep){const[l,d]=await Promise.all([api('/api/admin/discord/cmds'),S.docs.length?S.docs:api('/api/admin/discord/script/docs')]);
@@ -69,7 +71,7 @@ function editor(){const c=S.cur;if(!c)return emptyView();
   ${m.tipo==='mensaje'?`<label class="dc-w">Texto que lo activa<input id="fdi" maxlength="100" value="${esc(m.disparador)}"></label><label>Coincidencia${sel('fco',S.list.match,m.coincidencia,{exacta:'El mensaje es exactamente eso',contiene:'El mensaje contiene eso',empieza:'El mensaje empieza así'})}</label>`:''}</div>
   ${m.tipo==='slash'?`<div class="dc-opts" id="opts">${m.opciones.map((o,i)=>`<div class="dc-opt"><input data-k="name" value="${esc(o.name)}" placeholder="nombre" maxlength="32"><select data-k="type">${S.list.types.map(t=>`<option ${t===o.type?'selected':''}>${t}</option>`).join('')}</select><select data-k="required"><option value="0">Opcional</option><option value="1" ${o.required?'selected':''}>Obligatoria</option></select><input data-k="desc" value="${esc(o.desc)}" placeholder="descripción" maxlength="100"><button class="dc-ib dc-dng" data-rm="${i}" title="Quitar">${ic('x')}</button></div>`).join('')}</div><button class="btn ghost sm" id="ao" style="margin-top:8px" ${m.opciones.length>=25?'disabled':''}>${ic('plus')} Añadir opción</button>`:''}</div></details>
   <div class="dc-split"><div class="dc-edwrap"><div class="dc-ed"><div class="dc-gut" id="gut"></div><div class="dc-box"><pre id="hl" aria-hidden="true"></pre><textarea id="code" spellcheck="false" wrap="off" autocapitalize="off" autocomplete="off" aria-label="Código del comando"></textarea><div class="dc-ac" id="ac"></div></div></div><div class="dc-status"><span id="pos">Ln 1, Col 1</span><span id="cnt"></span><span class="dc-grow"></span><span>FCScript</span><span>Ctrl+S guarda</span></div></div>
-    <aside class="dc-fnp" id="ref" ${S.fnOpen?'':'hidden'}><div class="dc-fh"><input type="search" id="rq" placeholder="Buscar función…"></div><div class="dc-fl" id="rl"></div></aside></div>
+    <aside class="dc-fnp" id="ref" ${S.fnOpen?'':'hidden'}><div class="dc-fh" style="display:flex;gap:6px;align-items:center"><input type="search" id="rq" placeholder="Buscar función…"><button class="dc-ib" id="rclose" title="Cerrar (Esc)">${ic('x')}</button></div><div class="dc-fl" id="rl"></div></aside></div>
   <div class="dc-panel ${S.pmin?'dc-min':''}" id="pn"><div class="dc-pt"><button data-pt="prob">Problemas<span class="dc-cnt" id="pc" hidden></span></button><button data-pt="test">Prueba</button><span class="dc-grow"></span><button id="pmin" title="Mostrar u ocultar">${S.pmin?'▲':'▼'}</button></div><div class="dc-pc" id="pcont"></div></div>`;
   $('#code').value=c.code;paint();wireForm();panel();if(S.fnOpen)refList('');checkSoon(0);showDirty()}
 function readForm(){const c=S.cur,m=c.meta;c.name=slug($('#fname').value);c.folder=$('#ffo').value;m.acceso=$('#facc').value;m.activo=$('#fact').checked;
@@ -82,7 +84,7 @@ work.addEventListener('change',e=>{if(!S.cur||e.target.closest('#pn,#rq'))return
 work.addEventListener('toggle',e=>{if(e.target.classList?.contains('dc-props'))S.propsClosed=!e.target.open},true);
 function wireForm(){const c=S.cur;
   $('#sv').onclick=save;$('#mside').onclick=()=>{side.classList.add('dc-open');scrim.classList.add('dc-open')};
-  $('#rf').onclick=()=>{S.fnOpen=!S.fnOpen;$('#ref').hidden=!S.fnOpen;if(S.fnOpen)refList($('#rq').value)};
+  $('#rf').onclick=()=>setFn(!S.fnOpen);$('#rclose').onclick=()=>setFn(false);
   $('#tst').onclick=()=>{S.tab='test';S.pmin=false;panel()};
   const dl=$('#del');if(dl)dl.onclick=()=>delCmd(c.id);
   const ao=$('#ao');if(ao)ao.onclick=()=>{readForm();c.meta.opciones.push({name:'texto',type:'string',required:false,desc:'Opción'});mark();editor()};

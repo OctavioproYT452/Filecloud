@@ -19,5 +19,7 @@ function render(q){q=(q||'').toLowerCase().trim();let h='';
   const i=$('#wq');if(q){i.focus();i.setSelectionRange(q.length,q.length)}}
 nav.addEventListener('input',e=>{if(e.target.id==='wq')render(e.target.value)});
 body.addEventListener('click',async e=>{const b=e.target.closest('[data-cp]');if(!b)return;const t=b.parentElement.querySelector('code').textContent;try{await navigator.clipboard.writeText(t);b.textContent='¡Copiado!'}catch{b.textContent='No se pudo'}setTimeout(()=>b.textContent='Copiar',1400)});
+const x=document.createElement('button');x.className='btn dc-wclose';x.id='wclose';x.textContent='✕ Cerrar wiki';
+x.onclick=()=>{window.close();setTimeout(()=>{location.href='/admin/discord.html'},200)};document.body.append(x);
 api('/api/admin/discord/script/wiki').then(w=>{W=w;render('');if(location.hash)document.getElementById(location.hash.slice(1))?.scrollIntoView()}).catch(x=>{body.innerHTML=`<p style="color:var(--danger)">${esc(x.message)}</p>`});
 })();
