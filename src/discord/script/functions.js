@@ -5,6 +5,7 @@ const { usage } = require("../../lib/storage");
 const { limitB } = require("../../lib/paths");
 const ver = require("../../version");
 const R = require("./runtime");
+const dstore = require("../store");
 const crypto = require("crypto");
 const { genCaptcha } = require("./captcha");
 const ai = require("../../ai");
@@ -48,6 +49,10 @@ function vset(ctx, sc, key, name, value) {
 
 function vdel(ctx, sc, key, name) { if (ctx.dry) ctx.dryVars?.delete(`${sc}|${key}|${name}`); else run("DELETE FROM discord_vars WHERE scope=? AND key=? AND name=?", sc, key, name); }
 const num2 = (v) => { const x = R.num(v); return isNaN(x) ? 0 : x; };
+
+// Cuenta de File Cloud de quien usa el comando o, si se indica un ID/mención de Discord, de esa persona (null si no está vinculada o está suspendida)
+function fcOf(ctx, v) { const uid = id(v); if (!uid || uid === ctx.user.id) return ctx.fc || null; const u = dstore.userByDiscord(uid); return u && !u.suspended ? u : null; }
+const fcNeed = (ctx, v) => { const u = fcOf(ctx, v); if (!u) throw Error(id(v) && id(v) !== ctx.user.id ? "esa persona no tiene la cuenta de File Cloud vinculada" : "necesita la cuenta vinculada"); return u; };
 
 // ---- calculadora segura (sin eval) ----
 function calc(src) {
@@ -94,8 +99,12 @@ F(C1, "userRoles", "[id];[separador]", "Nombres de los roles del usuario (sin @e
 F(C1, "serverIcon", "", "Enlace del icono del servidor (vacío si no tiene).", c => c.guild?.iconURL?.({ size: 512 }) ?? "");
 F(C1, "mentionRole", "idRol", "Menciona un rol (no avisa a nadie: solo se ve el nombre).", (c, a) => `<@&${id(a[0])}>`, { min: 1 });
 F(C1, "mentionChannel", "[idCanal]", "Enlace a un canal (por defecto, el actual).", (c, a) => `<#${id(a[0]) || c.channel?.id || ""}>`);
-F(C1, "isFcAdmin", "", "true si quien lo usa tiene su cuenta de File Cloud vinculada y es administrador.", c => !!(c.fc && c.fc.is_admin));
-F(C1, "isLinked", "", "true si quien lo usa tiene una cuenta de File Cloud vinculada.", c => !!c.fc);
+F(C1, "ownerId", "", "ID del dueño del servidor.", c => c.guild?.ownerId ?? "");
+F(C1, "isOwner", "[id]", "true si el usuario es el dueño del servidor.", (c, a) => (c.guild?.ownerId ?? "") === (id(a[0]) || c.user.id));
+F(C1, "boostCount", "", "Número de mejoras (boosts) del servidor.", c => c.guild?.premiumSubscriptionCount ?? 0);
+F(C1, "channelTopic", "", "Tema del canal actual (vacío si no tiene).", c => c.channel?.topic ?? "");
+F(C1, "isFcAdmin", "[idUsuario]", "true si esa persona (por defecto, quien usa el comando) tiene su cuenta de File Cloud vinculada y es administrador.", (c, a) => !!fcOf(c, a[0])?.is_admin);
+F(C1, "isLinked", "[idUsuario]", "true si esa persona (por defecto, quien usa el comando) tiene una cuenta de File Cloud vinculada.", (c, a) => !!fcOf(c, a[0]));
 
 // =================== Respuesta ===================
 const C2 = "Respuesta";
@@ -215,6 +224,9 @@ F(C6, "hash", "texto;[sha256|sha1|md5]", "Huella (hash) del texto en hexadecimal
 F(C6, "randomString", "[largo];[tipo]", "Texto al azar seguro (máx. 64). Tipos: alnum (por defecto), letters, numbers, hex. Sirve para códigos y contraseñas.", (c, a) => { const set = { alnum: "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789", letters: "abcdefghijklmnopqrstuvwxyz", numbers: "0123456789", hex: "0123456789abcdef" }[S(a[1], "alnum").toLowerCase()]; if (!set) throw Error("tipo no válido (alnum, letters, numbers, hex)"); return Array.from({ length: Math.min(64, Math.max(1, N(a[0], 8))) }, () => set[crypto.randomInt(0, set.length)]).join(""); });
 F(C6, "shuffle", "a;b;c;…", "Mezcla las opciones y las devuelve separadas por coma.", (c, a) => { const x = [...a]; for (let k = x.length - 1; k > 0; k--) { const j = crypto.randomInt(0, k + 1); [x[k], x[j]] = [x[j], x[k]]; } return x.join(", "); }, { min: 1 });
 
+F(C6, "sort", "a;b;c;…", "Ordena las opciones alfabéticamente (o de menor a mayor si son números) y las devuelve separadas por coma.", (c, a) => [...a].sort((x, y) => { const p = R.num(x), q = R.num(y); return !isNaN(p) && !isNaN(q) ? p - q : String(x).localeCompare(String(y), "es"); }).join(", "), { min: 1 });
+F(C6, "unique", "a;b;c;…", "Quita las opciones repetidas y las devuelve separadas por coma.", (c, a) => [...new Set(a.map(x => String(x).trim()))].join(", "), { min: 1 });
+F(C6, "lines", "texto", "Cuenta las líneas de un texto.", (c, a) => S(a[0]).split(/\r?\n/).length, { min: 1 });
 // =================== Tiempo ===================
 const C7 = "Tiempo";
 F(C7, "unix", "", "Segundos desde 1970 (ahora).", () => Math.floor(Date.now() / 1000));
@@ -229,10 +241,10 @@ F(C7, "daysBetween", "unix1;unix2", "Días enteros entre dos instantes.", (c, a)
 
 // =================== File Cloud ===================
 const C8 = "File Cloud";
-F(C8, "fcUser", "", "Usuario de File Cloud vinculado a quien lo usa (vacío si no hay).", c => c.fc?.username ?? "");
-F(C8, "fcSpace", "", "Espacio usado (requiere cuenta vinculada).", async c => { if (!c.fc) throw Error("necesita la cuenta vinculada"); return fmtB(await usage(c.fc)); });
-F(C8, "fcQuota", "", "Espacio total de la cuenta vinculada.", c => { if (!c.fc) throw Error("necesita la cuenta vinculada"); const l = limitB(c.fc); return Number.isFinite(l) ? fmtB(l) : "sin límite"; });
-F(C8, "fcPercent", "", "Porcentaje de espacio usado.", async c => { if (!c.fc) throw Error("necesita la cuenta vinculada"); const l = limitB(c.fc); return Number.isFinite(l) ? Math.round(await usage(c.fc) / l * 100) : 0; });
+F(C8, "fcUser", "[idUsuario]", "Usuario de File Cloud vinculado a esa persona (por defecto, quien usa el comando); vacío si no hay.", (c, a) => fcOf(c, a[0])?.username ?? "");
+F(C8, "fcSpace", "[idUsuario]", "Espacio usado por esa persona (requiere cuenta vinculada).", async (c, a) => fmtB(await usage(fcNeed(c, a[0]))));
+F(C8, "fcQuota", "[idUsuario]", "Espacio total de la cuenta vinculada de esa persona.", (c, a) => { const l = limitB(fcNeed(c, a[0])); return Number.isFinite(l) ? fmtB(l) : "sin límite"; });
+F(C8, "fcPercent", "[idUsuario]", "Porcentaje de espacio usado por esa persona.", async (c, a) => { const u = fcNeed(c, a[0]), l = limitB(u); return Number.isFinite(l) ? Math.round(await usage(u) / l * 100) : 0; });
 F(C8, "fcUsers", "", "Número de cuentas del servidor de File Cloud.", () => get("SELECT COUNT(*) n FROM users").n);
 F(C8, "fcVersion", "", "Versión instalada de File Cloud.", () => ver.info().current);
 
@@ -248,6 +260,29 @@ F(C9, "deleteMessages", "cantidad", "Borra mensajes recientes del canal (1-100; 
 F(C9, "setNickname", "idUsuario;apodo", "Cambia el apodo de un miembro (necesita «Gestionar apodos»). Vacío = quitarlo.", async (c, a) => { need(c, "ManageNicknames"); const g = sameGuild(c), w = await who(c, a[0]); await act(c, `cambiaría el apodo de ${w.user.username} a «${S(a[1]).slice(0, 32)}»`, async () => { await (w.member || await g.members.fetch(w.id)).setNickname(S(a[1]).slice(0, 32) || null); }); }, { q: true, min: 1 });
 F(C9, "unban", "idUsuario;[motivo]", "Quita el baneo a un usuario (necesita «Banear miembros»).", async (c, a) => { need(c, "BanMembers"); const g = sameGuild(c), uid = id(a[0]); if (!uid) throw Error("falta el ID"); await act(c, `quitaría el baneo a ${uid}`, async () => { await g.members.unban(uid, S(a[1]).slice(0, 200)); }); }, { q: true, min: 1 });
 F(C9, "slowmode", "segundos", "Modo lento del canal actual (0-21600 s; necesita «Gestionar canales»). 0 lo quita.", async (c, a) => { need(c, "ManageChannels"); const n = Math.min(21600, Math.max(0, N(a[0]))); await act(c, `pondría el modo lento a ${n} s`, async () => { await c.channel.setRateLimitPerUser(n); }); }, { q: true, min: 1 });
+
+// Roles "de autoservicio": los da el BOT (necesita «Gestionar roles» y que el rol esté por debajo del suyo), así que quien usa el comando NO necesita ese permiso.
+// Para que esto no sirva para escalar privilegios, solo se permiten roles sin permisos peligrosos y que no sean de bots/integraciones ni @everyone.
+const DANGER = ["Administrator", "ManageGuild", "ManageRoles", "ManageChannels", "ManageWebhooks", "KickMembers", "BanMembers", "ModerateMembers", "ManageMessages", "ManageNicknames", "ManageThreads", "ManageEvents", "ManageGuildExpressions", "MentionEveryone", "ViewAuditLog", "ViewGuildInsights"];
+function grantable(g, roleId) { // devuelve el rol o lanza un error que explica por qué no se puede
+  const r = g.roles.cache.get(roleId); if (!r) throw Error("ese rol no existe en este servidor");
+  const me = g.members.me; if (!me?.permissions?.has("ManageRoles")) throw Error("el bot no tiene el permiso «Gestionar roles» en este servidor");
+  if (r.id === g.id || r.managed) throw Error("ese rol no se puede dar (es @everyone o de una integración)");
+  if (r.position >= me.roles.highest.position) throw Error("el rol está por encima del rol del bot: sube el rol del bot en Ajustes del servidor → Roles");
+  const bad = DANGER.filter(p => r.permissions.has(p)); if (bad.length) throw Error(`por seguridad no se pueden dar con FCScript roles con permisos de gestión (${bad.slice(0, 3).join(", ")}…)`);
+  return r;
+}
+const selfRole = (give) => async (c, a) => {
+  const g = sameGuild(c), rid = id(a[0]); if (!rid) throw Error("falta el ID del rol");
+  await act(c, `${give ? "daría" : "quitaría"} el rol ${rid} a quien usa el comando (lo hace el bot, sin pedir permisos al usuario)`, async () => {
+    const r = grantable(g, rid), m = c.member || await g.members.fetch(c.user.id);
+    if (give) await m.roles.add(r, "FCScript: $grantRole"); else await m.roles.remove(r, "FCScript: $revokeRole");
+  });
+};
+F(C9, "grantRole", "idRol", "Da un rol a quien usa el comando, lo hace el bot: el usuario NO necesita permisos. Ideal para el captcha. Solo roles sin permisos de gestión y por debajo del rol del bot.", selfRole(true), { q: true, min: 1 });
+F(C9, "revokeRole", "idRol", "Quita un rol a quien usa el comando, lo hace el bot (mismas reglas que $grantRole).", selfRole(false), { q: true, min: 1 });
+F(C9, "canGrantRole", "idRol", "true si el bot puede dar ese rol con $grantRole (existe, está por debajo del bot y no es peligroso). Para avisar al admin con un mensaje claro.", (c, a) => { if (c.dry) return true; try { grantable(sameGuild(c), id(a[0])); return true; } catch { return false; } }, { min: 1 });
+F(C9, "botHasPerm", "permiso", "true si el BOT tiene ese permiso de Discord en el servidor (ManageRoles, BanMembers…).", (c, a) => c.dry ? true : !!c.guild?.members?.me?.permissions?.has?.(S(a[0]).trim()), { min: 1 });
 
 // =================== IA (usa la IA configurada en File Cloud) ===================
 // Sin herramientas: la IA solo recibe el texto y devuelve texto; nunca toca archivos. Máx. 3 llamadas por ejecución.

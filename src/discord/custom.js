@@ -215,7 +215,7 @@ async function dry(code, meta, { args = "", options = {}, fc = null } = {}) {
   if (c.errors.length) return { errors: c.errors };
   const user = { id: "100000000000000001", username: "tu_usuario", globalName: "Tú", bot: false, displayAvatarURL: () => "https://cdn.discordapp.com/embed/avatars/0.png", send: async () => { } };
   const opts = new Map(Object.entries(options).map(([k, v]) => [k, String(v)])), argv = c.meta.tipo === "slash" ? [...opts.values()] : String(args).split(/\s+/).filter(Boolean);
-  const r = await R.exec(c, { kind: "test", dry: true, user, member: { displayName: "Tú", permissions: { has: () => true }, roles: { cache: { has: () => true } } }, guild: { id: "200000000000000002", name: "Servidor de prueba", memberCount: 42 }, channel: { id: "300000000000000003", name: "general" }, argv, opts, mentions: [], cmd: { id: "prueba", name: "prueba" }, prefix: prefix(), fc, limitMs: 3000 });
+  const r = await R.exec(c, { kind: "test", dry: true, user, member: { displayName: "Tú", permissions: { has: () => true }, roles: { cache: { has: () => true } } }, guild: { id: "200000000000000002", name: "Servidor de prueba", memberCount: 42 }, channel: { id: "300000000000000003", name: "general" }, argv, opts, mentions: [...String(args).matchAll(/<@!?(\d{5,})>|(?<!\d)(\d{17,20})(?!\d)/g)].map(m => m[1] || m[2]).slice(0, 10), cmd: { id: "prueba", name: "prueba" }, prefix: prefix(), fc, limitMs: 3000 });
   return { errors: [], error: r.error, stopped: r.stopped, message: r.error ? null : preview(R.payload(r)), ephemeral: !!r.out.eph, simulated: r.sim, deletes: r.out.del };
 }
 
