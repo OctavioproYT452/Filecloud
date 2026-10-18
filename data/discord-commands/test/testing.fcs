@@ -5,3 +5,9 @@
 //@ alias: test
 
 Hola $nickname, usaste $prefix$commandName
+$serverName
+$if[$username==octavioproyt453]
+Eres el creador
+$else
+Eres alguien más...
+$endif

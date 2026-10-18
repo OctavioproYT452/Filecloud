@@ -14,6 +14,10 @@ router.get("/api/admin/discord/cmds", needAdmin, wrap(async (req, res) => {
   res.json({ ...custom.list(), prefix: custom.prefix(), limits: custom.limits, types: custom.OPT_TYPES, access: custom.ACCESS, match: custom.MATCH, bot: { ready: dc.state.ready, content: dc.state.content, configured: dc.state.configured } });
 }));
 router.get("/api/admin/discord/cmds/get", needAdmin, wrap(async (req, res) => res.json(custom.read(String(req.query.id || "")))));
+router.get("/api/admin/discord/script/wiki", needAdmin, (req, res) => {
+  const w = require("../discord/script/wiki");
+  res.json({ guides: w.GUIDES, functions: custom.docs().map(d => ({ ...d, ex: w.EXAMPLES[d.n] || null })) });
+});
 router.get("/api/admin/discord/script/docs", needAdmin, (req, res) => res.json(custom.docs()));
 
 router.post("/api/admin/discord/cmds/save", needAdmin, wrap(async (req, res) => {
