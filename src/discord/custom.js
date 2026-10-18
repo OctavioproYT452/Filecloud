@@ -52,7 +52,21 @@ function serialize(m, code) {
   if (m.tipo === "mensaje") h.push(`//@ disparador: ${m.disparador.replace(/\n/g, " ")}`, `//@ coincidencia: ${m.coincidencia}`);
   return h.join("\n") + "\n\n" + code.replace(/\r\n/g, "\n");
 }
-function compile(c) { const p = parse(c.code, QUIET); check(p.ast, p.errors, p.lineOf, FN); c.ast = p.ast; c.lineOf = p.lineOf; c.errors = p.errors; return c; }
+// Nombres de todas las funciones que usa un árbol (para saber si el comando llama a la IA o es efímero)
+function usedNames(ast, set = new Set()) {
+  for (const x of ast) {
+    if (x.t === "call") { set.add(x.name); x.args.forEach(a => usedNames(a, set)); }
+    else if (x.t === "if") { x.branches.forEach(b => { usedNames(b.cond, set); usedNames(b.body, set); }); if (x.else) usedNames(x.else, set); }
+    else if (x.t === "for") { x.args.forEach(a => usedNames(a, set)); usedNames(x.body, set); }
+    else if (x.t === "while") { usedNames(x.cond, set); usedNames(x.body, set); }
+  }
+  return set;
+}
+function compile(c) {
+  const p = parse(c.code, QUIET); check(p.ast, p.errors, p.lineOf, FN); c.ast = p.ast; c.lineOf = p.lineOf; c.errors = p.errors;
+  c.uses = usedNames(p.ast); c.slow = [...c.uses].some(n => n.startsWith("ai") && n !== "aiavailable" && n !== "aipersona"); // la IA tarda: hay que "pensar" antes de contestar
+  return c;
+}
 
 function load() {
   cmds = new Map(); folders = new Set(); fs.mkdirSync(DIR, { recursive: true });
@@ -156,13 +170,16 @@ async function runSlash(i) {
   if (!allowed(c, fc, i.member)) { await i.reply({ content: NOPE[c.meta.acceso], flags: EPH }); return true; }
   const opts = new Map(), argv = [], mentions = [];
   for (const o of c.meta.opciones) { const v = i.options.get(o.name)?.value; if (v === undefined || v === null) continue; opts.set(o.name, String(v)); argv.push(String(v)); if (o.type === "user") mentions.push(String(v)); }
+  let deferred = false;
+  if (c.slow) { await i.deferReply(c.uses.has("ephemeral") ? { flags: EPH } : {}); deferred = true; }
+  const send = o => deferred ? i.editReply((delete o.flags, o)) : i.reply(o);
   const r = await R.exec(c, { kind: "slash", D, client: i.client, inter: i, user: i.user, member: i.member, guild: i.guild, channel: i.channel, argv, opts, mentions, cmd: { id: c.id, name: c.name }, prefix: prefix(), fc });
-  if (r.error) return void await i.reply({ content: "⚠️ Error en el comando: " + r.error.slice(0, 1500), flags: EPH }), true;
+  if (r.error) return void await send({ content: "⚠️ Error en el comando: " + r.error.slice(0, 1500), flags: EPH }), true;
   const p = R.payload(r);
   if (r.stopped || r.out.eph) p.flags = EPH;
   if (!p.content && !p.embeds) { p.content = r.stopped ? "Comando cancelado." : "✓"; p.flags = EPH; }
   p.allowedMentions = { parse: ["users"] };
-  await i.reply(p); return true;
+  await send(p); return true;
 }
 
 async function onMessage(m) {
@@ -176,11 +193,20 @@ async function onMessage(m) {
   if (!c || spam(m.author.id)) return;
   const fc = userOf(m.author.id);
   if (!allowed(c, fc, m.member)) { if (c.meta.tipo === "prefijo") await m.reply({ content: NOPE[c.meta.acceso], allowedMentions: { repliedUser: false } }).catch(() => { }); return; }
+  if (c.slow) m.channel.sendTyping?.().catch(() => { });
   const r = await R.exec(c, { kind: c.meta.tipo === "prefijo" ? "prefix" : "message", D, client: m.client, msg: m, user: m.author, member: m.member, guild: m.guild, channel: m.channel, argv, opts: new Map(), mentions: [...m.mentions.users.keys()], cmd: { id: c.id, name: c.name }, prefix: pf, fc });
   const box = { allowedMentions: { parse: ["users"], repliedUser: false } };
   if (r.error) return void await m.reply({ ...box, content: (fc?.is_admin ? "⚠️ Error en el comando: " + r.error : "Ocurrió un error en este comando.").slice(0, 1500) }).catch(() => { });
-  const p = { ...R.payload(r), ...box }; if (!p.content && !p.embeds) { if (r.out.del) m.delete().catch(() => { }); return; }
+  const p = { ...R.payload(r), ...box }; if (!p.content && !p.embeds && !p.files) { if (r.out.del) m.delete().catch(() => { }); return; }
   if (r.out.del) { m.delete().catch(() => { }); await m.channel.send(p).catch(() => { }); } else await m.reply(p).catch(() => { });
+}
+
+// En la prueba del editor los archivos adjuntos se muestran como imagen incrustada (data URI) en lugar de enviarse
+function preview(p) {
+  const files = p.files || []; delete p.files; p.attachments = files.map(f => ({ name: f.name, size: f.attachment.length }));
+  const e = p.embeds?.[0]; const m = /^attachment:\/\/(.+)$/.exec(e?.image?.url || "");
+  if (m) { const f = files.find(x => x.name === m[1]); if (f) e.image.url = "data:image/png;base64," + f.attachment.toString("base64"); }
+  return p;
 }
 
 // Prueba sin tocar Discord: las acciones (roles, mensajes, expulsiones…) solo se describen
@@ -190,7 +216,7 @@ async function dry(code, meta, { args = "", options = {}, fc = null } = {}) {
   const user = { id: "100000000000000001", username: "tu_usuario", globalName: "Tú", bot: false, displayAvatarURL: () => "https://cdn.discordapp.com/embed/avatars/0.png", send: async () => { } };
   const opts = new Map(Object.entries(options).map(([k, v]) => [k, String(v)])), argv = c.meta.tipo === "slash" ? [...opts.values()] : String(args).split(/\s+/).filter(Boolean);
   const r = await R.exec(c, { kind: "test", dry: true, user, member: { displayName: "Tú", permissions: { has: () => true }, roles: { cache: { has: () => true } } }, guild: { id: "200000000000000002", name: "Servidor de prueba", memberCount: 42 }, channel: { id: "300000000000000003", name: "general" }, argv, opts, mentions: [], cmd: { id: "prueba", name: "prueba" }, prefix: prefix(), fc, limitMs: 3000 });
-  return { errors: [], error: r.error, stopped: r.stopped, message: r.error ? null : R.payload(r), ephemeral: !!r.out.eph, simulated: r.sim, deletes: r.out.del };
+  return { errors: [], error: r.error, stopped: r.stopped, message: r.error ? null : preview(R.payload(r)), ephemeral: !!r.out.eph, simulated: r.sim, deletes: r.out.del };
 }
 
 const init = (d, reserved, onChange) => { D = d; hook = onChange; for (const n of reserved || []) RESERVED.add(n); ensure(); };

@@ -97,7 +97,7 @@ async function cond(ctx, nodes) {
 
 // Ejecuta un comando ya compilado. ctx lo prepara custom.js (quién lo usa, dónde, opciones…).
 async function exec(compiled, ctx) {
-  Object.assign(ctx, { steps: 0, deadline: Date.now() + (ctx.limitMs || 4000), vars: new Map(), sim: ctx.sim || [], out: { embed: {}, fields: [], eph: false, del: false, reactions: [] } });
+  Object.assign(ctx, { steps: 0, deadline: Date.now() + (ctx.limitMs || 4000), vars: new Map(), sim: ctx.sim || [], out: { embed: {}, fields: [], files: [], eph: false, del: false, reactions: [], ai: 0 } });
   try {
     const text = (await ev(ctx, compiled.ast)).replace(/\n{3,}/g, "\n\n").trim();
     return { content: text.slice(0, 2000), out: ctx.out, sim: ctx.sim };
@@ -114,12 +114,15 @@ function payload(r) {
   if (r.content) p.content = r.content;
   if (Object.keys(em).length || o.fields.length) {
     const e = { color: em.color ?? 0x4f8cff };
-    for (const k of ["title", "description", "image", "thumbnail", "timestamp"]) if (em[k]) e[k] = k === "image" || k === "thumbnail" ? { url: em[k] } : String(em[k]).slice(0, k === "description" ? 4000 : 256);
-    if (em.footer) e.footer = { text: String(em.footer).slice(0, 2000) };
-    if (em.author) e.author = { name: String(em.author).slice(0, 256) };
+    for (const k of ["title", "description", "timestamp"]) if (em[k]) e[k] = String(em[k]).slice(0, k === "description" ? 4000 : 256);
+    if (em.titleUrl && e.title) e.url = em.titleUrl;
+    for (const k of ["image", "thumbnail"]) if (em[k]) e[k] = { url: em[k] };
+    if (em.footer || em.footerIcon) e.footer = { text: String(em.footer || "\u200b").slice(0, 2000), ...(em.footerIcon ? { icon_url: em.footerIcon } : {}) };
+    if (em.author || em.authorIcon) e.author = { name: String(em.author || "\u200b").slice(0, 256), ...(em.authorIcon ? { icon_url: em.authorIcon } : {}), ...(em.authorUrl ? { url: em.authorUrl } : {}) };
     if (o.fields.length) e.fields = o.fields.slice(0, 25);
     p.embeds = [e];
   }
+  if (o.files.length) p.files = o.files.slice(0, 3).map(f => ({ attachment: f.data, name: f.name }));
   return p;
 }
 

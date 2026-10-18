@@ -29,8 +29,29 @@ const G = [
     { t: "p", v: "`$topUserVar[monedas;10]` devuelve un ranking de mayor a menor." },
   ] },
   { id: "respuestas", title: "Respuestas y tarjetas", b: [
-    { t: "p", v: "El texto que no es una función es el mensaje. Si usas `$title`, `$description`, `$color`, `$addField`, `$footer`, `$image`, `$thumbnail` o `$author`, se envía además una **tarjeta** (embed). En comandos slash, `$ephemeral` hace que solo la vea quien lo usó." },
-    { t: "code", v: "$title[Perfil de $nickname]\n$color[#4f8cff]\n$thumbnail[$avatar]\n$addField[Cuenta;$fcUser;yes]\n$addField[Espacio;$fcSpace de $fcQuota;yes]\n$footer[$serverName]\n$ephemeral" },
+    { t: "p", v: "El texto que no es una función es el mensaje normal. Si usas cualquiera de las funciones de tarjeta (`$title`, `$description`, `$color`, `$addField`, `$footer`, `$image`, `$thumbnail`, `$author`…), se envía además una **tarjeta** (embed). En comandos slash, `$ephemeral` hace que solo la vea quien lo usó." },
+    { t: "embed" },
+    { t: "table", h: ["N.º", "Parte de la tarjeta", "Funciones"], r: [["1", "Autor (nombre, icono y enlace)", "`$author` `$authorIcon` `$authorUrl`"], ["2", "Título (puede ser un enlace)", "`$title` `$titleUrl`"], ["3", "Texto principal", "`$description`"], ["4", "Imagen pequeña (esquina)", "`$thumbnail`"], ["5", "Campos en columnas", "`$addField`"], ["6", "Imagen grande", "`$image` · `$genCaptcha`"], ["7", "Pie (texto, icono y hora)", "`$footer` `$footerIcon` `$timestamp`"], ["—", "Color de la franja izquierda", "`$color` · `$randomColor`"]] },
+    { t: "code", v: "$author[$nickname]\n$authorIcon[$avatar]\n$title[Perfil de $nickname]\n$titleUrl[https://example.com]\n$color[#4f8cff]\n$thumbnail[$avatar]\n$addField[Cuenta;$fcUser;yes]\n$addField[Espacio;$fcSpace de $fcQuota;yes]\n$footer[$serverName]\n$footerIcon[$serverIcon]\n$timestamp\n$ephemeral" },
+    { t: "tip", v: "Los enlaces de imagen e iconos deben empezar por `http://` o `https://`; si no, se ignoran. Discord no muestra imágenes de enlaces que no sean públicos." },
+  ] },
+  { id: "captcha", title: "Captcha paso a paso", b: [
+    { t: "p", v: "`$genCaptcha` dibuja una imagen con letras y números deformados, **la mete dentro de la tarjeta** junto con el resto de tu mensaje y **guarda el código** en la variable de usuario `captcha`. Después compruebas lo que escribe la persona con `$checkCaptcha`." },
+    { t: "ul", v: ["El código no usa caracteres que se confunden (0, O, 1, I). La longitud va de 4 a 8 (5 por defecto).", "`$checkCaptcha[texto]` no distingue mayúsculas, ignora espacios y **borra el captcha si acierta**. Tras 5 fallos seguidos también se invalida, para que nadie pueda adivinarlo.", "Puedes leer el código directamente con `$getUserVar[captcha]` (por ejemplo, para guardarlo en un registro) y borrarlo con `$clearCaptcha`.", "Si pides otro captcha, el anterior queda sustituido."] },
+    { t: "p", v: "**Comando 1: `/captcha` (slash, sin opciones)**" },
+    { t: "code", v: "$cooldown[10;Espera unos segundos para pedir otro.]\n$title[🔒 Verificación]\n$description[Escribe el código de la imagen con `/verificar codigo:XXXXX`.\nTienes 5 intentos.]\n$footer[$serverName]\n$footerIcon[$serverIcon]\n$genCaptcha[5]\n$ephemeral" },
+    { t: "p", v: "**Comando 2: `/verificar` (slash con la opción `codigo`, tipo texto)**" },
+    { t: "code", v: "$onlyIf[$getUserVar[captcha]!=;Primero pide un captcha con /captcha.]\n$ephemeral\n$if[$checkCaptcha[$option[codigo]]==true]\n$setUserVar[verificado;si]\n✅ ¡Verificado! Ya puedes usar el servidor.\n$else\n❌ Código incorrecto. Revisa la imagen y vuelve a probar.\n$endif" },
+    { t: "tip", v: "Para dar un rol automáticamente tendrías que usar `$giveRole`, pero esa función exige que **quien usa el comando** tenga el permiso «Gestionar roles», así que no sirve para auto-verificarse. Usa la variable `verificado` y que tus otros comandos la comprueben con `$onlyIf[$getUserVar[verificado]==si;Verifícate primero.]`." },
+    { t: "p", v: "El botón **Probar** del editor muestra la imagen del captcha y el código (en «Acciones simuladas»), sin enviar nada a Discord." },
+  ] },
+  { id: "ia", title: "Funciones de IA", b: [
+    { t: "p", v: "Si un administrador ha configurado una IA (Grok, ChatGPT, Gemini u Ollama) en el panel, tus comandos pueden usarla con las funciones `$ai…`. La IA **solo recibe texto y devuelve texto**: no puede tocar archivos ni ejecutar nada." },
+    { t: "code", v: "$cooldown[15;Espera un poco.]\n$onlyIf[$message!=;Escribe algo después del comando.]\n$aiPersona[Eres un pirata simpático. Responde en una frase.]\n$title[🏴‍☠️ El capitán responde]\n$description[$ai[Responde a la pregunta;$message]]" },
+    { t: "ul", v: ["**Instrucción y datos separados:** en `$ai[instrucción;texto]` la instrucción la escribes tú y el texto (lo que escribe el usuario) se envía como **datos**: la IA recibe la orden de no obedecer lo que haya dentro. Aun así, no confíes ciegamente en la respuesta.", "**Límites:** cada ejecución puede hacer hasta 3 llamadas. Se cuentan en el límite de IA de la cuenta de File Cloud vinculada de quien usa el comando; si no tiene, son 10 por hora por persona.", "**Tiempo:** en comandos slash el bot responde «pensando…» mientras espera a la IA, así que no caduca el comando.", "**Menciones:** la respuesta se limpia: si la IA escribe `@everyone` o una mención, se desactiva.", "**Pruebas:** el botón Probar sí llama a la IA (para que veas el resultado real) pero no gasta el límite de nadie.", "Usa `$aiAvailable` para dar una alternativa cuando la IA no esté configurada."] },
+    { t: "p", v: "**Moderación automática (tipo mensaje, «contiene» con un texto muy habitual, o prefijo):**" },
+    { t: "code", v: "$onlyIf[$aiModerate[$message]==true;]\n$deleteCommand\n⚠️ $mention, cuida el lenguaje." },
+    { t: "tip", v: "Cada mensaje que activa un comando de tipo mensaje y llama a la IA cuenta como un uso. Para vigilar un canal entero no es la herramienta adecuada; úsalo en comandos concretos." },
   ] },
   { id: "opciones", title: "Opciones y entrada del usuario", b: [
     { t: "p", v: "En un comando **slash** defines opciones en el formulario (nombre, tipo, obligatoria). Las lees con `$option[nombre]`. Tipos: `string` (texto), `integer`, `number`, `boolean`, `user`, `channel`, `role`." },
@@ -43,6 +64,18 @@ const G = [
   ] },
   { id: "limites", title: "Límites y errores comunes", b: [
     { t: "ul", v: ["Máx. 4000 operaciones y 4 segundos por ejecución; 200 vueltas por bucle; 20 000 caracteres por comando; 200 comandos (60 slash).", "Si falta un `]`, un `$endif` o escribes una función que no existe, el editor marca la línea en rojo y la lista de **Problemas** lo explica.", "Un nombre de comando slash solo admite letras minúsculas, números, `-` y `_`, y no puede coincidir con los comandos del propio bot (`/ayuda`, `/cuenta`…).", "Cambiar un slash tarda unos segundos en aparecer en Discord.", "Los comandos de prefijo y de mensaje no responden si falta «Message Content Intent» (Developer Portal → Bot)."] },
+  ] },
+  { id: "faq", title: "Problemas frecuentes", b: [
+    { t: "table", h: ["Síntoma", "Causa y solución"], r: [
+      ["La respuesta sale vacía o con un «✓»", "El comando no escribió ningún texto ni tarjeta. Revisa que haya texto fuera de las funciones o un `$description`."],
+      ["«La función $xxx no existe»", "Está mal escrita o pegada a otro texto (`$usernamehola`). Sepárala con un espacio. Los nombres no distinguen mayúsculas."],
+      ["No se ve la imagen / el icono", "El enlace debe ser `https://…` y público. Los enlaces de `$avatar` y `$serverIcon` ya valen."],
+      ["El slash no aparece en Discord", "Tarda unos segundos; comprueba que el comando esté **activo** y que el nombre no lo use ya el bot."],
+      ["Los comandos de prefijo no responden", "Falta «Message Content Intent» en el Developer Portal → Bot."],
+      ["«necesita el permiso de Discord…»", "Las funciones de moderación comprueban a **quien usa el comando**, no al bot. El bot además necesita el permiso en el servidor."],
+      ["«La IA no está activada»", "Un administrador debe configurarla en el panel. Usa `$aiAvailable` para avisar al usuario con elegancia."],
+      ["El captcha dice siempre «incorrecto»", "Se invalida a los 5 fallos o al pedir otro. Pide uno nuevo con tu comando de captcha."],
+    ] },
   ] },
   { id: "recetas", title: "Recetas listas para copiar", b: [
     { t: "p", v: "**Contador de usos (prefijo):**" },
@@ -57,10 +90,26 @@ const G = [
     { t: "code", v: "$choose[¡Buenos días!;¡Muy buenas!;¡Hola!] $mention" },
     { t: "p", v: "**Ranking de monedas (slash):**" },
     { t: "code", v: "$title[🏆 Top monedas]\n$description[$topUserVar[monedas;10;{pos}. {user} — {value}]]" },
+    { t: "p", v: "**Recompensa diaria con cuenta atrás (slash):**" },
+    { t: "code", v: "$cooldown[86400;Ya cobraste hoy. Vuelve mañana.]\n$incUserVar[monedas;$random[50;150]]\n$title[🎁 Recompensa diaria]\n$description[Ahora tienes **$getUserVar[monedas]** $plural[$getUserVar[monedas];moneda;monedas].\nPuesto en el ranking: **#$rankUserVar[monedas]**]\n$footer[$username]\n$footerIcon[$avatar]" },
+    { t: "p", v: "**Ficha de usuario con fechas (slash con opción `usuario`, tipo user):**" },
+    { t: "code", v: "$author[$nickname[$option[usuario]]]\n$authorIcon[$avatar[$option[usuario]]]\n$thumbnail[$avatar[$option[usuario]]]\n$addField[Cuenta creada;$discordTime[$createdAt[$option[usuario]];D] ($timeAgo[$createdAt[$option[usuario]]]);no]\n$addField[Entró al servidor;$discordTime[$joinedAt[$option[usuario]];R];no]\n$addField[Roles;$default[$userRoles[$option[usuario]];Ninguno];no]" },
+    { t: "p", v: "**Barra de progreso (slash con opción `nivel`):**" },
+    { t: "code", v: "$title[Progreso]\n$description[$progressBar[$option[nivel];100;12] $percent[$option[nivel];100]%]" },
+    { t: "p", v: "**Traductor con IA (prefijo, `!traducir hola a todos`):**" },
+    { t: "code", v: "$onlyIf[$aiAvailable==true;La IA no está activada.]\n$cooldown[10;Espera un poco.]\n$title[🌍 Traducción]\n$description[$aiTranslate[$message;inglés]]" },
   ] },
 ];
 
 // Ejemplos: nombre -> [código, resultado]; n: nota extra
+const NEW = "footerIcon authorIcon authorUrl titleUrl genCaptcha checkCaptcha clearCaptcha chance createdAt joinedAt userRoles serverIcon mentionRole mentionChannel incUserVar incServerVar incGlobalVar rankUserVar clamp percent progressBar randomColor plural titleCase truncate pad count startsWith endsWith indexOf slug hash randomString shuffle parseDate timeAgo daysBetween setNickname unban slowmode aiAvailable aiPersona ai aiSummarize aiTranslate aiFix aiRewrite aiExplain aiIdeas aiSentiment aiClassify aiModerate".split(" ");
+// Categorías: icono y explicación corta para la wiki
+const CATS = {
+  "Contexto": ["👤", "Quién usa el comando, dónde y qué escribió."], "Respuesta": ["💬", "Mensaje, tarjeta (embed), imágenes, captcha y envíos."],
+  "Lógica y control": ["🧭", "Condiciones, permisos, esperas y captcha."], "Variables guardadas": ["💾", "Datos que se conservan para siempre: monedas, niveles, ajustes…"],
+  "Matemáticas": ["🔢", "Cálculos, azar, porcentajes y barras de progreso."], "Texto": ["🔤", "Cortar, buscar, cambiar y generar texto."], "Tiempo": ["⏱️", "Fechas, duraciones y marcas de tiempo."],
+  "File Cloud": ["☁️", "Datos de la cuenta vinculada y del servidor."], "Moderación": ["🛡️", "Roles, expulsiones, apodos y canales."], "IA": ["🤖", "Usa la IA configurada: resumir, traducir, clasificar…"], "Bloques": ["🧱", "Condiciones y bucles."],
+};
 const E = {
   message: ["$message[2]", "con «!cmd hola mundo» → mundo"], argCount: ["Escribiste $argCount palabras", "→ Escribiste 2 palabras"], option: ["$option[texto]", "valor de la opción «texto»"],
   mentioned: ["$mention[$mentioned[1]]", "menciona al primer usuario citado"], username: ["$username", "→ juan"], nickname: ["¡Hola $nickname!", "→ ¡Hola Juan!"], mention: ["$mention", "→ @Juan"],
@@ -87,6 +136,18 @@ const E = {
   break: ["$for[i;1;9]$if[$get[i]==3]$break$endif$get[i]$endfor", "→ 12"], c: ["$c[nota]", ""], userId: ["$userId", ""], commandName: ["$commandName", ""], prefix: ["$prefix", ""],
   isBot: ["$isBot[$mentioned[1]]", ""], serverId: ["$serverId", ""], channelId: ["$channelId", ""], channelName: ["$channelName", ""], roleName: ["$roleName[123456789012345678]", ""],
   isFcAdmin: ["$if[$isFcAdmin==true]admin$endif", ""], isLinked: ["$if[$isLinked==true]vinculado$endif", ""], timestamp: ["$timestamp", "hora actual en la tarjeta"], author: ["$author[$username]", ""], thumbnail: ["$thumbnail[$avatar]", ""],
+  footerIcon: ["$footer[$serverName]\n$footerIcon[$serverIcon]", "icono junto al pie"], authorIcon: ["$author[$nickname]\n$authorIcon[$avatar]", "icono redondo junto al autor"], authorUrl: ["$author[Mi web]\n$authorUrl[https://example.com]", "el nombre del autor es un enlace"], titleUrl: ["$title[Léeme]\n$titleUrl[https://example.com]", "el título es un enlace"],
+  genCaptcha: ["$title[Verificación]\n$description[Escribe el código con /verificar]\n$genCaptcha[5]", "imagen dentro de la tarjeta; código en la variable de usuario «captcha»"], checkCaptcha: ["$if[$checkCaptcha[$option[codigo]]==true]¡Correcto!$else Incorrecto$endif", "no distingue mayúsculas; borra el captcha si acierta"], clearCaptcha: ["$clearCaptcha", "descarta el captcha pendiente"],
+  chance: ["$if[$chance[25]==true]¡Premio!$endif", "25 % de probabilidad"], createdAt: ["Cuenta creada $discordTime[$createdAt;D]", "→ Cuenta creada 14 de marzo de 2019"], joinedAt: ["Entró $discordTime[$joinedAt;R]", "→ Entró hace 2 años"], userRoles: ["$userRoles[$userId; | ]", "→ Miembro | VIP"], serverIcon: ["$thumbnail[$serverIcon]", "icono del servidor en la tarjeta"], mentionRole: ["$mentionRole[123456789012345678]", ""], mentionChannel: ["Ve a $mentionChannel[123456789012345678]", "→ enlace al canal"],
+  incUserVar: ["$incUserVar[monedas;10]\nTienes $getUserVar[monedas]", "suma 10 (usa -10 para restar)"], incServerVar: ["$incServerVar[mensajes]", "suma 1 por defecto"], incGlobalVar: ["$incGlobalVar[usos;1;0;1000]", "con mínimo 0 y máximo 1000"], rankUserVar: ["Eres el n.º $rankUserVar[monedas]", "→ Eres el n.º 3"],
+  clamp: ["$clamp[150;0;100]", "→ 100"], percent: ["$percent[3;12;1]%", "→ 25%"], progressBar: ["$progressBar[7;10;10]", "→ ▰▰▰▰▰▰▰▱▱▱"], randomColor: ["$color[$randomColor]", "color al azar para la tarjeta"], plural: ["$plural[2;moneda;monedas]", "→ monedas"],
+  titleCase: ["$titleCase[hola mundo cruel]", "→ Hola Mundo Cruel"], truncate: ["$truncate[abcdefghij;6]", "→ abcde…"], pad: ["$pad[7;3;0]", "→ 007"], count: ["$count[banana;a]", "→ 3"], startsWith: ["$startsWith[Hola mundo;hola]", "→ true"], endsWith: ["$endsWith[foto.png;.png]", "→ true"], indexOf: ["$indexOf[hola;l]", "→ 2"],
+  slug: ["$slug[Mi Canción Nº 1!]", "→ mi-cancion-n-1"], hash: ["$hash[hola;sha256]", "→ b221d9db…"], randomString: ["$randomString[8;hex]", "→ 3fa9c01b"], shuffle: ["$shuffle[ana;luis;eva]", "→ eva, ana, luis"],
+  parseDate: ["$parseDate[2026-12-25 18:30]", "→ segundos Unix"], timeAgo: ["$timeAgo[$calc[$unix-3700]]", "→ hace 1 h 1 min 40 s"], daysBetween: ["$daysBetween[$unix;$parseDate[2026-12-25]]", "→ días hasta Navidad"],
+  setNickname: ["$setNickname[$mentioned[1];Nuevo apodo]", "necesita «Gestionar apodos»"], unban: ["$unban[123456789012345678;Apelación aceptada]", "necesita «Banear miembros»"], slowmode: ["$slowmode[10]", "10 s entre mensajes; 0 lo quita"],
+  aiAvailable: ["$if[$aiAvailable==true]…$else La IA no está activa$endif", ""], aiPersona: ["$aiPersona[Eres un pirata simpático]", "afecta a las siguientes llamadas"], ai: ["$ai[Responde en una frase;$message]", "instrucción tuya + texto del usuario como datos"],
+  aiSummarize: ["$aiSummarize[$message;2]", "resumen en 2 frases"], aiTranslate: ["$aiTranslate[$message;inglés]", ""], aiFix: ["$aiFix[hola komo estas]", "→ Hola, ¿cómo estás?"], aiRewrite: ["$aiRewrite[$message;más formal]", ""], aiExplain: ["$aiExplain[$message]", ""], aiIdeas: ["$aiIdeas[nombres para un bot;5]", "lista con viñetas"],
+  aiSentiment: ["$aiSentiment[¡Me encanta!]", "→ positivo"], aiClassify: ["$aiClassify[$message;saludo,queja,pregunta]", "→ queja"], aiModerate: ["$if[$aiModerate[$message]==true]…$endif", "true si es ofensivo o spam"],
   delUserVar: ["$delUserVar[monedas]", ""], delServerVar: ["$delServerVar[x]", ""], delGlobalVar: ["$delGlobalVar[x]", ""],
 };
-module.exports = { GUIDES: G, EXAMPLES: E };
+module.exports = { GUIDES: G, EXAMPLES: E, CATS, NEW };

@@ -11,7 +11,7 @@ Sube, organiza, edita y comparte archivos desde cualquier dispositivo, con usuar
 
 </div>
 
-> **Versión 2.10.4.** Qué ha cambiado en esta versión: consulta [RELEASE.md](RELEASE.md).
+> **Versión 2.10.5.** Qué ha cambiado en esta versión: consulta [RELEASE.md](RELEASE.md).
 
 ---
 
@@ -327,7 +327,7 @@ Disponible en `/admin/` solo para administradores. Usa el mismo menú de usuario
 - La versión instalada está en `data/version.json`:
 
   ```json
-  { "version": "2.10.4" }
+  { "version": "2.10.5" }
   ```
 
 - Cada 2 minutos el servidor lee ese archivo local y lo compara con el `data/version.json` publicado en GitHub. Si el de GitHub es más nuevo (se comparan los números: `2.10` es mayor que `2.9`), los **administradores** ven un aviso de nueva versión con instrucciones para actualizar.
@@ -428,7 +428,7 @@ Desde **Admin → Discord → Abrir el editor de comandos** (`/admin/discord.htm
 - **Acceso por comando:** todos, solo cuentas vinculadas, solo admins de File Cloud, o admins y gestores del servidor.
 - **Carpetas:** organiza los comandos en carpetas (hasta 3 niveles), arrastra un comando a una carpeta para moverlo, renómbralas o bórralas.
 - **Archivos:** al guardar, cada comando se escribe como un archivo `.fcs` en `data/discord-commands/<carpeta>/`. Se compilan una sola vez y se ejecutan desde la memoria; puedes hacer copia de seguridad de esa carpeta o editar los archivos a mano (se leen al reiniciar).
-- **Wiki:** `/admin/discord-wiki.html` (también desde el editor) con guías, recetas y la referencia de las 100 funciones con ejemplos y buscador.
+- **Wiki:** `/admin/discord-wiki.html` (también desde el editor) con guías, recetas y la referencia de las 160 funciones con ejemplos, filtros por categoría, marca de «nuevo» y buscador (tecla `/`).
 - **Editor:** explorador con carpetas (editar, duplicar, borrar y arrastrar), propiedades, panel de problemas, panel de pruebas y barra de estado; resaltado de sintaxis (funciones, bloques, corchetes por niveles, errores en rojo), autocompletado al escribir `$`, números de línea con errores marcados, panel de funciones con buscador y **prueba en vivo** que no envía nada a Discord (las acciones como dar roles o expulsar solo se describen).
 - **Comandos de prefijo y de mensaje** necesitan el permiso especial «Message Content Intent» (Developer Portal → Bot → Privileged Gateway Intents). Sin él, el bot arranca igual y los comandos slash funcionan.
 
@@ -447,7 +447,9 @@ $footer[Tu espacio: $fcSpace de $fcQuota]
 
 **Sintaxis:** `$funcion` o `$funcion[arg1;arg2]` (se pueden anidar). Escapes: `\$ \; \[ \]`. Comentarios: líneas que empiezan por `//` o `$c[texto]`. Bloques: `$if / $elseif / $else / $endif`, `$for[var;desde;hasta] … $endfor` y `$while[cond] … $endwhile` (máx. 200 vueltas). Operadores: `== != > < >= <= ~=` (contiene), `&&`, `||`.
 
-**Funciones (más de 90):** contexto (`$username`, `$message[1]`, `$option[x]`, `$mentioned`, `$serverName`, `$hasRole`…), respuesta (`$title`, `$description`, `$color`, `$addField`, `$ephemeral`, `$sendMessage`, `$sendDM`, `$addReaction`…), lógica (`$onlyIf`, `$onlyAdmin`, `$onlyPerms`, `$onlyRoles`, `$onlyLinked`, `$cooldown`, `$stop`, `$set/$get`), variables guardadas por usuario, servidor o globales (`$setUserVar`, `$getServerVar`, `$topUserVar`…), matemáticas (`$calc`, `$random`, `$round`…), texto (`$upper`, `$replace`, `$split`, `$contains`, `$choose`…), tiempo (`$date`, `$discordTime`, `$duration`), File Cloud (`$fcUser`, `$fcSpace`, `$fcQuota`, `$fcUsers`, `$fcVersion`) y moderación (`$giveRole`, `$takeRole`, `$kick`, `$ban`, `$timeout`, `$deleteMessages`). La lista completa, con descripción de cada una, está en el panel *Funciones* del editor.
+**Funciones (160):** contexto (`$username`, `$message[1]`, `$option[x]`, `$mentioned`, `$serverName`, `$hasRole`…), respuesta (`$title`, `$description`, `$color`, `$addField`, `$ephemeral`, `$sendMessage`, `$sendDM`, `$addReaction`…), lógica (`$onlyIf`, `$onlyAdmin`, `$onlyPerms`, `$onlyRoles`, `$onlyLinked`, `$cooldown`, `$stop`, `$set/$get`), variables guardadas por usuario, servidor o globales (`$setUserVar`, `$getServerVar`, `$topUserVar`…), matemáticas (`$calc`, `$random`, `$round`…), texto (`$upper`, `$replace`, `$split`, `$contains`, `$choose`…), tiempo (`$date`, `$discordTime`, `$duration`), File Cloud (`$fcUser`, `$fcSpace`, `$fcQuota`, `$fcUsers`, `$fcVersion`) y moderación (`$giveRole`, `$takeRole`, `$kick`, `$ban`, `$timeout`, `$deleteMessages`). La lista completa, con descripción de cada una, está en el panel *Funciones* del editor.
+
+**Novedades de FCScript en la 2.10.5:** tarjetas completas (`$footerIcon`, `$authorIcon`, `$authorUrl`, `$titleUrl`), captcha con imagen (`$genCaptcha` genera un PNG sin dependencias, lo incluye en la tarjeta y guarda el código en la variable de usuario `captcha`; `$checkCaptcha` y `$clearCaptcha` lo verifican y lo borran), contadores (`$incUserVar`, `$incServerVar`, `$incGlobalVar`, `$rankUserVar`), utilidades de texto, números y fechas (`$progressBar`, `$percent`, `$randomString`, `$truncate`, `$parseDate`, `$timeAgo`…), más moderación (`$setNickname`, `$unban`, `$slowmode`) y **funciones de IA** (`$ai`, `$aiSummarize`, `$aiTranslate`, `$aiClassify`, `$aiSentiment`, `$aiModerate`…) que usan la IA configurada en el panel. Las funciones de IA solo envían y reciben texto, tratan lo que escribe el usuario como datos, limitan a 3 llamadas por ejecución y cuentan en el límite de IA de la cuenta vinculada (o 10 por hora si no la hay); en comandos slash el bot responde «pensando…» mientras espera.
 
 **Seguridad:** lo que escribe un usuario nunca se interpreta como código; los operadores de las condiciones solo cuentan si los escribió el autor; hay límites de pasos (4000), de tiempo (4 s), de bucles, de tamaño (20 000 caracteres por comando, 200 comandos, 60 slash) y de variables guardadas (20 000). Las funciones de moderación comprueban que **quien usa el comando** tenga el permiso de Discord correspondiente. Las menciones masivas (`@everyone` y roles) están desactivadas en las respuestas.
 
@@ -503,7 +505,7 @@ Estado del bot, enlace de invitación, canales de registros y de actualizaciones
 │   ├── index.js           # Arranque: Express, middleware, rutas y tareas periódicas
 │   ├── config.js          # Rutas (data, hosting, public), puerto y duración de sesión
 │   ├── version.js         # Comprobación de nuevas versiones
-│   ├── discord/script/    # FCScript: analizador (parser.js), intérprete (runtime.js) y funciones (functions.js)
+│   ├── discord/script/    # FCScript: analizador (parser.js), intérprete (runtime.js) y funciones (functions.js), captcha (captcha.js) y contenido de la wiki (wiki.js)
 │   ├── db/                # Base de datos SQLite
 │   │   ├── index.js       #   Ayudantes get / all / run / now
 │   │   ├── connection.js  #   Apertura (node:sqlite o better-sqlite3)
@@ -551,7 +553,7 @@ Estado del bot, enlace de invitación, canales de registros y de actualizaciones
 │   │   ├── logger.js      #   Cola en memoria y envío agrupado al canal de registros
 │   │   ├── updates.js     #   Aviso de versiones nuevas
 │   │   └── store.js       #   Vínculos y ajustes en la base de datos
-│   └── ai/                # Agente de IA (Grok/OpenAI/Gemini/Ollama)
+│   └── ai/                # Agente de IA (Grok/OpenAI/Gemini/Ollama) y consultas de un turno para FCScript (ask.js)
 │       ├── index.js       #   API pública del módulo
 │       ├── config.js      #   Configuración guardada en la base de datos
 │       ├── validate.js    #   Validación de URL, modelo, clave y límites

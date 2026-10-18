@@ -5,6 +5,9 @@ const { usage } = require("../../lib/storage");
 const { limitB } = require("../../lib/paths");
 const ver = require("../../version");
 const R = require("./runtime");
+const crypto = require("crypto");
+const { genCaptcha } = require("./captcha");
+const ai = require("../../ai");
 
 const FN = {}, LIST = [], QUIET = new Set();
 const F = (c, n, a, d, fn, o = {}) => { FN[n.toLowerCase()] = { n, a, d, c, fn, ...o }; LIST.push({ n, a, d, c, min: o.min || 0, q: !!o.q }); if (o.q) QUIET.add(n.toLowerCase()); };
@@ -43,6 +46,9 @@ function vset(ctx, sc, key, name, value) {
   run("INSERT OR REPLACE INTO discord_vars(scope,key,name,value) VALUES(?,?,?,?)", sc, key, name, value);
 }
 
+function vdel(ctx, sc, key, name) { if (ctx.dry) ctx.dryVars?.delete(`${sc}|${key}|${name}`); else run("DELETE FROM discord_vars WHERE scope=? AND key=? AND name=?", sc, key, name); }
+const num2 = (v) => { const x = R.num(v); return isNaN(x) ? 0 : x; };
+
 // ---- calculadora segura (sin eval) ----
 function calc(src) {
   const t = src.replace(/\s+/g, "").replace(/,/g, "."); let p = 0;
@@ -58,7 +64,7 @@ function calc(src) {
 const human = s => { s = Math.max(0, Math.floor(s)); const d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return [d && d + " d", h && h + " h", m && m + " min", (x || !(d || h || m)) && x + " s"].filter(Boolean).join(" "); };
 const pad = (n, l = 2) => String(n).padStart(l, "0");
 function dateFmt(f, d) { return f.replace(/YYYY|MM|DD|HH|mm|ss/g, t => ({ YYYY: d.getFullYear(), MM: pad(d.getMonth() + 1), DD: pad(d.getDate()), HH: pad(d.getHours()), mm: pad(d.getMinutes()), ss: pad(d.getSeconds()) })[t]); }
-const cool = new Map();
+const cool = new Map(), capFail = new Map();
 
 // =================== Quién y dónde ===================
 const C1 = "Contexto";
@@ -82,6 +88,12 @@ F(C1, "channelName", "", "Nombre del canal donde se usó.", c => c.channel?.name
 F(C1, "roleName", "idRol", "Nombre de un rol del servidor.", (c, a) => c.dry ? "rol" : sameGuild(c).roles.cache.get(id(a[0]))?.name ?? "", { min: 1 });
 F(C1, "hasRole", "idRol;[idUsuario]", "true si el usuario tiene ese rol.", async (c, a) => { const w = await who(c, a[1]); return !!w.member?.roles?.cache?.has?.(id(a[0])); }, { min: 1 });
 F(C1, "hasPerm", "permiso;[idUsuario]", "true si tiene el permiso de Discord (ManageMessages, BanMembers, Administrator…).", async (c, a) => { const w = await who(c, a[1]); return c.dry ? true : !!w.member?.permissions?.has?.(S(a[0]).trim()); }, { min: 1 });
+F(C1, "createdAt", "[id]", "Cuándo se creó la cuenta de Discord (segundos Unix). Úsalo con $discordTime o $timeAgo.", async (c, a) => { const x = id(a[0]) || c.user.id; if (x.length < 15) throw Error("ID no válido"); return Number((BigInt(x) >> 22n) + 1420070400000n) / 1000 | 0; });
+F(C1, "joinedAt", "[id]", "Cuándo entró al servidor (segundos Unix; vacío si no está).", async (c, a) => { const w = await who(c, a[0]); return w.member?.joinedTimestamp ? Math.floor(w.member.joinedTimestamp / 1000) : c.dry ? Math.floor(Date.now() / 1000) - 86400 * 30 : ""; });
+F(C1, "userRoles", "[id];[separador]", "Nombres de los roles del usuario (sin @everyone), separados por coma o por lo que indiques.", async (c, a) => { const w = await who(c, a[0]); if (c.dry) return ["Miembro", "VIP"].join(S(a[1], ", ")); return [...(w.member?.roles?.cache?.values?.() || [])].filter(r => r.name !== "@everyone").sort((x, y) => y.position - x.position).map(r => r.name).join(S(a[1], ", ")); });
+F(C1, "serverIcon", "", "Enlace del icono del servidor (vacío si no tiene).", c => c.guild?.iconURL?.({ size: 512 }) ?? "");
+F(C1, "mentionRole", "idRol", "Menciona un rol (no avisa a nadie: solo se ve el nombre).", (c, a) => `<@&${id(a[0])}>`, { min: 1 });
+F(C1, "mentionChannel", "[idCanal]", "Enlace a un canal (por defecto, el actual).", (c, a) => `<#${id(a[0]) || c.channel?.id || ""}>`);
 F(C1, "isFcAdmin", "", "true si quien lo usa tiene su cuenta de File Cloud vinculada y es administrador.", c => !!(c.fc && c.fc.is_admin));
 F(C1, "isLinked", "", "true si quien lo usa tiene una cuenta de File Cloud vinculada.", c => !!c.fc);
 
@@ -92,6 +104,15 @@ E("title", "texto", "Título de la tarjeta (embed).", "title"); E("description",
 E("footer", "texto", "Pie de la tarjeta.", "footer"); E("author", "texto", "Autor de la tarjeta.", "author");
 E("image", "url", "Imagen grande de la tarjeta.", "image", x => /^https?:\/\//i.test(x) ? x : ""); E("thumbnail", "url", "Imagen pequeña de la tarjeta.", "thumbnail", x => /^https?:\/\//i.test(x) ? x : "");
 E("color", "#rrggbb", "Color de la tarjeta, en hexadecimal.", "color", x => { const m = /^#?([0-9a-f]{6})$/i.exec(x.trim()); if (!m) throw Error("el color debe ser como #4f8cff"); return parseInt(m[1], 16); });
+const URL_OK = x => /^https?:\/\//i.test(x) ? x.slice(0, 1000) : "";
+E("footerIcon", "url", "Icono pequeño junto al pie de la tarjeta (solo enlaces http/https).", "footerIcon", URL_OK);
+E("authorIcon", "url", "Icono redondo junto al autor de la tarjeta (solo enlaces http/https).", "authorIcon", URL_OK);
+E("authorUrl", "url", "Enlace que se abre al pulsar el nombre del autor.", "authorUrl", URL_OK);
+E("titleUrl", "url", "Convierte el título de la tarjeta en un enlace.", "titleUrl", URL_OK);
+F(C2, "genCaptcha", "[longitud]", "Crea una imagen de captcha (4-8 caracteres, por defecto 5) y la envía dentro de la tarjeta junto al resto de tu mensaje. El código se guarda en la variable de usuario «captcha» ($getUserVar[captcha]); compruébalo con $checkCaptcha.", (c, a) => {
+  const r = genCaptcha(N(a[0], 5)); vset(c, "user", c.user.id, "captcha", r.code); capFail.delete(c.user.id);
+  c.out.files = c.out.files.filter(f => f.name !== "captcha.png"); c.out.files.push({ name: "captcha.png", data: r.png }); c.out.embed.image = "attachment://captcha.png"; return "";
+}, { q: true });
 F(C2, "addField", "nombre;valor;[enLinea]", "Añade un campo a la tarjeta (máx. 25).", (c, a) => { if (c.out.fields.length < 25) c.out.fields.push({ name: S(a[0], "\u200b").slice(0, 256), value: S(a[1], "\u200b").slice(0, 1024), inline: R.truthy(S(a[2], "no")) }); return ""; }, { q: true, min: 2 });
 F(C2, "timestamp", "", "Pone la hora actual en la tarjeta.", c => { c.out.embed.timestamp = new Date().toISOString(); return ""; }, { q: true });
 F(C2, "ephemeral", "", "Solo quien usó el comando ve la respuesta (comandos slash).", c => { c.out.eph = true; return ""; }, { q: true });
@@ -108,6 +129,14 @@ F(C3, "onlyPerms", "permisos;[mensaje]", "Solo quien tenga TODOS los permisos de
 F(C3, "onlyRoles", "idRoles;[mensaje]", "Solo quien tenga alguno de esos roles (IDs separados por coma).", (c, a) => { if (c.dry) return; const ok = S(a[0]).split(",").some(r => c.member?.roles?.cache?.has?.(id(r))); if (!ok) throw new R.Stop(S(a[1], "No tienes el rol necesario.")); }, { q: true, min: 1 });
 F(C3, "onlyLinked", "[mensaje]", "Solo para quien haya vinculado su cuenta de File Cloud.", (c, a) => { if (!c.fc) throw new R.Stop(S(a[0], "Primero vincula tu cuenta con /vincular.")); }, { q: true });
 F(C3, "cooldown", "segundos;[mensaje]", "Limita cada cuánto puede usarlo cada persona (máx. 1 día).", (c, a) => { if (c.dry) return; const k = c.cmd.id + "|" + c.user.id, t = Date.now(), s = Math.min(86400, N(a[0], 5)), nx = cool.get(k) || 0; if (t < nx) throw new R.Stop(S(a[1], `Espera ${human((nx - t) / 1000 + 0.99)} para usarlo otra vez.`)); cool.set(k, t + s * 1000); if (cool.size > 5000) for (const [x, v] of cool) if (v < t) cool.delete(x); }, { q: true, min: 1 });
+F(C3, "checkCaptcha", "texto", "true si el texto coincide con el captcha que se le generó a quien usa el comando (sin distinguir mayúsculas). Si acierta, el captcha se borra; tras 5 fallos seguidos también se invalida.", (c, a) => {
+  const code = vget(c, "user", c.user.id, "captcha"); if (!code) return false;
+  if (S(a[0]).replace(/\s+/g, "").toUpperCase() === String(code).toUpperCase()) { vdel(c, "user", c.user.id, "captcha"); capFail.delete(c.user.id); return true; }
+  if (!c.dry) { const n = (capFail.get(c.user.id) || 0) + 1; if (n >= 5) { vdel(c, "user", c.user.id, "captcha"); capFail.delete(c.user.id); } else capFail.set(c.user.id, n); if (capFail.size > 5000) capFail.clear(); }
+  return false;
+}, { min: 1 });
+F(C3, "clearCaptcha", "", "Borra el captcha pendiente de quien usa el comando.", c => { vdel(c, "user", c.user.id, "captcha"); capFail.delete(c.user.id); return ""; }, { q: true });
+F(C3, "chance", "porcentaje", "true con esa probabilidad (0-100). Ej.: $chance[25] es verdadero una de cada cuatro veces.", (c, a) => Math.random() * 100 < N(a[0]), { min: 1 });
 F(C3, "stop", "[mensaje]", "Termina el comando aquí (con un mensaje opcional).", (c, a) => { throw new R.Stop(S(a[0])); }, { q: true });
 F(C3, "break", "", "Sale del bucle actual.", () => { throw new R.Brk(); }, { q: true });
 F(C3, "default", "texto;porDefecto", "Devuelve el texto, o el valor por defecto si está vacío.", (c, a) => S(a[0], S(a[1])), { min: 2 });
@@ -123,6 +152,18 @@ for (const [nm, sc, lab] of [["User", "user", "de cada usuario"], ["Server", "se
   F(C4, `get${nm}Var`, `nombre;[porDefecto]${idArg}`, `Lee una variable ${lab}.`, (c, a) => vget(c, SC[sc], vkey(c, SC[sc], a[2]), S(a[0]).trim()) ?? S(a[1]), { min: 1 });
   F(C4, `del${nm}Var`, `nombre${idArg}`, `Borra una variable ${lab}.`, (c, a) => { const k = vkey(c, SC[sc], a[1]); if (c.dry) c.sim.push(`borraría la variable ${a[0]}`); else run("DELETE FROM discord_vars WHERE scope=? AND key=? AND name=?", SC[sc], k, S(a[0]).trim()); return ""; }, { q: true, min: 1 });
 }
+for (const [nm, sc, lab] of [["User", "user", "de usuario"], ["Server", "server", "de servidor"], ["Global", "global", "global"]]) {
+  const idArg = sc === "user" ? ";[idUsuario]" : "";
+  F(C4, `inc${nm}Var`, `nombre;[cantidad];[mínimo];[máximo]${idArg}`, `Suma (o resta, con negativo) a una variable ${lab}. Cantidad por defecto: 1. Opcionalmente limita el resultado entre un mínimo y un máximo. No escribe nada: lee el resultado con $get${nm}Var.`, (c, a) => {
+    const k = vkey(c, SC[sc], a[4]), nameV = S(a[0]).trim(); let v = num2(vget(c, SC[sc], k, nameV)) + N(a[1], 1);
+    if (S(a[2]) !== "") v = Math.max(v, N(a[2])); if (S(a[3]) !== "") v = Math.min(v, N(a[3]));
+    v = Math.round(v * 1e10) / 1e10; vset(c, SC[sc], k, nameV, v); return "";
+  }, { q: true, min: 1 });
+}
+F(C4, "rankUserVar", "nombre;[idUsuario]", "Puesto de un usuario en el ranking de una variable (1 = el mayor). Vacío si no tiene la variable.", (c, a) => {
+  const nameV = S(a[0]).trim(), v = vget(c, "user", vkey(c, "user", a[1]), nameV); if (v === undefined) return "";
+  return get("SELECT COUNT(*) n FROM discord_vars WHERE scope='user' AND name=? AND CAST(value AS REAL) > CAST(? AS REAL)", nameV, v).n + 1;
+}, { min: 1 });
 F(C4, "topUserVar", "nombre;[cuántos];[plantilla]", "Ranking de la variable de usuario (de mayor a menor). Plantilla: {pos} {user} {value}.", (c, a) => all("SELECT key,value FROM discord_vars WHERE scope='user' AND name=? ORDER BY CAST(value AS REAL) DESC LIMIT ?", S(a[0]).trim(), Math.min(25, Math.max(1, N(a[1], 10)))).map((r, k) => S(a[2], "{pos}. {user} — {value}").replace(/\{pos\}/g, k + 1).replace(/\{user\}/g, `<@${r.key}>`).replace(/\{value\}/g, r.value)).join("\n"), { min: 1 });
 
 // =================== Matemáticas ===================
@@ -137,6 +178,12 @@ F(C5, "min", "a;b;…", "El menor de varios números.", (c, a) => Math.min(...a.
 F(C5, "max", "a;b;…", "El mayor de varios números.", (c, a) => Math.max(...a.map(x => N(x))), { min: 1 });
 F(C5, "sum", "a;b;…", "Suma varios números.", (c, a) => a.reduce((s, x) => s + N(x), 0), { min: 1 });
 F(C5, "formatNumber", "número", "Pone separador de miles (1.234.567).", (c, a) => N(a[0]).toLocaleString("es-ES"), { min: 1 });
+
+F(C5, "clamp", "número;mínimo;máximo", "Limita un número entre un mínimo y un máximo.", (c, a) => Math.min(Math.max(N(a[0]), N(a[1])), N(a[2])), { min: 3 });
+F(C5, "percent", "parte;total;[decimales]", "Qué porcentaje es una parte del total (sin el signo %).", (c, a) => { const t = N(a[1]); if (!t) throw Error("el total no puede ser 0"); const m = 10 ** Math.min(6, N(a[2], 0)); return Math.round(N(a[0]) / t * 100 * m) / m; }, { min: 2 });
+F(C5, "progressBar", "valor;máximo;[largo];[lleno];[vacío]", "Barra de progreso de texto. Ej.: $progressBar[7;10;10] → ▰▰▰▰▰▰▰▱▱▱", (c, a) => { const t = N(a[1]), n = Math.min(40, Math.max(2, N(a[2], 10))), k = t > 0 ? Math.round(Math.min(1, Math.max(0, N(a[0]) / t)) * n) : 0; return S(a[3], "▰").repeat(k) + S(a[4], "▱").repeat(n - k); }, { min: 2 });
+F(C5, "randomColor", "", "Color hexadecimal al azar, para usar con $color.", () => "#" + crypto.randomInt(0, 0x1000000).toString(16).padStart(6, "0"));
+F(C5, "plural", "número;singular;plural", "Elige la palabra según el número. Ej.: $plural[$get[n];moneda;monedas]", (c, a) => N(a[0]) === 1 ? S(a[1]) : S(a[2]), { min: 3 });
 
 // =================== Texto ===================
 const C6 = "Texto";
@@ -156,6 +203,18 @@ F(C6, "choose", "a;b;c;…", "Elige una opción al azar.", (c, a) => a[Math.floo
 F(C6, "urlEncode", "texto", "Codifica el texto para usarlo en un enlace.", (c, a) => encodeURIComponent(S(a[0])), { min: 1 });
 F(C6, "newline", "", "Salto de línea.", () => "\n");
 
+F(C6, "titleCase", "texto", "Primera letra de cada palabra en mayúscula.", (c, a) => S(a[0]).toLowerCase().replace(/(^|\s)(\S)/g, (m, s1, l) => s1 + l.toUpperCase()), { min: 1 });
+F(C6, "truncate", "texto;máximo;[final]", "Corta el texto si es largo y añade «…» (o lo que indiques).", (c, a) => { const t = S(a[0]), m = Math.max(1, N(a[1], 100)), e = S(a[2], "…"); return t.length <= m ? t : t.slice(0, Math.max(0, m - e.length)) + e; }, { min: 2 });
+F(C6, "pad", "texto;largo;[relleno];[derecha]", "Rellena el texto hasta un largo (por la izquierda; con «yes» como 4.º argumento, por la derecha). Útil para alinear.", (c, a) => { const L = Math.min(100, N(a[1])), f = S(a[2], " ").slice(0, 1) || " "; return R.truthy(S(a[3], "no")) ? S(a[0]).padEnd(L, f) : S(a[0]).padStart(L, f); }, { min: 2 });
+F(C6, "count", "texto;buscar", "Cuántas veces aparece lo buscado en el texto.", (c, a) => S(a[1]) ? S(a[0]).split(S(a[1])).length - 1 : 0, { min: 2 });
+F(C6, "startsWith", "texto;inicio", "true si el texto empieza así (sin distinguir mayúsculas).", (c, a) => S(a[0]).toLowerCase().startsWith(S(a[1]).toLowerCase()), { min: 2 });
+F(C6, "endsWith", "texto;final", "true si el texto termina así (sin distinguir mayúsculas).", (c, a) => S(a[0]).toLowerCase().endsWith(S(a[1]).toLowerCase()), { min: 2 });
+F(C6, "indexOf", "texto;buscar", "Posición (desde 0) de la primera aparición, o -1.", (c, a) => S(a[0]).indexOf(S(a[1])), { min: 2 });
+F(C6, "slug", "texto", "Convierte el texto en algo apto para enlaces: minúsculas, sin tildes y con guiones.", (c, a) => S(a[0]).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""), { min: 1 });
+F(C6, "hash", "texto;[sha256|sha1|md5]", "Huella (hash) del texto en hexadecimal. Por defecto sha256.", (c, a) => { const al = S(a[1], "sha256").toLowerCase(); if (!["sha256", "sha1", "md5"].includes(al)) throw Error("algoritmo no válido"); return crypto.createHash(al).update(S(a[0])).digest("hex"); }, { min: 1 });
+F(C6, "randomString", "[largo];[tipo]", "Texto al azar seguro (máx. 64). Tipos: alnum (por defecto), letters, numbers, hex. Sirve para códigos y contraseñas.", (c, a) => { const set = { alnum: "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789", letters: "abcdefghijklmnopqrstuvwxyz", numbers: "0123456789", hex: "0123456789abcdef" }[S(a[1], "alnum").toLowerCase()]; if (!set) throw Error("tipo no válido (alnum, letters, numbers, hex)"); return Array.from({ length: Math.min(64, Math.max(1, N(a[0], 8))) }, () => set[crypto.randomInt(0, set.length)]).join(""); });
+F(C6, "shuffle", "a;b;c;…", "Mezcla las opciones y las devuelve separadas por coma.", (c, a) => { const x = [...a]; for (let k = x.length - 1; k > 0; k--) { const j = crypto.randomInt(0, k + 1); [x[k], x[j]] = [x[j], x[k]]; } return x.join(", "); }, { min: 1 });
+
 // =================== Tiempo ===================
 const C7 = "Tiempo";
 F(C7, "unix", "", "Segundos desde 1970 (ahora).", () => Math.floor(Date.now() / 1000));
@@ -163,6 +222,10 @@ F(C7, "date", "[formato];[unix]", "Fecha y hora. Formato con YYYY MM DD HH mm ss
 F(C7, "discordTime", "unix;[estilo]", "Hora que Discord muestra en la zona de cada persona (estilo: t T d D f F R).", (c, a) => `<t:${Math.floor(N(a[0]))}:${/^[tTdDfFR]$/.test(S(a[1])) ? a[1] : "f"}>`, { min: 1 });
 F(C7, "duration", "segundos", "Convierte segundos en «1 d 2 h 3 min».", (c, a) => human(N(a[0])), { min: 1 });
 F(C7, "uptime", "", "Tiempo que lleva encendido el servidor.", () => human(process.uptime()));
+
+F(C7, "parseDate", "fecha", "Convierte «2026-12-25» o «2026-12-25 18:30» en segundos Unix (hora del servidor).", (c, a) => { const m = /^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2}))?$/.exec(S(a[0]).trim()); if (!m) throw Error("usa el formato AAAA-MM-DD o AAAA-MM-DD HH:mm"); const d = new Date(+m[1], +m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0)); if (isNaN(d)) throw Error("fecha no válida"); return Math.floor(d / 1000); }, { min: 1 });
+F(C7, "timeAgo", "unix", "Tiempo transcurrido desde un instante: «hace 2 h 5 min» (o «dentro de…» si es futuro).", (c, a) => { const d = Math.floor(Date.now() / 1000) - N(a[0]); return (d >= 0 ? "hace " : "dentro de ") + human(Math.abs(d)); }, { min: 1 });
+F(C7, "daysBetween", "unix1;unix2", "Días enteros entre dos instantes.", (c, a) => Math.floor(Math.abs(N(a[1]) - N(a[0])) / 86400), { min: 2 });
 
 // =================== File Cloud ===================
 const C8 = "File Cloud";
@@ -181,6 +244,34 @@ F(C9, "kick", "idUsuario;[motivo]", "Expulsa a un miembro (necesita «Expulsar m
 F(C9, "ban", "idUsuario;[motivo]", "Banea a un usuario (necesita «Banear miembros»).", async (c, a) => { need(c, "BanMembers"); const g = sameGuild(c), w = await who(c, a[0]); await act(c, `baneará a ${w.user.username}`, async () => { await g.members.ban(w.id, { reason: S(a[1]).slice(0, 200) }); }); }, { q: true, min: 1 });
 F(C9, "timeout", "idUsuario;minutos;[motivo]", "Aísla a un miembro (necesita «Aislar miembros»). 0 = quitar.", async (c, a) => { need(c, "ModerateMembers"); const g = sameGuild(c), w = await who(c, a[0]), min = Math.min(40320, Math.max(0, N(a[1]))); await act(c, `aislaría a ${w.user.username} ${min} min`, async () => { await (w.member || await g.members.fetch(w.id)).timeout(min ? min * 60000 : null, S(a[2]).slice(0, 200)); }); }, { q: true, min: 2 });
 F(C9, "deleteMessages", "cantidad", "Borra mensajes recientes del canal (1-100; necesita «Gestionar mensajes»).", async (c, a) => { need(c, "ManageMessages"); const n = Math.min(100, Math.max(1, N(a[0]))); await act(c, `borraría ${n} mensajes`, async () => { await c.channel.bulkDelete(n, true); }); }, { q: true, min: 1 });
+
+F(C9, "setNickname", "idUsuario;apodo", "Cambia el apodo de un miembro (necesita «Gestionar apodos»). Vacío = quitarlo.", async (c, a) => { need(c, "ManageNicknames"); const g = sameGuild(c), w = await who(c, a[0]); await act(c, `cambiaría el apodo de ${w.user.username} a «${S(a[1]).slice(0, 32)}»`, async () => { await (w.member || await g.members.fetch(w.id)).setNickname(S(a[1]).slice(0, 32) || null); }); }, { q: true, min: 1 });
+F(C9, "unban", "idUsuario;[motivo]", "Quita el baneo a un usuario (necesita «Banear miembros»).", async (c, a) => { need(c, "BanMembers"); const g = sameGuild(c), uid = id(a[0]); if (!uid) throw Error("falta el ID"); await act(c, `quitaría el baneo a ${uid}`, async () => { await g.members.unban(uid, S(a[1]).slice(0, 200)); }); }, { q: true, min: 1 });
+F(C9, "slowmode", "segundos", "Modo lento del canal actual (0-21600 s; necesita «Gestionar canales»). 0 lo quita.", async (c, a) => { need(c, "ManageChannels"); const n = Math.min(21600, Math.max(0, N(a[0]))); await act(c, `pondría el modo lento a ${n} s`, async () => { await c.channel.setRateLimitPerUser(n); }); }, { q: true, min: 1 });
+
+// =================== IA (usa la IA configurada en File Cloud) ===================
+// Sin herramientas: la IA solo recibe el texto y devuelve texto; nunca toca archivos. Máx. 3 llamadas por ejecución.
+// Los textos de usuario se pasan como DATOS (no como instrucciones). Se cuentan en el límite de IA de la cuenta vinculada, o 10 por hora si no hay.
+const CA = "IA";
+async function askAI(c, task, text) {
+  if (!ai.enabled()) throw Error("la IA no está activada: configúrala en el panel de administración");
+  if (c.out.ai >= 3) throw Error("máximo 3 llamadas a la IA por ejecución");
+  c.out.ai++; const t0 = Date.now();
+  try { return await ai.ask({ u: c.fc, did: c.user.id, system: c.aiSystem, free: c.dry, prompt: text === undefined ? task : `${task}\n\n<datos>\n${S(text).slice(0, 4000)}\n</datos>` }); }
+  finally { c.deadline += Date.now() - t0; } // el tiempo de espera de la IA no cuenta para el límite de 4 s
+}
+F(CA, "aiAvailable", "", "true si la IA está configurada (para dar una alternativa si no lo está).", () => ai.enabled());
+F(CA, "aiPersona", "descripción", "Define cómo debe comportarse la IA en las siguientes llamadas de este comando (máx. 600 caracteres). Ej.: «Eres un pirata gracioso».", (c, a) => { c.aiSystem = S(a[0]).slice(0, 600); return ""; }, { q: true, min: 1 });
+F(CA, "ai", "instrucción;[texto]", "Pide algo a la IA. La instrucción la escribes tú; el texto (lo que escribe el usuario) se trata como datos. Ej.: $ai[Responde en una frase;$message]", (c, a) => askAI(c, S(a[0]), a.length > 1 ? S(a[1]) : undefined), { min: 1 });
+F(CA, "aiSummarize", "texto;[frases]", "Resume un texto en pocas frases (3 por defecto).", (c, a) => askAI(c, `Resume el texto en ${Math.min(10, Math.max(1, N(a[1], 3)))} frase(s).`, a[0]), { min: 1 });
+F(CA, "aiTranslate", "texto;idioma", "Traduce un texto al idioma indicado (español, inglés, japonés…).", (c, a) => askAI(c, `Traduce el texto a ${S(a[1]).slice(0, 40)}. Devuelve solo la traducción.`, a[0]), { min: 2 });
+F(CA, "aiFix", "texto", "Corrige la ortografía y la gramática sin cambiar el significado.", (c, a) => askAI(c, "Corrige la ortografía y la gramática del texto sin cambiar su significado. Devuelve solo el texto corregido.", a[0]), { min: 1 });
+F(CA, "aiRewrite", "texto;estilo", "Reescribe el texto con otro estilo (formal, divertido, más corto…).", (c, a) => askAI(c, `Reescribe el texto con este estilo: ${S(a[1]).slice(0, 80)}. Devuelve solo el texto reescrito.`, a[0]), { min: 2 });
+F(CA, "aiExplain", "tema", "Explica un tema de forma sencilla y breve.", (c, a) => askAI(c, "Explica el tema de forma sencilla y breve, como a alguien que empieza.", a[0]), { min: 1 });
+F(CA, "aiIdeas", "tema;[cantidad]", "Da una lista de ideas sobre un tema (5 por defecto, máx. 10).", (c, a) => askAI(c, `Da ${Math.min(10, Math.max(1, N(a[1], 5)))} ideas breves y distintas sobre el tema, una por línea con «• » delante.`, a[0]), { min: 1 });
+F(CA, "aiSentiment", "texto", "Devuelve positivo, negativo o neutral según el tono del texto.", async (c, a) => { const r = (await askAI(c, "Indica el sentimiento del texto. Responde con una sola palabra: positivo, negativo o neutral.", a[0])).toLowerCase(); return /negativ/.test(r) ? "negativo" : /positiv/.test(r) ? "positivo" : "neutral"; }, { min: 1 });
+F(CA, "aiClassify", "texto;cat1,cat2,…", "Elige a cuál de tus categorías pertenece el texto. Devuelve una de ellas (vacío si ninguna encaja).", async (c, a) => { const cats = S(a[1]).split(",").map(x => x.trim()).filter(Boolean).slice(0, 20); if (!cats.length) throw Error("indica las categorías separadas por coma"); const r = (await askAI(c, `Clasifica el texto en UNA de estas categorías: ${cats.join(", ")}. Responde solo con el nombre exacto de la categoría.`, a[0])).toLowerCase(); return cats.find(x => r === x.toLowerCase()) || cats.find(x => r.includes(x.toLowerCase())) || ""; }, { min: 2 });
+F(CA, "aiModerate", "texto", "true si la IA considera el texto ofensivo, acoso, spam o inapropiado; si no, false. Pensado para comandos de mensaje.", async (c, a) => /^\s*(si|sí|true|yes)/i.test(await askAI(c, "¿El texto contiene insultos, acoso, discurso de odio, spam o contenido inapropiado? Responde solo «si» o «no».", a[0])), { min: 1 });
 
 const BLOCKDOCS = [
   { n: "if", a: "condición", d: "Empieza una condición. Operadores: == != > < >= <= ~= (contiene), && (y), || (o).", c: "Bloques", blk: true },

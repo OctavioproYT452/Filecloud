@@ -16,7 +16,7 @@ router.get("/api/admin/discord/cmds", needAdmin, wrap(async (req, res) => {
 router.get("/api/admin/discord/cmds/get", needAdmin, wrap(async (req, res) => res.json(custom.read(String(req.query.id || "")))));
 router.get("/api/admin/discord/script/wiki", needAdmin, (req, res) => {
   const w = require("../discord/script/wiki");
-  res.json({ guides: w.GUIDES, functions: custom.docs().map(d => ({ ...d, ex: w.EXAMPLES[d.n] || null })) });
+  res.json({ guides: w.GUIDES, cats: w.CATS, news: w.NEW, version: require("../version").info().current, functions: custom.docs().map(d => ({ ...d, ex: w.EXAMPLES[d.n] || null })) });
 });
 router.get("/api/admin/discord/script/docs", needAdmin, (req, res) => res.json(custom.docs()));
 
