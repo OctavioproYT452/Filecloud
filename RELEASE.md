@@ -1,15 +1,18 @@
-# Versión 2.10.7
+# Versión 2.10.8
 
-Las funciones de File Cloud de FCScript pueden hablar de otra persona, no solo de quien usa el comando.
+El editor de comandos de Discord puede programar comandos con IA leyendo la wiki.
 
 ## Novedades
-- `$isLinked`, `$isFcAdmin`, `$fcUser`, `$fcSpace`, `$fcQuota` y `$fcPercent` aceptan un **ID o mención de Discord**: `$fcSpace[$mentioned[1]]`. Sin argumento siguen refiriéndose a quien usó el comando. Si esa persona no está vinculada (o está suspendida), `$isLinked` da false, `$fcUser` vacío y las demás un error claro.
-- Revisadas todas las funciones: las demás que hablan de un usuario ya aceptaban ID (`$username`, `$nickname`, `$avatar`, `$mention`, `$isBot`, `$hasRole`, `$hasPerm`, `$isOwner`, `$createdAt`, `$joinedAt`, `$userRoles`, las variables de usuario y la moderación).
-- Nueva guía de la wiki **Hablar de otra persona** con una receta de `!perfil @usuario` y una tabla de qué función acepta qué.
-- La prueba del editor reconoce menciones (`<@ID>`) o IDs escritos en los argumentos.
+- **Botón ✨ IA en el editor:** describes lo que quieres (y, si quieres, el tipo de comando) y la IA configurada escribe el comando FCScript completo: nombre, tipo, descripción, acceso, opciones y código, más unas notas de uso.
+- **Lee toda la wiki:** en cada petición recibe las guías, las recetas y la referencia de las funciones con sus ejemplos, y se le prohíbe inventar funciones.
+- **Se comprueba y se corrige sola:** el resultado pasa por el analizador de FCScript; si hay errores se le devuelven a la IA para que los arregle (hasta 2 reintentos).
+- **No guarda nada:** el comando aparece en el editor sin guardar, para que lo revises, lo pruebes y lo guardes tú. Con un comando abierto puedes pedirle modificaciones sobre él.
+- **Límites:** solo administradores; una petición a la vez; cuenta un uso (aunque haya reintentos) del límite de IA del administrador; cada petición envía unos 10 000 tokens de contexto, así que conviene un modelo con buena ventana de contexto. Queda anotado en el registro del bot.
+- Nueva API `POST /api/admin/discord/cmds/ai` y nueva función interna `ai.session` (sesiones largas de IA sin recortar respuestas).
 
 ## Archivos modificados
-`src/discord/script/functions.js`, `wiki.js`, `src/discord/custom.js`, `public/js/dc-wiki.js`, `README.md`, `RELEASE.md`, `package.json`, `data/version.json`.
+- Nuevo: `src/discord/script/aigen.js`.
+- Modificados: `src/ai/ask.js`, `src/ai/index.js`, `src/discord/custom.js`, `src/routes/discord-custom.js`, `src/discord/script/wiki.js`, `public/js/dc-editor.js`, `README.md`, `RELEASE.md`, `package.json`, `data/version.json`.
 
 ## Actualizar
 Copia los archivos y reinicia. Sin cambios en la base de datos ni dependencias nuevas.

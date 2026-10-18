@@ -25,6 +25,14 @@ router.post("/api/admin/discord/cmds/save", needAdmin, wrap(async (req, res) => 
   log(req, `${b.id ? "guardó" : "creó"} el comando propio **${logger.md(r.id)}**`);
   res.json({ success: true, ...r });
 }));
+// Crear o modificar un comando con IA (la IA lee toda la wiki). No guarda nada: devuelve el código para revisarlo en el editor.
+router.post("/api/admin/discord/cmds/ai", needAdmin, wrap(async (req, res) => {
+  const ai = require("../ai"); if (!ai.enabled()) throw Error("La IA no está activada: configúrala en el panel de administración");
+  const b = req.body || {}, cur = b.current && typeof b.current === "object" ? { name: String(b.current.name || ""), meta: b.current.meta || {}, code: String(b.current.code || "") } : null;
+  const r = await require("../discord/script/aigen").generate(req.user, { instructions: b.instructions, current: cur, tipo: ["slash", "prefijo", "mensaje"].includes(b.tipo) ? b.tipo : "" });
+  log(req, `usó la IA para ${cur ? "modificar" : "crear"} un comando propio (**${logger.md(r.name)}**)`);
+  res.json(r);
+}));
 router.post("/api/admin/discord/cmds/delete", needAdmin, wrap(async (req, res) => {
   const id = String(req.body?.id || ""); custom.remove(id); log(req, `borró el comando propio **${logger.md(id)}**`); res.json({ success: true });
 }));

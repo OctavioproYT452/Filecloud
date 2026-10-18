@@ -39,4 +39,20 @@ async function ask({ u = null, did = "0", system = "", prompt, free = false }) {
   } catch (e) { refund(); if (e.provider) { console.error("[IA]", e.message, "-", e.detail); } throw Error(e.provider ? e.message : e.message); }
 }
 
-module.exports = { ask };
+// Sesión larga (varios mensajes, prompt grande, sin recortar la respuesta). Cuenta UN uso del usuario de File Cloud aunque haya reintentos.
+// La usa el generador de comandos de FCScript. Devuelve una función chat(messages) que devuelve el texto de la IA.
+const busyGen = new Set();
+async function session(u, fn) {
+  if (!enabled()) throw Error("la IA no está configurada en este servidor");
+  const st = status(u);
+  if (st.limit === 0) throw Error("tu cuenta no puede usar la IA");
+  if (st.limit > 0 && st.used >= st.limit) throw Error(`has llegado a tu límite de IA (${st.limit} por ${st.period === "day" ? "día" : "hora"})`);
+  if (busyGen.has(u.id)) throw Error("espera a que termine tu petición anterior");
+  busyGen.add(u.id); const ins = run("INSERT INTO ai_usage VALUES(?,?)", u.id, now()); let answered = false;
+  try {
+    return await fn(async messages => { const m = await llm(getConfig(), messages, null, 150000); answered = true; return String(m.content || ""); });
+  } catch (e) { if (!answered) run("DELETE FROM ai_usage WHERE rowid=?", ins.lastInsertRowid); if (e.provider) console.error("[IA]", e.message, "-", e.detail); throw e; }
+  finally { busyGen.delete(u.id); }
+}
+
+module.exports = { ask, session };

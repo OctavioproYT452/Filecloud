@@ -6,8 +6,8 @@ const { reload, enabled, describe, save, publicConfig } = require("./config");
 const { status, usedBy, limitFor, purge } = require("./limits");
 const { test } = require("./llm");
 const { chat } = require("./chat");
-const { ask } = require("./ask");
+const { ask, session } = require("./ask");
 const { IMPL } = require("./tools");
 const { PROVIDERS, CLOUD, DEF } = require("./constants");
 
-module.exports = { init: reload, reload, enabled, describe, save, publicConfig, test, chat, ask, status, usedBy, limitFor, purge, PROVIDERS, CLOUD, DEF, _impl: IMPL };
+module.exports = { init: reload, reload, enabled, describe, save, publicConfig, test, chat, ask, session, status, usedBy, limitFor, purge, PROVIDERS, CLOUD, DEF, _impl: IMPL };
