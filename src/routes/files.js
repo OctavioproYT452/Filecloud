@@ -13,6 +13,7 @@ const { zipTo, zipFile } = require("../lib/zip");
 const { extract } = require("../lib/unzip");
 const { need } = require("../middleware/auth");
 const { space, relOf, moved, removed } = require("../services/collab");
+const trash = require("../services/trash");
 
 const exists = f => fsp.access(f).then(() => 1, () => 0);
 
@@ -94,11 +95,12 @@ router.post("/api/move", need, wrap(async (req, res) => {
 }));
 router.post("/api/delete", need, wrap(async (req, res) => {
   const sp = await space(req, "delete"), u = sp.owner, f = fileOf(req, sp.root), rel = path.relative(sp.base, f);
-  await fsp.rm(f, { recursive: true, force: true });
+  if (!(await fsp.lstat(f).catch(() => null))) throw Error("No existe");
+  const t = await trash.put(u, f, req.user.username); // a la papelera (o borrado definitivo si está desactivada o no cabe)
   for (const s of all("SELECT token,path FROM shares WHERE user_id=?", u.id))
     if (s.path === rel || s.path.startsWith(rel + path.sep)) run("DELETE FROM shares WHERE token=?", s.token);
   removed(u.id, relOf(u, f));
-  await usage(u, true); res.json({ success: true });
+  await usage(u, true); res.json({ success: true, trashed: t.trashed });
 }));
 router.post("/api/copy", need, wrap(async (req, res) => {
   const sp = await space(req, "create"), u = sp.owner, f = fileOf(req, sp.root), dir = safe(sp.root, req.body.dest ?? path.dirname(path.relative(sp.root, f)));

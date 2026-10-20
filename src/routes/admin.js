@@ -60,7 +60,7 @@ router.delete("/api/admin/users/:id", needAdmin, wrap(async (req, res) => {
   if (!t) throw Error("Usuario no encontrado");
   if (t.id === req.user.id) throw Error("No puedes borrar tu propia cuenta");
   run("DELETE FROM users WHERE id=?", t.id);
-  await fsp.rm(base(t), { recursive: true, force: true });
+  await fsp.rm(base(t), { recursive: true, force: true }); await require("../services/trash").wipeUser(t.uuid).catch(() => { });
   res.json({ success: true });
 }));
 
@@ -76,16 +76,25 @@ router.get("/api/admin/file", needAdmin, wrap(async (req, res) => serve(res, saf
 router.post("/api/admin/delete-file", needAdmin, wrap(async (req, res) => {
   const u = target(req), f = safe(base(u), req.body.path);
   if (f === base(u)) throw Error("Ruta inválida");
-  await fsp.rm(f, { recursive: true, force: true }); removed(u.id, relOf(u, f)); await usage(u, true);
+  await require("../services/trash").put(u, f, req.user.username + " (admin)"); removed(u.id, relOf(u, f)); await usage(u, true);
   res.json({ success: true });
 }));
-router.get("/api/admin/settings", needAdmin, (req, res) => res.json({ allow_registration: setting("allow_registration") === "1", default_quota_mb: Number(setting("default_quota_mb")), announcement: setting("announcement") || "" }));
+router.get("/api/admin/settings", needAdmin, (req, res) => res.json({ allow_registration: setting("allow_registration") === "1", default_quota_mb: Number(setting("default_quota_mb")), announcement: setting("announcement") || "", trash: require("../services/trash").config() }));
 router.post("/api/admin/settings", needAdmin, wrap(async (req, res) => {
   const q = Number(req.body.default_quota_mb);
   if (!Number.isFinite(q)) throw Error("Cuota inválida");
   run("UPDATE settings SET value=? WHERE key='allow_registration'", req.body.allow_registration ? "1" : "0");
   run("UPDATE settings SET value=? WHERE key='default_quota_mb'", String(q));
   run("INSERT OR REPLACE INTO settings VALUES('announcement',?)", String(req.body.announcement || "").slice(0, 300));
+  const t = req.body.trash;
+  if (t) {
+    const d = Math.floor(Number(t.days)), c = Math.floor(Number(t.capMB));
+    if (!(d >= 1 && d <= 365)) throw Error("Los días de la papelera deben estar entre 1 y 365");
+    if (!Number.isFinite(c)) throw Error("Tope de papelera inválido");
+    run("INSERT OR REPLACE INTO settings VALUES('trash_enabled',?)", t.enabled ? "1" : "0");
+    run("INSERT OR REPLACE INTO settings VALUES('trash_days',?)", String(d));
+    run("INSERT OR REPLACE INTO settings VALUES('trash_cap_mb',?)", String(c));
+  }
   res.json({ success: true });
 }));
 router.get("/api/admin/shares", needAdmin, (req, res) => res.json({ shares: all("SELECT s.token,s.path,s.expires_at,s.created_at,s.pw IS NOT NULL locked,u.username FROM shares s JOIN users u ON u.id=s.user_id ORDER BY s.created_at DESC LIMIT 300") }));

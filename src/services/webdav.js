@@ -132,7 +132,7 @@ async function handle(req, res) {
     await drain(req);
     if (isRoot) return send(res, 403);
     if (!await stat(f)) return send(res, 404);
-    await fsp.rm(f, { recursive: true }); run("UPDATE users SET used_at=0 WHERE id=?", u.id);
+    await require("./trash").put(u, f, u.username); run("UPDATE users SET used_at=0 WHERE id=?", u.id);
     return send(res, 204);
   }
 

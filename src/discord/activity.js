@@ -48,7 +48,9 @@ const RULES = [
   ["POST", "/api/copy", "archivos", r => `copió ${code(P(pth(r)))}${r.body.dest ? " a " + code(P(r.body.dest)) : ""}${where(r)}`],
   ["POST", "/api/compress", "archivos", (r, s) => `comprimió ${lastOf(r)} ${plural(lastOf(r), "elemento", "elementos")} en ${code(s._body?.name)}${where(r)}`],
   ["POST", "/api/extract", "archivos", (r, s) => `descomprimió ${code(P(pth(r)))} en la carpeta ${code(s._body?.name)}${where(r)}`],
-  ["POST", "/api/delete", "borrados", r => `eliminó ${code(P(pth(r)))}${where(r)}`],
+  ["POST", "/api/delete", "borrados", r => `movió a la papelera ${code(P(pth(r)))}${where(r)}`],
+  ["POST", "/api/trash/restore", "borrados", (r, s) => `restauró de la papelera ${code(P(s._body?.path || ""))}`],
+  ["POST", "/api/trash/empty", "borrados", () => "vació su papelera"],
 
   ["POST", "/api/share", "enlaces", r => `creó un enlace para compartir ${code(P(pth(r)))}${r.body.password ? " con contraseña" : ""}${Number(r.body.days) > 0 ? `, caduca en ${Number(r.body.days)} ${plural(Number(r.body.days), "día", "días")}` : ""}`],
   ["POST", "/api/share/revoke", "enlaces", () => "revocó uno de sus enlaces compartidos"],

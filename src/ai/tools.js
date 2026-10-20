@@ -100,9 +100,9 @@ const IMPL = {
   async delete_item(u, a) {
     const f = await R(u, a.path); if (!(await exists(f))) throw Error("No existe: " + rel(u, f));
     const r = path.relative(base(u), f);
-    await fsp.rm(f, { recursive: true, force: true }); removed(u.id, relOf(u, f));
+    const t = await require("../services/trash").put(u, f, "IA"); removed(u.id, relOf(u, f));
     for (const s of all("SELECT token,path FROM shares WHERE user_id=?", u.id)) if (s.path === r || s.path.startsWith(r + path.sep)) run("DELETE FROM shares WHERE token=?", s.token);
-    await usage(u, true); return "Borrado: " + rel(u, f);
+    await usage(u, true); return (t.trashed ? "Movido a la papelera (se puede restaurar desde la web): " : "Borrado definitivamente: ") + rel(u, f);
   },
 };
 async function fixModes(p) { // las copias nunca conservan el bit de ejecución
@@ -119,12 +119,12 @@ const TOOLS = [
   fn("write_file", "Crea un archivo de texto con el contenido dado (crea las carpetas intermedias). Nunca se ejecuta.", { path: P("Ruta del archivo"), content: P("Contenido completo del archivo"), overwrite: { type: "boolean", description: "true solo si hay que sustituir un archivo existente" } }, ["path", "content"]),
   fn("move_item", "Mueve o renombra un archivo/carpeta. Si 'to' es una carpeta existente, el elemento se mueve dentro de ella.", { from: P("Ruta de origen"), to: P("Ruta de destino") }, ["from", "to"]),
   fn("copy_item", "Copia un archivo/carpeta. Si 'to' es una carpeta existente, la copia va dentro de ella.", { from: P("Ruta de origen"), to: P("Ruta de destino") }, ["from", "to"]),
-  fn("delete_item", "Borra un archivo o carpeta (con todo su contenido). No se puede deshacer.", { path: P("Ruta a borrar") }, ["path"]),
+  fn("delete_item", "Borra un archivo o carpeta (con todo su contenido). Va a la papelera del usuario, que puede restaurarlo desde la web.", { path: P("Ruta a borrar") }, ["path"]),
 ];
 const LABEL = {
   list_dir: a => `Listó ${a.path || "/"}`, read_file: a => `Leyó ${a.path}`, create_folder: a => `Creó la carpeta ${a.path}`,
   write_file: a => `${a.overwrite ? "Escribió" : "Creó"} el archivo ${a.path}`, move_item: a => `Movió ${a.from} → ${a.to}`,
-  copy_item: a => `Copió ${a.from} → ${a.to}`, delete_item: a => `Borró ${a.path}`,
+  copy_item: a => `Copió ${a.from} → ${a.to}`, delete_item: a => `Movió a la papelera ${a.path}`,
 };
 const MUTATES = new Set(["create_folder", "write_file", "move_item", "copy_item", "delete_item"]);
 

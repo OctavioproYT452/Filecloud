@@ -1,21 +1,13 @@
-# Versión 2.10.11
+# Versión 2.11.0
 
-Nuevo panel de Discord en su propia página, más claro y menos cargado.
+**Papelera de reciclaje:** borrar ya no es definitivo.
 
 ## Novedades
-- **`/admin/discord-panel.html`** con menú lateral (en móvil, pestañas arriba) y una sección por pantalla en lugar de una sola página larga:
-  - **Estado:** conexión del bot, invitación, mensaje de prueba, cifras (servidores, cuentas vinculadas, tickets abiertos), avisos de intents y permisos que faltan, y accesos rápidos.
-  - **Actividad:** canales de registros y de actualizaciones, eventos que se registran y acciones permitidas a los usuarios.
-  - **Tickets:** configuración y envío del panel en dos tarjetas, con la lista de tickets abiertos.
-  - **Bienvenidas:** ajustes y mensaje con vista previa en vivo, lado a lado.
-  - **Comandos propios:** accesos al editor y a la wiki.
-- **Selector de servidor** (solo si el bot está en más de uno) para Tickets y Bienvenidas: se ve un servidor cada vez en lugar de una tarjeta por servidor. Se recuerda el último elegido.
-- En **Admin → Discord** queda un resumen con el estado y botones que llevan al panel (cada tarjeta abre su sección). El editor de comandos también enlaza al panel.
-- Sin cambios en la API ni en la base de datos.
-
-## Archivos modificados
-- Nuevos: `public/admin/discord-panel.html`, `public/js/dc-panel.js`, `public/dc-panel.css`.
-- Modificados: `public/js/admin.js` (la sección de Discord pasa a ser un resumen), `public/admin/discord.html`, `README.md`, `RELEASE.md`, `package.json`, `data/version.json`.
-
-## Actualizar
-Copia los archivos y reinicia. Sin dependencias nuevas.
+- **Papelera** en la web (botón de la barra y menú de usuario): lista con ruta original, tamaño, quién lo borró y días restantes; **Restaurar**, **Eliminar definitivamente** y **Vaciar papelera**.
+- Todo lo que se borra va a la papelera: panel web (también varios a la vez), **WebDAV**, el **asistente de IA** (ahora avisa de que se puede restaurar) y el borrado de archivos desde el panel de administración. Lo que borra un colaborador en una carpeta compartida va a la papelera del dueño.
+- Restaurar recrea las carpetas que falten y no pisa nada: si el nombre ya existe, añade `(1)`. Comprueba la cuota.
+- **Vaciado automático** a los N días y **tope por usuario** (se elimina lo más antiguo). La papelera no cuenta para la cuota.
+- **Admin → Ajustes → Papelera de reciclaje:** activar, días (1–365) y tope en MB. Desactivada, borrar vuelve a ser definitivo.
+- **Discord:** `/papelera ver | restaurar | vaciar` y eventos «borrados» en el registro de actividad.
+- Al eliminar una cuenta se borra también su papelera.
+- Nueva tabla `trash` (se crea sola) y carpeta `data/trash/`. Rutas `/api/trash`, `/api/trash/restore`, `/api/trash/delete`, `/api/trash/empty`.

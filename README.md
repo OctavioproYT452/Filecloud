@@ -11,7 +11,7 @@ Sube, organiza, edita y comparte archivos desde cualquier dispositivo, con usuar
 
 </div>
 
-> **Versión 2.10.11.** Qué ha cambiado en esta versión: consulta [RELEASE.md](RELEASE.md).
+> **Versión 2.11.0.** Qué ha cambiado en esta versión: consulta [RELEASE.md](RELEASE.md).
 
 ---
 
@@ -210,6 +210,18 @@ Notas:
 - No se puede compartir la carpeta raíz. Si el dueño renombra o mueve la carpeta, la colaboración la sigue; si la borra, se elimina.
 - Los permisos se comprueban siempre en el servidor, no solo en la interfaz.
 
+### Papelera de reciclaje
+
+Desde la 2.11.0 **borrar ya no es definitivo**: lo que eliminas (desde la web, WebDAV, el asistente de IA o un administrador) se mueve a la papelera y se puede restaurar.
+
+- **Ver y restaurar:** botón **Papelera** de la barra del panel o en el menú de usuario. Cada elemento muestra su ruta original, tamaño, quién lo borró y los días que le quedan. **Restaurar** lo devuelve a su sitio (con otro nombre, p. ej. `fotos (1)`, si ya existe uno igual y recreando las carpetas que falten); también hay **Eliminar definitivamente** y **Vaciar papelera**.
+- **Sin gastar cuota:** la papelera vive en `data/trash/<uuid>/`, fuera de tu espacio, pero tiene un **tope por usuario**; si se llena, se elimina lo más antiguo. Para restaurar sí tiene que caber en tu cuota.
+- **Se vacía sola** pasados N días (comprobación al arrancar y cada hora).
+- **Carpetas compartidas:** lo que borra un colaborador va a la papelera del dueño de la carpeta.
+- **Ajustes** (Admin → Ajustes → Papelera de reciclaje): activar/desactivar, días (1–365, por defecto 30) y tope por usuario en MB (por defecto 2048; -1 = sin límite). Con la papelera desactivada, o si un elemento solo ya supera el tope, se borra definitivamente.
+- Al eliminar una cuenta se borra también su papelera. La API: `GET /api/trash`, `POST /api/trash/restore|delete|empty`.
+- **Discord:** `/papelera ver`, `/papelera restaurar <id>` y `/papelera vaciar`; el registro de actividad usa el evento «borrados».
+
 ### Menú de usuario y perfil
 
 - El botón con tu inicial (en móvil, la hamburguesa) abre el menú: arriba tu nombre y el espacio usado, y debajo las opciones agrupadas con una breve explicación. Se cierra con `Esc`, tocando fuera o al elegir una opción.
@@ -327,7 +339,7 @@ Disponible en `/admin/` solo para administradores. Usa el mismo menú de usuario
 - La versión instalada está en `data/version.json`:
 
   ```json
-  { "version": "2.10.11" }
+  { "version": "2.11.0" }
   ```
 
 - Cada 2 minutos el servidor lee ese archivo local y lo compara con el `data/version.json` publicado en GitHub. Si el de GitHub es más nuevo (se comparan los números: `2.10` es mayor que `2.9`), los **administradores** ven un aviso de nueva versión con instrucciones para actualizar.
@@ -398,6 +410,7 @@ Un bot que se conecta a tu servidor de Discord con el token que pongas en el `.e
 | `/archivos [ruta]` | Vinculados | Lista tu carpeta personal (solo lectura). |
 | `/buscar texto` | Vinculados | Busca archivos y carpetas por nombre. |
 | `/enlaces listar · crear · revocar` | Vinculados | Gestiona tus enlaces para compartir (`crear` y `/ia` se pueden desactivar en Admin → Discord). |
+| `/papelera ver · restaurar · vaciar` | Vinculados | Mira y restaura lo que borraste, o vacía la papelera |
 | `/ia pregunta` | Vinculados | Habla con el asistente de IA (respeta tus límites de uso). |
 | `/version [privado]` | Todos | **Público.** Versión instalada y si hay una nueva. |
 | `/ping [privado]` | Todos | **Público.** Comprueba que el bot responde y su latencia. |
@@ -633,6 +646,7 @@ Todas las rutas `/api/*` devuelven JSON y requieren sesión, salvo `login`, `reg
 | `POST` | `/api/rename`, `/api/move`, `/api/copy`, `/api/delete`, `/api/edit`, `/api/fav` | Operaciones sobre elementos. |
 | `GET` | `/api/download`, `/api/preview`, `/api/zip`, `/api/file-content` | Lectura y descarga. |
 | `POST` / `GET` | `/api/share`, `/api/shares`, `/api/share/revoke` | Enlaces compartidos. |
+| `GET` / `POST` | `/api/trash`, `/api/trash/restore`, `/api/trash/delete`, `/api/trash/empty` | Papelera de reciclaje. |
 | `GET` | `/api/collab/shared` | Carpetas que otros han compartido conmigo (dueño y rol). |
 | `GET` / `POST` | `/api/collab/folder`, `/api/collab/add`, `/api/collab/role`, `/api/collab/remove`, `/api/collab/mine`, `/api/collab/roles` | Gestión de colaboradores (dueño); `remove` también permite abandonar una carpeta compartida. |
 | `GET` / `POST` | `/api/theme` | Tema activo del usuario. |

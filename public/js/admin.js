@@ -67,8 +67,9 @@ async function discordAdmin(){const s=await api('/api/admin/discord');
 
 async function settings(){const s=await api('/api/admin/settings');
  $('#set').innerHTML=head('Ajustes generales','Opciones que afectan a todo el servidor.')+`<div class="cols"><div class="card"><h4 class="h0">Acceso</h4>${chk('reg','Permitir registro público','Cualquiera podrá crear una cuenta desde la página de inicio.',s.allow_registration)}${fld('Espacio por defecto (MB)','Cuota que reciben las cuentas nuevas. -1 = sin límite.',`<input class="input" id="q" type="number" value="${s.default_quota_mb}">`)}</div>
+ <div class="card"><h4 class="h0">Papelera de reciclaje</h4>${chk('tr','Activar la papelera','Lo que se borre se podrá restaurar. Si se desactiva, borrar es definitivo.',s.trash.enabled)}${fld('Días que se conserva','Pasado este tiempo se elimina sola (1–365).',`<input class="input" id="trd" type="number" min="1" max="365" value="${s.trash.days}">`)}${fld('Tope por usuario (MB)','No cuenta para su cuota. Si se llena, se borra lo más antiguo. -1 = sin límite.',`<input class="input" id="trc" type="number" value="${s.trash.capMB}">`)}</div>
  <div class="card"><h4 class="h0">Anuncio</h4>${fld('Mensaje para todos los usuarios','Se muestra arriba en el panel. Déjalo vacío para no mostrar ninguno.',`<textarea class="input" id="an" maxlength="300" rows="4">${esc(s.announcement||'')}</textarea>`)}</div></div>
  <div class="row sticky-act"><button class="btn" id="sv">Guardar cambios</button></div>`;
- $('#sv').onclick=async()=>{try{await api('/api/admin/settings',{allow_registration:$('#reg').checked,default_quota_mb:$('#q').value,announcement:$('#an').value});toast('Guardado')}catch(e){toast(e.message,1)}}}
+ $('#sv').onclick=async()=>{try{await api('/api/admin/settings',{allow_registration:$('#reg').checked,default_quota_mb:$('#q').value,announcement:$('#an').value,trash:{enabled:$('#tr').checked,days:$('#trd').value,capMB:$('#trc').value}});toast('Guardado')}catch(e){toast(e.message,1)}}}
 
 api('/api/session').then(s=>{if(!s.logged||!s.admin)location.href='/';else{show();updateNotice(s)}});

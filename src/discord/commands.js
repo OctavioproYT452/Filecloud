@@ -206,6 +206,25 @@ module.exports = function build(D) {
     await say(i, `Enlace revocado: ${code(P(rows[0].path))}.`);
   }, "user");
 
+  add(cmd("papelera", "Mira, restaura o vacía tu papelera de reciclaje")
+    .addSubcommand(s => s.setName("ver").setDescription("Lo que hay en tu papelera"))
+    .addSubcommand(s => s.setName("restaurar").setDescription("Devuelve un elemento a su sitio original").addStringOption(o => o.setName("id").setDescription("El código que aparece en /papelera ver").setRequired(true).setMinLength(3).setMaxLength(20)))
+    .addSubcommand(s => s.setName("vaciar").setDescription("Elimina todo lo de la papelera para siempre")), async (i, u) => {
+    const sub = i.options.getSubcommand(), tr = require("../services/trash");
+    if (sub === "ver") {
+      const items = tr.list(u), sm = tr.summary(u);
+      const lines = items.slice(0, 15).map(t => `**${t.id.slice(0, 6)}** · ${code(t.path)} · ${fmt(t.size)} · se elimina <t:${unix(t.expires_at)}:R>`);
+      return reply(i, { embeds: [emb("Tu papelera", lines.join("\n") || "*La papelera está vacía.*").setFooter({ text: `File Cloud · ${sm.count} elemento(s)${items.length > 15 ? " · mostrando 15" : ""} · restaura con /papelera restaurar` })] });
+    }
+    if (!store.actionsOn()) throw Error("Un administrador ha desactivado las acciones sobre archivos desde Discord");
+    if (sub === "vaciar") { const n = await tr.empty(u); logger.log("borrados", `**${md(u.username)}** vació su papelera *(desde Discord)*`); return say(i, `Papelera vaciada (${n} elemento${n === 1 ? "" : "s"}).`); }
+    const id = i.options.getString("id").trim(), rows = tr.list(u).filter(t => t.id.startsWith(id));
+    if (!rows.length) throw Error("No encuentro nada con ese código en tu papelera");
+    if (rows.length > 1) throw Error("Ese código coincide con varios elementos: escribe más caracteres");
+    const to = await tr.restore(u, rows[0].id);
+    logger.log("borrados", `**${md(u.username)}** restauró ${code(to)} de la papelera *(desde Discord)*`);
+    await say(i, `Restaurado en ${code(to)}.`);
+  }, "user");
   add(cmd("ia", "Pídele algo al asistente de IA sobre tus archivos").addStringOption(o => o.setName("pregunta").setDescription("Qué quieres que haga o responda").setRequired(true).setMaxLength(2000)), async (i, u) => {
     if (!ai.enabled()) throw Error("La IA no está activada en este servidor");
     if (!store.actionsOn()) throw Error("Un administrador ha desactivado las acciones sobre archivos desde Discord");

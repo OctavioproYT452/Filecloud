@@ -51,7 +51,7 @@ function menu(n,dir){const ed=!dir&&EDIT.has(ext(n))&&can('write'),acts=[[ic(dir
 
 async function rename(n){const v=await ask('Renombrar','Nuevo nombre',n);if(v&&v!==n)act('/api/rename',{path:join(n),newName:v})}
 async function moveTo(n){const v=await ask('Mover','Carpeta destino (vacío = inicio)','');if(v!==null)act('/api/move',{path:join(n),dest:v.replace(/^\/+/,'')})}
-async function del(n){if(await yes('Eliminar',`¿Eliminar "${n}"? Esta acción no se puede deshacer.`))act('/api/delete',{path:join(n)})}
+async function del(n){if(await yes('Eliminar',`¿Mover "${n}" a la papelera? Podrás restaurarlo desde "Papelera".`))act('/api/delete',{path:join(n)})}
 async function act(url,body){try{await api(url,body);toast('Hecho');load()}catch(e){toast(e.message,1)}}
 
 function preview(n){const p=join(n),u='/api/preview?path='+encodeURIComponent(p)+cq(),e=ext(n);let h;
@@ -69,6 +69,13 @@ async function editor(n){try{const{content}=await api('/api/file-content?path='+
 async function share(n){const d=dialog('Compartir "'+n+'"',`<label>Caducidad<select><option value="1">1 día</option><option value="7" selected>7 días</option><option value="30">30 días</option><option value="0">Sin caducidad</option></select></label><label>Contraseña (opcional)<input class="input" type="password" autocomplete="new-password"></label><p class="muted">Cualquiera con el enlace podrá verlo. Puedes revocarlo en "Enlaces".</p>`,async d=>{
   const r=await api('/api/share',{path:join(n),days:$('select',d).value,password:$('input',d).value});setTimeout(()=>showLink(r.url),50)},'Crear enlace')}
 function showLink(url){dialog('Enlace creado',`<input class="input" readonly value="${esc(url)}">`,async d=>{try{await navigator.clipboard.writeText(url);toast('Copiado')}catch{$('input',d).select();throw Error('Copia el enlace manualmente')}},'Copiar')}
+async function trashDlg(){const t=await api('/api/trash'),left=x=>Math.max(0,Math.ceil((x-Date.now())/864e5));
+  const body=!t.enabled&&!t.items.length?'<p class="muted">La papelera está desactivada: al borrar, los archivos se eliminan definitivamente.</p>':
+   (t.items.length?`<p class="muted" style="margin:0 0 8px">${t.count} elemento(s) · ${fmt(t.bytes)}. Se vacía sola a los ${t.days} días.</p><div class="menu" style="max-height:50vh;overflow:auto">${t.items.map(i=>`<div class="item" style="cursor:default"><div class="meta"><b>${esc(i.name)}${i.isDir?'/':''}</b><small>${esc(i.path)} · ${fmt(i.size)} · quedan ${left(i.expires_at)} d${i.deleted_by?' · '+esc(i.deleted_by):''}</small></div><button type="button" class="btn sm ghost" data-r="${i.id}">Restaurar</button><button type="button" class="btn sm danger" data-d="${i.id}" title="Eliminar definitivamente">${ic('x')}</button></div>`).join('')}</div><div class="row" style="margin-top:10px"><button type="button" class="btn sm danger" data-e="1">Vaciar papelera</button></div>`:'<p class="muted">La papelera está vacía.</p>');
+  const d=dialog('Papelera',body,null);
+  d.onclick=async e=>{const r=e.target.closest('[data-r]')?.dataset.r,x=e.target.closest('[data-d]')?.dataset.d,em=e.target.closest('[data-e]');
+   try{if(r){const o=await api('/api/trash/restore',{id:r});toast('Restaurado en '+o.path)}else if(x){if(!await yes('Eliminar definitivamente','Se borrará para siempre.'))return;await api('/api/trash/delete',{id:x})}else if(em){if(!await yes('Vaciar papelera','Se borrará todo para siempre.'))return;await api('/api/trash/empty',{})}else return;
+    d.close();load();trashDlg()}catch(er){toast(er.message,1)}}}
 async function shares(){const{shares}=await api('/api/shares');
   const d=dialog('Mis enlaces',shares.length?`<div class="menu">${shares.map(s=>`<div class="item" style="cursor:default"><div class="meta"><b>${esc(s.path)}</b><small>${s.expires_at?'Caduca '+new Date(s.expires_at).toLocaleDateString():'Sin caducidad'}</small></div><button type="button" class="btn sm ghost" data-c="${s.token}">Copiar</button><button type="button" class="btn sm danger" data-r="${s.token}">${ic('x')}</button></div>`).join('')}</div>`:'<p class="muted">No tienes enlaces activos.</p>',null);
   d.onclick=async e=>{const c=e.target.dataset?.c,r=e.target.dataset?.r;if(c){await navigator.clipboard?.writeText(location.origin+'/s/'+c);toast('Copiado')}if(r){await api('/api/share/revoke',{token:r});d.close();shares_()}}}
@@ -117,7 +124,7 @@ let dc=0;addEventListener('dragenter',e=>{e.preventDefault();dc++;$('#drop').cla
 addEventListener('dragover',e=>e.preventDefault());addEventListener('drop',e=>{e.preventDefault();dc=0;$('#drop').classList.remove('on');upload(e.dataTransfer.files)});
 
 document.addEventListener('click',e=>{const a=e.target.closest('[data-a]')?.dataset.a;if(!a)return;
-  ({shares,account,newDir,newFile,favview:()=>showList('/api/favs','Favoritos'),recent:()=>showList('/api/recent','Recientes'),theme:appearance,select:()=>{selMode=!selMode;sel.clear();render()},view:()=>{list=!list;localStorage.fcList=list?'1':'0';render()}})[a]()});
+  ({trash:trashDlg,shares,account,newDir,newFile,favview:()=>showList('/api/favs','Favoritos'),recent:()=>showList('/api/recent','Recientes'),theme:appearance,select:()=>{selMode=!selMode;sel.clear();render()},view:()=>{list=!list;localStorage.fcList=list?'1':'0';render()}})[a]()});
 api('/api/session').then(s=>{if(!s.logged)return location.href='/';me=s;$('#me').textContent=s.user;userUI();$('#adminLink').hidden=!s.admin;if(s.ai)aiInit();load();loadCollabs();updateNotice(s);
   if(s.announcement&&localStorage.fcAnn!==s.announcement){const a=$('#ann');a.hidden=false;a.innerHTML=`${ic('info')}<span class="grow">${esc(s.announcement)}</span><button class="more" aria-label="Cerrar">${ic('x')}</button>`;$('button',a).onclick=()=>{localStorage.fcAnn=s.announcement;a.hidden=true}}});
 
@@ -126,7 +133,7 @@ async function unzip(n){try{toast('Descomprimiendo…');const r=await api('/api/
 async function bulk(k){const ns=[...sel];if(!ns.length)return;let dest;
   if(k==='cz'){selMode=false;return compress(ns)}
   if(k==='zip'){location.href='/api/zip?'+ns.map(n=>'path='+encodeURIComponent(join(n))).join('&')+cq();return}
-  if(k==='del'&&!await yes('Eliminar',`¿Eliminar ${ns.length} elemento(s)? No se puede deshacer.`))return;
+  if(k==='del'&&!await yes('Eliminar',`¿Mover ${ns.length} elemento(s) a la papelera? Podrás restaurarlos.`))return;
   if(k!=='del'){dest=await ask(k==='mv'?'Mover':'Copiar','Carpeta destino (vacío = inicio)','');if(dest===null)return;dest=dest.replace(/^\/+/,'')}
   for(const n of ns)try{await api({del:'/api/delete',mv:'/api/move',cp:'/api/copy'}[k],{path:join(n),dest})}catch(e){toast(n+': '+e.message,1)}
   selMode=false;load()}
