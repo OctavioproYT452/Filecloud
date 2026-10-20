@@ -47,6 +47,10 @@ router.post("/api/admin/discord/folders", needAdmin, wrap(async (req, res) => {
 router.post("/api/admin/discord/prefix", needAdmin, wrap(async (req, res) => { custom.setPrefix(req.body?.prefix); res.json({ success: true, prefix: custom.prefix() }); }));
 
 // Canales de registros y de actualizaciones, elegidos desde la web (igual que /config en Discord)
+router.post("/api/admin/discord/update-notice", needAdmin, wrap(async (req, res) => {
+  const v = await updates.notify(req.user.username);
+  log(req, `envió el aviso de actualización (${v}) al canal de actualizaciones`); res.json({ success: true, version: v });
+}));
 router.post("/api/admin/discord/channel", needAdmin, wrap(async (req, res) => {
   const w = req.body?.which === "update" ? "update" : req.body?.which === "log" ? "log" : null, cid = String(req.body?.channel_id || "");
   if (!w) throw Error("Canal inválido");

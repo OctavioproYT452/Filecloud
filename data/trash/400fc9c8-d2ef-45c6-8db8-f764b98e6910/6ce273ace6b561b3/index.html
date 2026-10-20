@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpeedPulse - Medidor de Internet Profesional</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="dark-theme">
+    <div class="bg-glow"></div>
+    <div class="bg-grid"></div>
+
+    <header class="app-header">
+        <div class="logo">
+            <i class="fa-solid fa-gauge-high pulse-icon"></i>
+            <h1>Speed<span>Pulse</span></h1>
+        </div>
+        <div class="theme-toggle" id="themeToggle" title="Cambiar tema">
+            <i class="fa-solid fa-moon"></i>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <!-- Panel principal del medidor -->
+        <section class="gauge-section">
+            <div class="gauge-card">
+                <div class="status-badge" id="statusBadge">
+                    <span class="dot"></span> <span id="statusText">Listo para medir</span>
+                </div>
+
+                <div class="gauge-wrapper">
+                    <svg class="circular-gauge" viewBox="0 0 200 200">
+                        <circle class="gauge-bg" cx="100" cy="100" r="85"></circle>
+                        <circle class="gauge-progress" id="gaugeProgress" cx="100" cy="100" r="85"></circle>
+                    </svg>
+                    <div class="gauge-center">
+                        <span class="metric-value" id="currentSpeed">0.00</span>
+                        <span class="metric-unit" id="currentUnit">Mbps</span>
+                        <span class="metric-type" id="currentPhase">Velocidad</span>
+                    </div>
+                </div>
+
+                <div class="secondary-metrics">
+                    <div class="metric-box">
+                        <i class="fa-solid fa-arrow-down text-download"></i>
+                        <div>
+                            <span class="label">Descarga</span>
+                            <span class="val" id="downResult">-- <small>Mbps</small></span>
+                            <span class="val-mb" id="downResultMB">-- MB/s</span>
+                        </div>
+                    </div>
+                    <div class="metric-box">
+                        <i class="fa-solid fa-arrow-up text-upload"></i>
+                        <div>
+                            <span class="label">Subida</span>
+                            <span class="val" id="upResult">-- <small>Mbps</small></span>
+                            <span class="val-mb" id="upResultMB">-- MB/s</span>
+                        </div>
+                    </div>
+                    <div class="metric-box">
+                        <i class="fa-solid fa-stopwatch text-ping"></i>
+                        <div>
+                            <span class="label">Latencia (Ping)</span>
+                            <span class="val" id="pingResult">-- <small>ms</small></span>
+                            <span class="val-mb" id="jitterResult">Jitter: -- ms</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="start-btn" id="startBtn">
+                    <i class="fa-solid fa-play"></i> Iniciar Prueba
+                </button>
+            </div>
+        </section>
+
+        <!-- Panel de información y diagnóstico de red -->
+        <section class="info-section">
+            <div class="info-card">
+                <h3><i class="fa-solid fa-network-wired"></i> Información de Red</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">IP Pública</span>
+                        <span class="info-val" id="ipVal">Detectando...</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">ISP / Proveedor</span>
+                        <span class="info-val" id="ispVal">Detectando...</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Ubicación</span>
+                        <span class="info-val" id="locVal">Detectando...</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Tipo de Conexión</span>
+                        <span class="info-val" id="connTypeVal">Desconocido</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-card history-card">
+                <h3><i class="fa-solid fa-clock-rotate-left"></i> Historial Reciente</h3>
+                <div class="history-list" id="historyList">
+                    <p class="no-history">No hay pruebas recientes en esta sesión.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="app-footer">
+        <p>SpeedPulse &bull; Medidor de Ancho de Banda con APIs Reales</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

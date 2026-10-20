@@ -11,7 +11,7 @@ Sube, organiza, edita y comparte archivos desde cualquier dispositivo, con usuar
 
 </div>
 
-> **Versión 2.11.0.** Qué ha cambiado en esta versión: consulta [RELEASE.md](RELEASE.md).
+> **Versión 2.11.1.** Qué ha cambiado en esta versión: consulta [RELEASE.md](RELEASE.md).
 
 ---
 
@@ -339,7 +339,7 @@ Disponible en `/admin/` solo para administradores. Usa el mismo menú de usuario
 - La versión instalada está en `data/version.json`:
 
   ```json
-  { "version": "2.11.0" }
+  { "version": "2.11.1" }
   ```
 
 - Cada 2 minutos el servidor lee ese archivo local y lo compara con el `data/version.json` publicado en GitHub. Si el de GitHub es más nuevo (se comparan los números: `2.10` es mayor que `2.9`), los **administradores** ven un aviso de nueva versión con instrucciones para actualizar.
@@ -500,6 +500,10 @@ Cuando alguien entra al servidor, el bot envía un mensaje al canal que elijas. 
 **Rol automático:** el bot necesita el permiso «Gestionar roles» (el enlace de invitación nuevo ya lo incluye; si ya lo tenías invitado, dáselo en Ajustes del servidor) y su rol debe estar **por encima** del rol que va a dar. Funciona aunque no haya canal de bienvenidas.
 
 Códigos disponibles (en el mensaje y en el título): `{username}`, `{nickname}`, `{mention}`, `{tag}`, `{id}`, `{members}`, `{humans}`, `{server}`, `{created}` y `{date}`. Los nombres se escapan para que nadie cuele menciones masivas ni formato con su apodo; solo se menciona a la persona que entra.
+
+### Aviso de actualización a mano (2.11.1)
+
+En **Admin → Discord → Actividad → Avisar de una actualización ahora** el botón **Enviar aviso** consulta GitHub en ese momento (versión, notas de `RELEASE.md` y la sección «Archivos modificados» si existe) y publica el aviso en el canal de actualizaciones. Sirve aunque esa versión ya se hubiera anunciado; necesita el bot conectado y el canal configurado.
 
 ### Ajustes en la web (Admin → Discord → Panel de Discord)
 
