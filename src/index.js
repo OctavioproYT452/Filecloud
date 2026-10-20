@@ -30,6 +30,7 @@ app.use(require("./routes/auth"));
 app.use(require("./routes/security"));
 app.use(require("./routes/files"));
 app.use(require("./routes/trash"));
+app.use(require("./routes/cleanup"));
 app.use(require("./routes/shares"));
 app.use(require("./routes/collab"));
 app.use(require("./routes/share-page"));

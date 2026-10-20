@@ -1,14 +1,13 @@
-# Versión 2.11.1
+# Versión 2.12.0
 
-Botón para avisar de una actualización en Discord desde la web.
+Herramienta para recuperar espacio.
 
 ## Novedades
-- **Admin → Discord → Actividad → Enviar aviso:** consulta GitHub al momento y publica en el canal de actualizaciones un mensaje con la versión, las notas de la versión y los archivos modificados. Funciona aunque esa versión ya se hubiera anunciado.
-- Los avisos automáticos también muestran el apartado **Archivos modificados** de `RELEASE.md`.
-- Nueva ruta `POST /api/admin/discord/update-notice` (solo administradores; queda en el registro de actividad).
+- **Limpieza de espacio** (botón en la barra del panel y en el menú de usuario): los 25 archivos más grandes y los grupos de **archivos duplicados** (mismo contenido, por SHA-256) con el espacio que se puede liberar. Eliminar desde ahí manda el archivo a la **papelera**, así que se puede deshacer.
+- Análisis acotado para no cargar el servidor: máximo 30 000 archivos y no calcula huellas de archivos de más de 512 MB. Si se queda corto, lo indica.
+- Nueva ruta `GET /api/cleanup`. Sin cambios en la base de datos.
 
 ## Archivos modificados
-- `src/discord/updates.js`
-- `src/routes/discord-custom.js`
-- `public/js/dc-panel.js`
+- `src/routes/cleanup.js` (nuevo), `src/index.js`
+- `public/js/panel.js`, `public/js/menu.js`, `public/panel.html`
 - `README.md`, `RELEASE.md`, `package.json`, `data/version.json`

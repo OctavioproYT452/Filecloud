@@ -11,7 +11,7 @@ Sube, organiza, edita y comparte archivos desde cualquier dispositivo, con usuar
 
 </div>
 
-> **Versión 2.11.1.** Qué ha cambiado en esta versión: consulta [RELEASE.md](RELEASE.md).
+> **Versión 2.12.0.** Qué ha cambiado en esta versión: consulta [RELEASE.md](RELEASE.md).
 
 ---
 
@@ -53,6 +53,7 @@ Sube, organiza, edita y comparte archivos desde cualquier dispositivo, con usuar
 - **Fondo con imagen, GIF o vídeo** y botones con imagen o GIF en los temas.
 - **Enlaces para compartir** con caducidad, **contraseña opcional**, revocables en cualquier momento y con descarga de carpetas en ZIP.
 - **Carpetas colaborativas**: comparte una carpeta con otros usuarios por su UUID y asigna a cada uno un rol (solo lectura, edición, creación o permisos totales).
+- **Limpieza de espacio** (archivos grandes y duplicados) y **papelera de reciclaje** con restauración.
 - Cuota de almacenamiento por usuario con desglose por tipo (imágenes, vídeo, audio, documentos y otros).
 - **12 temas** y personalización completa (colores con selector o código hex, tipografía, redondeo y densidad), con **temas propios que se pueden exportar e importar como JSON** y una **comunidad de temas** para compartirlos con los demás usuarios del servidor.
 - Atajos de teclado: `/` filtra, `Supr` elimina la selección, `Ctrl+A` selecciona todo, `Esc` sale de la selección.
@@ -210,6 +211,10 @@ Notas:
 - No se puede compartir la carpeta raíz. Si el dueño renombra o mueve la carpeta, la colaboración la sigue; si la borra, se elimina.
 - Los permisos se comprueban siempre en el servidor, no solo en la interfaz.
 
+### Limpieza de espacio
+
+Botón **Limpieza** de la barra del panel (o del menú de usuario): analiza tu carpeta y muestra los **25 archivos más grandes** y los **duplicados** (mismo contenido, comprobado con SHA-256, no solo el nombre), con el espacio que sobra. Cada archivo tiene un botón para moverlo a la papelera. Revisa hasta 30 000 archivos; si tienes más, avisa de que el análisis es parcial. Ruta: `GET /api/cleanup`.
+
 ### Papelera de reciclaje
 
 Desde la 2.11.0 **borrar ya no es definitivo**: lo que eliminas (desde la web, WebDAV, el asistente de IA o un administrador) se mueve a la papelera y se puede restaurar.
@@ -339,7 +344,7 @@ Disponible en `/admin/` solo para administradores. Usa el mismo menú de usuario
 - La versión instalada está en `data/version.json`:
 
   ```json
-  { "version": "2.11.1" }
+  { "version": "2.12.0" }
   ```
 
 - Cada 2 minutos el servidor lee ese archivo local y lo compara con el `data/version.json` publicado en GitHub. Si el de GitHub es más nuevo (se comparan los números: `2.10` es mayor que `2.9`), los **administradores** ven un aviso de nueva versión con instrucciones para actualizar.
@@ -651,6 +656,7 @@ Todas las rutas `/api/*` devuelven JSON y requieren sesión, salvo `login`, `reg
 | `GET` | `/api/download`, `/api/preview`, `/api/zip`, `/api/file-content` | Lectura y descarga. |
 | `POST` / `GET` | `/api/share`, `/api/shares`, `/api/share/revoke` | Enlaces compartidos. |
 | `GET` / `POST` | `/api/trash`, `/api/trash/restore`, `/api/trash/delete`, `/api/trash/empty` | Papelera de reciclaje. |
+| `GET` | `/api/cleanup` | Archivos más grandes y duplicados. |
 | `GET` | `/api/collab/shared` | Carpetas que otros han compartido conmigo (dueño y rol). |
 | `GET` / `POST` | `/api/collab/folder`, `/api/collab/add`, `/api/collab/role`, `/api/collab/remove`, `/api/collab/mine`, `/api/collab/roles` | Gestión de colaboradores (dueño); `remove` también permite abandonar una carpeta compartida. |
 | `GET` / `POST` | `/api/theme` | Tema activo del usuario. |
