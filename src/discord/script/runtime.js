@@ -97,7 +97,7 @@ async function cond(ctx, nodes) {
 
 // Ejecuta un comando ya compilado. ctx lo prepara custom.js (quién lo usa, dónde, opciones…).
 async function exec(compiled, ctx) {
-  Object.assign(ctx, { steps: 0, deadline: Date.now() + (ctx.limitMs || 4000), vars: new Map(), sim: ctx.sim || [], out: { embed: {}, fields: [], files: [], eph: false, del: false, reactions: [], ai: 0 } });
+  Object.assign(ctx, { steps: 0, deadline: Date.now() + (ctx.limitMs || 4000), vars: new Map(), sim: ctx.sim || [], out: { embed: {}, fields: [], files: [], buttons: [], update: false, clearButtons: false, eph: false, del: false, reactions: [], ai: 0 } });
   try {
     const text = (await ev(ctx, compiled.ast)).replace(/\n{3,}/g, "\n\n").trim();
     return { content: text.slice(0, 2000), out: ctx.out, sim: ctx.sim };
@@ -123,6 +123,10 @@ function payload(r) {
     p.embeds = [e];
   }
   if (o.files.length) p.files = o.files.slice(0, 3).map(f => ({ attachment: f.data, name: f.name }));
+  if (o.buttons.length) {
+    const rows = []; for (let k = 0; k < o.buttons.length && k < 25; k += 5) rows.push({ type: 1, components: o.buttons.slice(k, k + 5) });
+    p.components = rows;
+  } else if (o.clearButtons) p.components = [];
   return p;
 }
 

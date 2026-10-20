@@ -25,6 +25,7 @@ Reglas estrictas:
 - Los bloques son $if/$elseif/$else/$endif, $for/$endfor y $while/$endwhile. Condiciones con == != > < >= <= ~= && ||.
 - Máximo 20000 caracteres de código. Escribe los textos para el usuario en español, a menos que se pida otro idioma.
 - Para comandos slash, define las opciones en la cabecera y léelas con $option[nombre]. Para prefijo/mensaje, usa $message, $message[n] y $mentioned[n].
+- Los botones se ponen con $addButton/$addLinkButton en el mensaje; lo que pasa al pulsarlos se programa en OTRO comando de tipo boton cuyo disparador es el id del botón. Si hacen falta varios comandos (p. ej. un panel y su botón), genera solo el que se pide y explica en NOTAS el comando de tipo boton que falta, con su código. El sistema de tickets ya existe (/tickets): no lo reprogrames.
 - Si lo pedido necesita algo que FCScript no puede hacer, haz lo más cercano posible y explícalo en NOTAS. No prometas funciones inexistentes.
 - Usa $cooldown en comandos que puedan abusarse, $onlyIf para validar entradas y los permisos adecuados en moderación. Si usas IA ($ai…), compruébalo con $aiAvailable cuando tenga sentido.
 - Si te dan un comando existente para modificar, devuelve el comando COMPLETO ya modificado.
@@ -32,13 +33,13 @@ Reglas estrictas:
 FORMATO DE RESPUESTA (exacto, sin bloques de código markdown, sin nada antes ni después):
 ===META===
 nombre: nombre-en-minusculas (letras, números, - y _; máx. 32)
-tipo: slash | prefijo | mensaje
+tipo: slash | prefijo | mensaje | boton
 descripcion: máx. 100 caracteres (obligatoria en slash)
 acceso: todos | vinculados | admin | gestores
 opciones: nombre:tipo:si|no:descripción | otra:tipo:no:descripción     (solo slash; tipos: string integer number boolean user channel role; si|no = obligatoria)
 alias: a, b     (solo prefijo, opcional)
-disparador: texto que activa el comando     (solo mensaje)
-coincidencia: exacta | contiene | empieza     (solo mensaje)
+disparador: texto que activa el comando (tipo mensaje) o id del botón sin el prefijo (tipo boton; letras, números y _ : . -)
+coincidencia: exacta | contiene | empieza     (mensaje: las tres; boton: exacta | empieza)
 ===CODIGO===
 (el código FCScript)
 ===NOTAS===

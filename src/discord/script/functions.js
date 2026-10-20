@@ -130,6 +130,28 @@ F(C2, "addReaction", "emoji", "Reacciona al mensaje del usuario (comandos de men
 F(C2, "sendMessage", "idCanal;texto", "Envía un mensaje a otro canal del mismo servidor.", async (c, a) => { const g = sameGuild(c); await act(c, `enviaría «${S(a[1]).slice(0, 40)}» al canal ${a[0]}`, async () => { const ch = await g.channels.fetch(id(a[0])).catch(() => null); if (!ch?.isTextBased?.()) throw Error("ese canal no existe o no es de texto"); await ch.send({ content: S(a[1]).slice(0, 2000), allowedMentions: { parse: [] } }); }); }, { min: 2 });
 F(C2, "sendDM", "texto", "Envía un mensaje privado a quien usó el comando.", async (c, a) => act(c, `enviaría un privado: «${S(a[0]).slice(0, 40)}»`, async () => { await c.user.send({ content: S(a[0]).slice(0, 2000), allowedMentions: { parse: [] } }).catch(() => { throw Error("no se pudo enviar el privado (¿los tiene cerrados?)"); }); }), { min: 1 });
 
+// =================== Botones ===================
+// Los botones se envían con el mensaje. Al pulsarlos se ejecuta un comando de tipo «Botón» cuyo texto activador coincide con el id del botón.
+const CB = "Botones", STYLE = { azul: 1, primary: 1, blurple: 1, gris: 2, secondary: 2, grey: 2, gray: 2, verde: 3, success: 3, green: 3, rojo: 4, danger: 4, red: 4 };
+const btnEmoji = v => { v = S(v).trim(); if (!v) return undefined; const m = /^<(a?):(\w{2,32}):(\d{15,25})>$/.exec(v); if (m) return { name: m[2], id: m[3], animated: !!m[1] }; return [...v].length <= 8 && !/[\w<>:]/.test(v) ? { name: v } : undefined; };
+const BTN_ID = /^[A-Za-z0-9_:.-]{1,80}$/;
+function pushBtn(c, b) { if (c.out.buttons.length >= 25) throw Error("máximo 25 botones por mensaje"); c.out.buttons.push(b); return ""; }
+F(CB, "addButton", "etiqueta;id;[estilo];[emoji];[desactivado]", "Añade un botón al mensaje (máx. 25, 5 por fila). Al pulsarlo se ejecuta el comando de tipo «Botón» cuyo activador sea el id. Estilos: azul, gris, verde, rojo. Truco: pon datos en el id separados por «:» (ej. rol:123) y léelos con $buttonArg.", (c, a) => {
+  const label = S(a[0]).slice(0, 80), bid = S(a[1]).trim(); if (!label && !btnEmoji(a[3])) throw Error("el botón necesita una etiqueta o un emoji"); if (!BTN_ID.test(bid)) throw Error("el id del botón solo admite letras, números y _ : . - (máx. 80)");
+  const st = STYLE[S(a[2], "azul").trim().toLowerCase()]; if (!st) throw Error("estilo no válido (azul, gris, verde, rojo)");
+  const b = { type: 2, style: st, label: label || undefined, custom_id: "fcs:" + bid }; const em = btnEmoji(a[3]); if (em) b.emoji = em; if (R.truthy(S(a[4], "no"))) b.disabled = true; return pushBtn(c, b);
+}, { q: true, min: 2 });
+F(CB, "addLinkButton", "etiqueta;url;[emoji]", "Añade un botón que abre un enlace (solo http/https). No ejecuta ningún comando.", (c, a) => {
+  const url = S(a[1]).trim(); if (!/^https?:\/\//i.test(url)) throw Error("el enlace debe empezar por http:// o https://");
+  const label = S(a[0]).slice(0, 80); if (!label) throw Error("el botón necesita una etiqueta");
+  const b = { type: 2, style: 5, label, url: url.slice(0, 512) }; const em = btnEmoji(a[2]); if (em) b.emoji = em; return pushBtn(c, b);
+}, { q: true, min: 2 });
+F(CB, "clearButtons", "", "Quita todos los botones del mensaje (útil con $updateMessage).", c => { c.out.buttons = []; c.out.clearButtons = true; return ""; }, { q: true });
+F(CB, "updateMessage", "", "En un comando de tipo «Botón»: en vez de enviar un mensaje nuevo, edita el mensaje donde está el botón.", c => { c.out.update = true; return ""; }, { q: true });
+F(CB, "buttonId", "", "Id del botón que se ha pulsado (sin el prefijo interno).", c => c.btn ?? "");
+F(CB, "buttonArg", "n", "La parte n (desde 1) del id del botón separado por «:». Con el id rol:123, $buttonArg[1] es rol y $buttonArg[2] es 123.", (c, a) => String(c.btn ?? "").split(":")[N(a[0], 1) - 1] ?? "", { min: 1 });
+F(CB, "isButtonClick", "", "true si el comando se ejecuta porque alguien pulsó un botón.", c => c.kind === "button" || (c.kind === "test" && c.btn !== undefined));
+
 // =================== Lógica ===================
 const C3 = "Lógica y control";
 F(C3, "onlyIf", "condición;mensajeSiFalla", "Detiene el comando (y muestra el mensaje) si la condición no se cumple.", async (c, a) => { if (!(await R.cond(c, a[0] || []))) throw new R.Stop(a[1] ? await R.ev(c, a[1]) : ""); }, { lazy: true, min: 1, q: true });

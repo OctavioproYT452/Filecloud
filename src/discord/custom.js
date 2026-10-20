@@ -11,12 +11,12 @@ const { setting } = require("../lib/settings");
 
 const DIR = path.join(DATA, "discord-commands"), EXT = ".fcs";
 const MAX_CMDS = 200, MAX_CODE = 20000, MAX_SLASH = 60;
-const TYPES = ["slash", "prefijo", "mensaje"], ACCESS = ["todos", "vinculados", "admin", "gestores"], MATCH = ["exacta", "contiene", "empieza"];
+const TYPES = ["slash", "prefijo", "mensaje", "boton"], ACCESS = ["todos", "vinculados", "admin", "gestores"], MATCH = ["exacta", "contiene", "empieza"];
 const OPT = { string: 3, integer: 4, boolean: 5, user: 6, channel: 7, role: 8, number: 10 };
 // Nombres que ya usa el propio bot (un comando propio no puede llamarse igual)
 const RESERVED = new Set("ayuda vincular desvincular cuenta archivos buscar enlaces ia version ping servidorinfo usuarioinfo avatar config servidor usuarios usuario suspender reactivar anuncio registro actualizar bienvenida dado moneda elegir encuesta recientes favoritos comandos limpiar".split(" "));
 
-let cmds = null, folders = new Set(), slash = new Map(), pre = new Map(), trig = [], D = null, hook = null;
+let cmds = null, folders = new Set(), slash = new Map(), pre = new Map(), trig = [], btns = [], D = null, hook = null;
 const seg = s => String(s || "").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 32);
 function dirOf(folder) {
   const parts = String(folder || "").split("/").map(seg).filter(Boolean);
@@ -37,7 +37,7 @@ function split(text) {
 function norm(m) {
   const o = {
     tipo: TYPES.includes(m.tipo) ? m.tipo : "slash", descripcion: String(m.descripcion || "").slice(0, 100), acceso: ACCESS.includes(m.acceso) ? m.acceso : "todos",
-    activo: !/^(no|false|0)$/i.test(String(m.activo ?? "si")), alias: [], opciones: [], disparador: String(m.disparador || "").slice(0, 100), coincidencia: MATCH.includes(m.coincidencia) ? m.coincidencia : "contiene",
+    activo: !/^(no|false|0)$/i.test(String(m.activo ?? "si")), alias: [], opciones: [], disparador: m.tipo === "boton" ? String(m.disparador || "").replace(/^fcs:/, "").replace(/[^A-Za-z0-9_:.-]/g, "").slice(0, 80) : String(m.disparador || "").slice(0, 100), coincidencia: MATCH.includes(m.coincidencia) ? m.coincidencia : "contiene",
   };
   const al = Array.isArray(m.alias) ? m.alias : String(m.alias || "").split(",");
   o.alias = [...new Set(al.map(seg).filter(Boolean))].slice(0, 5);
@@ -49,7 +49,7 @@ function serialize(m, code) {
   const h = [`//@ tipo: ${m.tipo}`, `//@ descripcion: ${m.descripcion.replace(/\n/g, " ")}`, `//@ acceso: ${m.acceso}`, `//@ activo: ${m.activo ? "si" : "no"}`];
   if (m.tipo === "slash" && m.opciones.length) h.push(`//@ opciones: ${m.opciones.map(o => `${o.name}:${o.type}:${o.required ? "si" : "no"}:${o.desc.replace(/[|\n]/g, " ")}`).join(" | ")}`);
   if (m.tipo === "prefijo" && m.alias.length) h.push(`//@ alias: ${m.alias.join(", ")}`);
-  if (m.tipo === "mensaje") h.push(`//@ disparador: ${m.disparador.replace(/\n/g, " ")}`, `//@ coincidencia: ${m.coincidencia}`);
+  if (m.tipo === "mensaje" || m.tipo === "boton") h.push(`//@ disparador: ${m.disparador.replace(/\n/g, " ")}`, `//@ coincidencia: ${m.coincidencia}`);
   return h.join("\n") + "\n\n" + code.replace(/\r\n/g, "\n");
 }
 // Nombres de todas las funciones que usa un árbol (para saber si el comando llama a la IA o es efímero)
@@ -84,12 +84,13 @@ function load() {
 const ensure = () => { if (!cmds) load(); };
 
 function index() {
-  slash = new Map(); pre = new Map(); trig = [];
+  slash = new Map(); pre = new Map(); trig = []; btns = [];
   for (const c of cmds.values()) {
     if (!c.meta.activo) continue;
     if (c.meta.tipo === "slash") { if (!RESERVED.has(c.name)) slash.set(c.name, c); }
     else if (c.meta.tipo === "prefijo") { for (const n of [c.name, ...c.meta.alias]) if (!pre.has(n)) pre.set(n, c); }
     else if (c.meta.tipo === "mensaje" && c.meta.disparador) trig.push(c);
+    else if (c.meta.tipo === "boton" && c.meta.disparador) btns.push(c);
   }
 }
 function changed() { index(); try { hook?.(); } catch { } }
@@ -111,6 +112,10 @@ function validate(folder, name, meta, code, oldId) {
   }
   if (meta.tipo === "prefijo") for (const n of [name, ...meta.alias]) { const o = others.find(c => c.meta.tipo === "prefijo" && c.meta.activo && [c.name, ...c.meta.alias].includes(n)); if (o && meta.activo) throw Error(`«${n}» ya lo usa el comando ${o.id}`); }
   if (meta.tipo === "mensaje" && !meta.disparador.trim()) throw Error("Escribe el texto que activa el comando");
+  if (meta.tipo === "boton") {
+    if (!meta.disparador) throw Error("Escribe el id del botón que lo activa (letras, números y _ : . -)");
+    const o = others.find(c => c.meta.tipo === "boton" && c.meta.activo && c.meta.disparador === meta.disparador && c.meta.coincidencia === meta.coincidencia); if (o && meta.activo) throw Error(`El comando ${o.id} ya responde a ese botón`);
+  }
   return id;
 }
 function save({ id: oldId, folder, name, meta, code }) {
@@ -182,6 +187,26 @@ async function runSlash(i) {
   await send(p); return true;
 }
 
+// Botón de un mensaje de FCScript (id «fcs:…»): se busca el comando de tipo «boton» cuyo activador coincide
+async function runButton(i) {
+  ensure(); const bid = String(i.customId).slice(4), EPH = D.MessageFlags.Ephemeral;
+  const c = btns.find(b => b.meta.coincidencia === "exacta" ? bid === b.meta.disparador : b.meta.coincidencia === "empieza" ? bid.startsWith(b.meta.disparador) : bid.includes(b.meta.disparador));
+  if (!c) return void await i.reply({ content: "Este botón ya no hace nada.", flags: EPH });
+  if (spam(i.user.id)) return void await i.reply({ content: "Más despacio: espera un segundo.", flags: EPH });
+  const fc = userOf(i.user.id);
+  if (!allowed(c, fc, i.member)) return void await i.reply({ content: NOPE[c.meta.acceso], flags: EPH });
+  const upd = c.uses.has("updatemessage"); let deferred = false;
+  if (c.slow) { if (upd) await i.deferUpdate(); else await i.deferReply(c.uses.has("ephemeral") ? { flags: EPH } : {}); deferred = true; }
+  const r = await R.exec(c, { kind: "button", D, client: i.client, inter: i, btn: bid, user: i.user, member: i.member, guild: i.guild, channel: i.channel, argv: [], opts: new Map(), mentions: [], cmd: { id: c.id, name: c.name }, prefix: prefix(), fc });
+  if (r.error) { const o = { content: "⚠️ Error en el comando: " + r.error.slice(0, 1500), flags: EPH }; return void await (deferred ? (upd ? i.followUp(o) : i.editReply((delete o.flags, o))) : i.reply(o)); }
+  const p = R.payload(r); p.allowedMentions = { parse: ["users"] };
+  if (!p.content && !p.embeds && !p.files && !p.components) { if (deferred && upd) return; if (r.stopped || !r.out.update) { const o = { content: r.stopped ? "Cancelado." : "✓", flags: EPH }; return void await (deferred ? i.followUp(o) : i.reply(o)); } }
+  if (r.stopped) { const o = { content: r.content || "Cancelado.", flags: EPH }; return void await (deferred ? i.followUp(o) : i.reply(o)); }
+  if (r.out.update) { if (deferred) await i.editReply(p); else await i.update(p); return; }
+  if (r.out.eph) p.flags = EPH;
+  if (deferred) { delete p.flags; await i.editReply(p); } else await i.reply(p);
+}
+
 async function onMessage(m) {
   if (m.author.bot || !m.guild || !m.content || (!pre.size && !trig.length)) return;
   ensure(); const pf = prefix(), text = m.content.trim(); let c = null, argv = [];
@@ -215,11 +240,11 @@ async function dry(code, meta, { args = "", options = {}, fc = null } = {}) {
   if (c.errors.length) return { errors: c.errors };
   const user = { id: "100000000000000001", username: "tu_usuario", globalName: "Tú", bot: false, displayAvatarURL: () => "https://cdn.discordapp.com/embed/avatars/0.png", send: async () => { } };
   const opts = new Map(Object.entries(options).map(([k, v]) => [k, String(v)])), argv = c.meta.tipo === "slash" ? [...opts.values()] : String(args).split(/\s+/).filter(Boolean);
-  const r = await R.exec(c, { kind: "test", dry: true, user, member: { displayName: "Tú", permissions: { has: () => true }, roles: { cache: { has: () => true } } }, guild: { id: "200000000000000002", name: "Servidor de prueba", memberCount: 42 }, channel: { id: "300000000000000003", name: "general" }, argv, opts, mentions: [...String(args).matchAll(/<@!?(\d{5,})>|(?<!\d)(\d{17,20})(?!\d)/g)].map(m => m[1] || m[2]).slice(0, 10), cmd: { id: "prueba", name: "prueba" }, prefix: prefix(), fc, limitMs: 3000 });
+  const r = await R.exec(c, { kind: "test", dry: true, btn: c.meta.tipo === "boton" ? String(args || c.meta.disparador || "id").trim() : undefined, user, member: { displayName: "Tú", permissions: { has: () => true }, roles: { cache: { has: () => true } } }, guild: { id: "200000000000000002", name: "Servidor de prueba", memberCount: 42 }, channel: { id: "300000000000000003", name: "general" }, argv, opts, mentions: [...String(args).matchAll(/<@!?(\d{5,})>|(?<!\d)(\d{17,20})(?!\d)/g)].map(m => m[1] || m[2]).slice(0, 10), cmd: { id: "prueba", name: "prueba" }, prefix: prefix(), fc, limitMs: 3000 });
   return { errors: [], error: r.error, stopped: r.stopped, message: r.error ? null : preview(R.payload(r)), ephemeral: !!r.out.eph, simulated: r.sim, deletes: r.out.del };
 }
 
 const init = (d, reserved, onChange) => { D = d; hook = onChange; for (const n of reserved || []) RESERVED.add(n); ensure(); };
 const setPrefix = p => { p = String(p || "").trim(); if (!/^\S{1,3}$/.test(p)) throw Error("El prefijo debe tener de 1 a 3 caracteres sin espacios"); store.setS("discord_prefix", p); };
 
-module.exports = { normMeta: norm, slugName: seg, init, list, read, save, remove, folder, checkCode, dry, slashJson, runSlash, onMessage, prefix, setPrefix, docs: () => DOCS, hasSlash: n => { ensure(); return slash.has(n); }, hasMessages: () => { ensure(); return pre.size > 0 || trig.length > 0; }, limits: { cmds: MAX_CMDS, code: MAX_CODE, slash: MAX_SLASH }, OPT_TYPES: Object.keys(OPT), ACCESS, MATCH };
+module.exports = { normMeta: norm, slugName: seg, init, list, read, save, remove, folder, checkCode, dry, slashJson, runSlash, runButton, onMessage, prefix, setPrefix, docs: () => DOCS, hasSlash: n => { ensure(); return slash.has(n); }, hasMessages: () => { ensure(); return pre.size > 0 || trig.length > 0; }, limits: { cmds: MAX_CMDS, code: MAX_CODE, slash: MAX_SLASH }, OPT_TYPES: Object.keys(OPT), ACCESS, MATCH };

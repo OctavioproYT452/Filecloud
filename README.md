@@ -11,7 +11,7 @@ Sube, organiza, edita y comparte archivos desde cualquier dispositivo, con usuar
 
 </div>
 
-> **Versión 2.10.8.** Qué ha cambiado en esta versión: consulta [RELEASE.md](RELEASE.md).
+> **Versión 2.10.11.** Qué ha cambiado en esta versión: consulta [RELEASE.md](RELEASE.md).
 
 ---
 
@@ -327,7 +327,7 @@ Disponible en `/admin/` solo para administradores. Usa el mismo menú de usuario
 - La versión instalada está en `data/version.json`:
 
   ```json
-  { "version": "2.10.8" }
+  { "version": "2.10.11" }
   ```
 
 - Cada 2 minutos el servidor lee ese archivo local y lo compara con el `data/version.json` publicado en GitHub. Si el de GitHub es más nuevo (se comparan los números: `2.10` es mayor que `2.9`), los **administradores** ven un aviso de nueva versión con instrucciones para actualizar.
@@ -428,7 +428,7 @@ Desde **Admin → Discord → Abrir el editor de comandos** (`/admin/discord.htm
 - **Acceso por comando:** todos, solo cuentas vinculadas, solo admins de File Cloud, o admins y gestores del servidor.
 - **Carpetas:** organiza los comandos en carpetas (hasta 3 niveles), arrastra un comando a una carpeta para moverlo, renómbralas o bórralas.
 - **Archivos:** al guardar, cada comando se escribe como un archivo `.fcs` en `data/discord-commands/<carpeta>/`. Se compilan una sola vez y se ejecutan desde la memoria; puedes hacer copia de seguridad de esa carpeta o editar los archivos a mano (se leen al reiniciar).
-- **Wiki:** `/admin/discord-wiki.html` (también desde el editor) con guías, recetas y la referencia de las 171 funciones con ejemplos, filtros por categoría, marca de «nuevo» y buscador (tecla `/`).
+- **Wiki:** `/admin/discord-wiki.html` (también desde el editor) con guías, recetas y la referencia de las 178 funciones con ejemplos, filtros por categoría, marca de «nuevo» y buscador (tecla `/`).
 - **Editor:** explorador con carpetas (editar, duplicar, borrar y arrastrar), propiedades, panel de problemas, panel de pruebas y barra de estado; resaltado de sintaxis (funciones, bloques, corchetes por niveles, errores en rojo), autocompletado al escribir `$`, números de línea con errores marcados, panel de funciones con buscador y **prueba en vivo** que no envía nada a Discord (las acciones como dar roles o expulsar solo se describen).
 - **Comandos de prefijo y de mensaje** necesitan el permiso especial «Message Content Intent» (Developer Portal → Bot → Privileged Gateway Intents). Sin él, el bot arranca igual y los comandos slash funcionan.
 
@@ -447,17 +447,35 @@ $footer[Tu espacio: $fcSpace de $fcQuota]
 
 **Sintaxis:** `$funcion` o `$funcion[arg1;arg2]` (se pueden anidar). Escapes: `\$ \; \[ \]`. Comentarios: líneas que empiezan por `//` o `$c[texto]`. Bloques: `$if / $elseif / $else / $endif`, `$for[var;desde;hasta] … $endfor` y `$while[cond] … $endwhile` (máx. 200 vueltas). Operadores: `== != > < >= <= ~=` (contiene), `&&`, `||`.
 
-**Funciones (171):** contexto (`$username`, `$message[1]`, `$option[x]`, `$mentioned`, `$serverName`, `$hasRole`…), respuesta (`$title`, `$description`, `$color`, `$addField`, `$ephemeral`, `$sendMessage`, `$sendDM`, `$addReaction`…), lógica (`$onlyIf`, `$onlyAdmin`, `$onlyPerms`, `$onlyRoles`, `$onlyLinked`, `$cooldown`, `$stop`, `$set/$get`), variables guardadas por usuario, servidor o globales (`$setUserVar`, `$getServerVar`, `$topUserVar`…), matemáticas (`$calc`, `$random`, `$round`…), texto (`$upper`, `$replace`, `$split`, `$contains`, `$choose`…), tiempo (`$date`, `$discordTime`, `$duration`), File Cloud (`$fcUser`, `$fcSpace`, `$fcQuota`, `$fcUsers`, `$fcVersion`) y moderación (`$giveRole`, `$takeRole`, `$kick`, `$ban`, `$timeout`, `$deleteMessages`). La lista completa, con descripción de cada una, está en el panel *Funciones* del editor.
+**Funciones (178):** contexto (`$username`, `$message[1]`, `$option[x]`, `$mentioned`, `$serverName`, `$hasRole`…), respuesta (`$title`, `$description`, `$color`, `$addField`, `$ephemeral`, `$sendMessage`, `$sendDM`, `$addReaction`…), lógica (`$onlyIf`, `$onlyAdmin`, `$onlyPerms`, `$onlyRoles`, `$onlyLinked`, `$cooldown`, `$stop`, `$set/$get`), variables guardadas por usuario, servidor o globales (`$setUserVar`, `$getServerVar`, `$topUserVar`…), matemáticas (`$calc`, `$random`, `$round`…), texto (`$upper`, `$replace`, `$split`, `$contains`, `$choose`…), tiempo (`$date`, `$discordTime`, `$duration`), File Cloud (`$fcUser`, `$fcSpace`, `$fcQuota`, `$fcUsers`, `$fcVersion`) y moderación (`$giveRole`, `$takeRole`, `$kick`, `$ban`, `$timeout`, `$deleteMessages`). La lista completa, con descripción de cada una, está en el panel *Funciones* del editor.
 
-**Novedades de FCScript en la 2.10.8:** tarjetas completas (`$footerIcon`, `$authorIcon`, `$authorUrl`, `$titleUrl`), captcha con imagen (`$genCaptcha` genera un PNG sin dependencias, lo incluye en la tarjeta y guarda el código en la variable de usuario `captcha`; `$checkCaptcha` y `$clearCaptcha` lo verifican y lo borran), contadores (`$incUserVar`, `$incServerVar`, `$incGlobalVar`, `$rankUserVar`), utilidades de texto, números y fechas (`$progressBar`, `$percent`, `$randomString`, `$truncate`, `$parseDate`, `$timeAgo`…), más moderación (`$setNickname`, `$unban`, `$slowmode`) y **funciones de IA** (`$ai`, `$aiSummarize`, `$aiTranslate`, `$aiClassify`, `$aiSentiment`, `$aiModerate`…) que usan la IA configurada en el panel. Las funciones de IA solo envían y reciben texto, tratan lo que escribe el usuario como datos, limitan a 3 llamadas por ejecución y cuentan en el límite de IA de la cuenta vinculada (o 10 por hora si no la hay); en comandos slash el bot responde «pensando…» mientras espera.
+**Novedades de FCScript en la 2.10.11:** tarjetas completas (`$footerIcon`, `$authorIcon`, `$authorUrl`, `$titleUrl`), captcha con imagen (`$genCaptcha` genera un PNG sin dependencias, lo incluye en la tarjeta y guarda el código en la variable de usuario `captcha`; `$checkCaptcha` y `$clearCaptcha` lo verifican y lo borran), contadores (`$incUserVar`, `$incServerVar`, `$incGlobalVar`, `$rankUserVar`), utilidades de texto, números y fechas (`$progressBar`, `$percent`, `$randomString`, `$truncate`, `$parseDate`, `$timeAgo`…), más moderación (`$setNickname`, `$unban`, `$slowmode`) y **funciones de IA** (`$ai`, `$aiSummarize`, `$aiTranslate`, `$aiClassify`, `$aiSentiment`, `$aiModerate`…) que usan la IA configurada en el panel. Las funciones de IA solo envían y reciben texto, tratan lo que escribe el usuario como datos, limitan a 3 llamadas por ejecución y cuentan en el límite de IA de la cuenta vinculada (o 10 por hora si no la hay); en comandos slash el bot responde «pensando…» mientras espera.
 
-**Roles de autoservicio (2.10.8):** `$grantRole[idRol]` y `$revokeRole[idRol]` los ejecuta el **bot**, así que quien usa el comando no necesita permisos (ideal para el captcha). El bot necesita «Gestionar roles», su rol debe estar por encima del rol a dar, y por seguridad se rechazan roles con permisos de gestión, de integraciones y @everyone. `$canGrantRole` y `$botHasPerm` permiten comprobarlo antes.
+**Roles de autoservicio (2.10.11):** `$grantRole[idRol]` y `$revokeRole[idRol]` los ejecuta el **bot**, así que quien usa el comando no necesita permisos (ideal para el captcha). El bot necesita «Gestionar roles», su rol debe estar por encima del rol a dar, y por seguridad se rechazan roles con permisos de gestión, de integraciones y @everyone. `$canGrantRole` y `$botHasPerm` permiten comprobarlo antes.
 
-**Hablar de otra persona (2.10.8):** `$isLinked`, `$isFcAdmin`, `$fcUser`, `$fcSpace`, `$fcQuota` y `$fcPercent` aceptan un ID o mención de Discord (`$fcSpace[$mentioned[1]]`), igual que `$username`, `$avatar`, `$hasRole`, `$getUserVar`… Así `!perfil @juan` muestra el perfil de Juan. Ver la guía «Hablar de otra persona» de la wiki.
+**Hablar de otra persona (2.10.11):** `$isLinked`, `$isFcAdmin`, `$fcUser`, `$fcSpace`, `$fcQuota` y `$fcPercent` aceptan un ID o mención de Discord (`$fcSpace[$mentioned[1]]`), igual que `$username`, `$avatar`, `$hasRole`, `$getUserVar`… Así `!perfil @juan` muestra el perfil de Juan. Ver la guía «Hablar de otra persona» de la wiki.
 
-**Programar con IA (2.10.8):** en el editor, el botón **✨ IA** recibe una descripción («un comando que…»), la IA lee **toda la wiki** (guías, recetas y las 171 funciones con ejemplo), escribe el comando, lo pasa por el analizador y se corrige sola si hay errores (hasta 2 reintentos). Nunca guarda nada: el resultado aparece en el editor para revisarlo, probarlo y guardarlo. También puede modificar el comando abierto. Cuenta un uso del límite de IA del administrador y envía unos 10 000 tokens de contexto por petición. API: `POST /api/admin/discord/cmds/ai` (solo administradores).
+**Programar con IA (2.10.11):** en el editor, el botón **✨ IA** recibe una descripción («un comando que…»), la IA lee **toda la wiki** (guías, recetas y las 178 funciones con ejemplo), escribe el comando, lo pasa por el analizador y se corrige sola si hay errores (hasta 2 reintentos). Nunca guarda nada: el resultado aparece en el editor para revisarlo, probarlo y guardarlo. También puede modificar el comando abierto. Cuenta un uso del límite de IA del administrador y envía unos 10 000 tokens de contexto por petición. API: `POST /api/admin/discord/cmds/ai` (solo administradores).
+
+**Botones (2.10.11):** `$addButton[etiqueta;id;estilo;emoji]` y `$addLinkButton[etiqueta;url]` añaden botones al mensaje (hasta 25). Lo que pasa al pulsarlos se programa en un comando de nuevo tipo **Botón** cuyo activador es el id del botón (exacto o «empieza así», para mandar datos en el id: `rol:123`). Dentro puedes usar `$buttonId`, `$buttonArg[n]`, `$updateMessage` (edita el mensaje del botón), `$clearButtons`, `$ephemeral`, etc. Los ids de FCScript llevan el prefijo interno `fcs:`, así que no chocan con los del sistema de tickets.
 
 **Seguridad:** lo que escribe un usuario nunca se interpreta como código; los operadores de las condiciones solo cuentan si los escribió el autor; hay límites de pasos (4000), de tiempo (4 s), de bucles, de tamaño (20 000 caracteres por comando, 200 comandos, 60 slash) y de variables guardadas (20 000). Las funciones de moderación comprueban que **quien usa el comando** tenga el permiso de Discord correspondiente. Las menciones masivas (`@everyone` y roles) están desactivadas en las respuestas.
+
+### Tickets de soporte
+
+Sistema ya hecho, con botón para abrir tickets. Se configura **desde la web (Admin → Discord → Panel de Discord → Tickets)**: rol de soporte, categoría, canal de transcripciones, máximo por persona, envío del panel con el botón (canal, título y texto) y lista de tickets abiertos con quién los atiende. También con estos comandos, para quien tenga «Gestionar servidor» (o sea admin de File Cloud):
+
+| Comando | Qué hace |
+|---|---|
+| `/tickets configurar rol:@Soporte [categoria] [registro] [maximo]` | Rol que ve, reclama y cierra los tickets; categoría donde se crean; canal de transcripciones; tickets abiertos por persona (1-5). |
+| `/tickets panel [canal] [titulo] [descripcion]` | Envía el mensaje con el botón **🎫 Abrir ticket**. |
+| `/tickets estado` | Configuración, tickets abiertos y permisos que falten. |
+
+- **Quien abre el ticket** rellena un formulario con su problema y solo puede **ver y escribir** en su canal privado (sin comandos, hilos, menciones masivas ni botones de gestión).
+- **El rol de soporte** ve el canal y pulsa **🙋 Reclamar** o **🔒 Cerrar**. Al reclamar, el resto del rol sigue viendo el ticket pero **no puede escribir**: solo atiende quien lo reclamó. Solo él (o alguien con «Gestionar servidor») puede **↩️ Soltarlo** o cerrarlo.
+- Al cerrar (con confirmación) se guarda una transcripción `.txt` en el canal de registro y se borra el canal. El texto de los mensajes de las personas en la transcripción requiere «Message Content Intent».
+- Permisos del bot: Gestionar canales, Gestionar roles, Ver canales, Enviar mensajes, Insertar enlaces, Adjuntar archivos y Leer el historial (el enlace de invitación del panel ya los incluye; si invitaste al bot antes, vuelve a invitarlo). Su rol debe estar por encima del rol de soporte.
+- Tablas nuevas: `discord_ticket_cfg` y `discord_tickets` (se crean solas).
 
 ### Bienvenidas
 
@@ -470,7 +488,9 @@ Cuando alguien entra al servidor, el bot envía un mensaje al canal que elijas. 
 
 Códigos disponibles (en el mensaje y en el título): `{username}`, `{nickname}`, `{mention}`, `{tag}`, `{id}`, `{members}`, `{humans}`, `{server}`, `{created}` y `{date}`. Los nombres se escapan para que nadie cuele menciones masivas ni formato con su apodo; solo se menciona a la persona que entra.
 
-### Ajustes en la web (Admin → Discord)
+### Ajustes en la web (Admin → Discord → Panel de Discord)
+
+Desde la 2.10.11 el panel tiene **página propia** (`/admin/discord-panel.html`) con menú lateral: **Estado** (conexión, avisos de permisos, accesos rápidos), **Actividad** (canales y eventos del registro, acciones de los usuarios), **Tickets**, **Bienvenidas** y **Comandos propios** (editor y wiki). Si el bot está en varios servidores, un selector elige el servidor para Tickets y Bienvenidas. En Admin → Discord solo queda un resumen con accesos.
 
 Estado del bot, enlace de invitación, canales de registros y de actualizaciones (se **eligen desde la web** o con `/config`, y se pueden quitar), qué categorías de eventos se registran (cuentas, inicios de sesión, archivos, borrados, enlaces, carpetas colaborativas, acciones de admin), si se permiten acciones sobre archivos desde Discord y un botón de mensaje de prueba.
 

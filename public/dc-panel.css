@@ -1,0 +1,26 @@
+/* Panel de Discord (página propia). Clases con prefijo dp- para no chocar con style.css */
+.dp{display:grid;grid-template-columns:240px minmax(0,1fr);max-width:1280px;margin:0 auto;min-height:calc(100dvh - 58px)}
+.dp-nav{position:sticky;top:58px;align-self:start;height:calc(100dvh - 58px);overflow:auto;padding:18px 12px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:4px}
+.dp-nav button{display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border:0;border-radius:11px;background:none;color:var(--text);font:inherit;text-align:left;cursor:pointer;border-left:3px solid transparent}
+.dp-nav button:hover{background:var(--card2)}.dp-nav button.on{background:color-mix(in srgb,var(--accent) 16%,transparent);border-left-color:var(--accent);font-weight:600}
+.dp-nav .dp-e{width:22px;text-align:center;font-size:17px}.dp-nav small{margin-left:auto;padding:1px 8px;border-radius:99px;background:var(--card2);font-weight:600}
+.dp-nav hr{width:100%;border:0;border-top:1px solid var(--line);margin:8px 0}
+.dp-main{padding:24px 28px 90px;min-width:0}
+.dp-guild{display:flex;align-items:center;gap:10px;margin:0 0 18px;padding:10px 14px;border:1px solid var(--line);border-radius:14px;background:var(--card)}.dp-guild select{max-width:320px}
+.dp-h{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin:0 0 18px}.dp-h h2{margin:0;font-size:26px}.dp-h p{margin:2px 0 0;color:var(--muted)}.dp-h .dp-sp{flex:1}
+.dp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:16px;align-items:start}
+.dp-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px}.dp-card>h3{margin:0 0 4px;font-size:17px}.dp-card>.dp-sub{margin:0 0 14px;color:var(--muted);font-size:14px;line-height:1.5}
+.dp-card .fld{margin:0 0 12px}.dp-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.dp-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:0 0 18px}.dp-stat{padding:14px;border:1px solid var(--line);border-radius:14px;background:var(--card)}.dp-stat b{display:block;font-size:26px}.dp-stat span{color:var(--muted);font-size:13px}
+.dp-hero{display:flex;flex-wrap:wrap;align-items:center;gap:14px;padding:18px;border-radius:18px;border:1px solid var(--line);margin:0 0 18px;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 14%,var(--card)),var(--card))}
+.dp-hero .dp-dot{width:12px;height:12px;border-radius:50%;background:var(--muted)}.dp-hero .dp-dot.ok{background:var(--ok);box-shadow:0 0 0 4px color-mix(in srgb,var(--ok) 25%,transparent)}.dp-hero .dp-dot.bad{background:var(--danger)}
+.dp-hero h2{margin:0;font-size:20px}.dp-hero small{display:block;color:var(--muted)}
+.dp-warn{padding:11px 14px;border-radius:12px;border:1px solid color-mix(in srgb,var(--warn) 55%,transparent);background:color-mix(in srgb,var(--warn) 12%,transparent);margin:0 0 12px;font-size:14px;line-height:1.5}
+.dp-bad{color:var(--danger)}
+.dp-links{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.dp-link{display:flex;flex-direction:column;gap:3px;padding:16px;border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--text);text-align:left;font:inherit;cursor:pointer;transition:transform .15s,border-color .15s}.dp-link:hover{transform:translateY(-2px);border-color:var(--accent)}.dp-link span{font-size:24px}.dp-link small{color:var(--muted)}
+.dp-ev{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:2px 16px}
+.dp-list .srow{padding:10px 0;border-top:1px solid var(--line)}.dp-list .srow:first-child{border-top:0}
+.dp-prev{background:#2b2d31;border-left:4px solid #4f8cff;border-radius:6px;padding:10px 14px;color:#dbdee1;font-size:14px;line-height:1.5}.dp-prev b.t{display:block;color:#fff;margin-bottom:4px}
+.dp-vars{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 12px}
+.dp-empty{text-align:center;padding:40px 16px;color:var(--muted)}
+@media(max-width:800px){.dp{grid-template-columns:1fr}.dp-nav{position:sticky;top:50px;z-index:15;height:auto;flex-direction:row;overflow-x:auto;padding:8px;border-right:0;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(8px)}.dp-nav button{width:auto;white-space:nowrap;padding:8px 12px;border-left:0;border-bottom:3px solid transparent}.dp-nav button.on{border-bottom-color:var(--accent)}.dp-nav hr,.dp-nav small{display:none}.dp-main{padding:16px 14px 90px}.dp-grid{grid-template-columns:1fr}}

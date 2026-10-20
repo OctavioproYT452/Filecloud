@@ -26,6 +26,9 @@ module.exports = function createSchema(db) {
   CREATE TABLE IF NOT EXISTS recovery_codes(hash TEXT PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, used INTEGER DEFAULT 0, created_at INTEGER);
   CREATE INDEX IF NOT EXISTS recovery_user ON recovery_codes(user_id);
   CREATE TABLE IF NOT EXISTS discord_links(user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE, discord_id TEXT NOT NULL UNIQUE, discord_name TEXT, linked_at INTEGER);
+  CREATE TABLE IF NOT EXISTS discord_ticket_cfg(guild_id TEXT PRIMARY KEY, role_id TEXT NOT NULL, category_id TEXT, log_id TEXT, max_open INTEGER NOT NULL DEFAULT 1, counter INTEGER NOT NULL DEFAULT 0);
+  CREATE TABLE IF NOT EXISTS discord_tickets(channel_id TEXT PRIMARY KEY, guild_id TEXT NOT NULL, user_id TEXT NOT NULL, number INTEGER NOT NULL, claimed_by TEXT, subject TEXT, created INTEGER);
+  CREATE INDEX IF NOT EXISTS discord_tickets_user ON discord_tickets(guild_id, user_id);
   CREATE TABLE IF NOT EXISTS discord_vars(scope TEXT NOT NULL, key TEXT NOT NULL, name TEXT NOT NULL, value TEXT, PRIMARY KEY(scope,key,name));
   CREATE TABLE IF NOT EXISTS discord_welcome(guild_id TEXT PRIMARY KEY, enabled INTEGER DEFAULT 0, channel_id TEXT, message TEXT, title TEXT, embed INTEGER DEFAULT 1, updated_at INTEGER, role_id TEXT);
   INSERT OR IGNORE INTO settings VALUES('allow_registration','1'),('default_quota_mb','100');

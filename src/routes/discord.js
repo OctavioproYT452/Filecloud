@@ -57,6 +57,23 @@ router.post("/api/admin/discord/welcome", needAdmin, wrap(async (req, res) => {
   logger.log("admin", `**${logger.md(req.user.username)}** *(admin, por la web)* cambió las bienvenidas de **${logger.md(g.name)}**`);
   res.json({ success: true });
 }));
+// Tickets: la misma configuración que /tickets en Discord (rol de soporte, categoría, registro, máximo por persona) y el envío del panel
+const tkGuild = id => { const g = dc.guildOf(id), t = dc.tickets(); if (!g || !t) throw Error("Ese servidor de Discord no existe o el bot no está conectado"); return { g, t }; };
+router.post("/api/admin/discord/tickets", needAdmin, wrap(async (req, res) => {
+  const b = req.body || {}, { g, t } = tkGuild(b.guild_id); t.saveCfg(g, b);
+  logger.log("admin", `**${logger.md(req.user.username)}** *(admin, por la web)* configuró los tickets de **${logger.md(g.name)}**`);
+  res.json({ success: true, tickets: t.info(g) });
+}));
+router.post("/api/admin/discord/tickets/panel", needAdmin, wrap(async (req, res) => {
+  const b = req.body || {}, { g, t } = tkGuild(b.guild_id); const ch = await t.sendPanel(g, b.channel_id, b.title, b.description);
+  logger.log("admin", `**${logger.md(req.user.username)}** *(admin, por la web)* envió el panel de tickets a <#${ch.id}>`);
+  res.json({ success: true });
+}));
+router.post("/api/admin/discord/tickets/reset", needAdmin, wrap(async (req, res) => {
+  const { g, t } = tkGuild(req.body?.guild_id); t.reset(g.id);
+  logger.log("admin", `**${logger.md(req.user.username)}** *(admin, por la web)* desactivó los tickets de **${logger.md(g.name)}**`);
+  res.json({ success: true });
+}));
 router.post("/api/admin/discord/welcome/test", needAdmin, wrap(async (req, res) => {
   if (!dc.state.ready) throw Error("El bot no está conectado");
   const g = guildOf(req.body?.guild_id), cfg = welcome.config(g.id);

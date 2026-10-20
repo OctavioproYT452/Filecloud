@@ -65,7 +65,7 @@ async function syncSlash() {
 
 async function onReady(c) {
   state.ready = true; state.error = null; state.tag = c.user.tag; state.guilds = c.guilds.cache.size;
-  state.invite = `https://discord.com/oauth2/authorize?client_id=${c.user.id}&scope=bot%20applications.commands&permissions=268454912`; // ver canal + enviar mensajes + insertar enlaces + gestionar roles (para el rol automático de bienvenida)
+  state.invite = `https://discord.com/oauth2/authorize?client_id=${c.user.id}&scope=bot%20applications.commands&permissions=268553232`; // ver canal + enviar mensajes + insertar enlaces + adjuntar archivos + leer historial + gestionar roles (bienvenida y $giveRole) + gestionar canales (tickets)
   logger.setSender(async (id, payload) => {
     const ch = await client.channels.fetch(id);
     if (!ch || !ch.isTextBased()) throw Error("El canal no existe o no es de texto");
@@ -80,6 +80,8 @@ async function onReady(c) {
 async function handle(i) {
   try {
     if (i.isChatInputCommand()) { if (!(custom.hasSlash(i.commandName) && await custom.runSlash(i))) await cmds.run(i); }
+    else if ((i.isButton() || i.isModalSubmit()) && String(i.customId).startsWith("tk:")) await cmds.tickets.component(i);
+    else if (i.isButton() && String(i.customId).startsWith("fcs:")) await custom.runButton(i);
     else if (i.isModalSubmit() && i.customId === "fc-link") await cmds.submitLink(i);
     else if (i.isModalSubmit() && i.customId === "fc-welcome") await cmds.submitWelcome(i);
   } catch (e) {
@@ -98,6 +100,9 @@ function guildList() {
       channels: [...g.channels.cache.values()].filter(c => (c.type === D.ChannelType.GuildText || c.type === D.ChannelType.GuildAnnouncement) && (!me || c.permissionsFor(me)?.has(["ViewChannel", "SendMessages"])))
         .sort((a, b) => a.rawPosition - b.rawPosition).map(c => ({ id: c.id, name: c.name })),
       can_roles: !!me?.permissions.has("ManageRoles"),
+      categories: [...g.channels.cache.values()].filter(c => c.type === D.ChannelType.GuildCategory).sort((a, b) => a.rawPosition - b.rawPosition).map(c => ({ id: c.id, name: c.name })),
+      all_roles: [...g.roles.cache.values()].filter(r => r.id !== g.id && !r.managed).sort((a, b) => b.position - a.position).map(r => ({ id: r.id, name: r.name })),
+      tickets: cmds?.tickets?.info(g) || null,
       roles: [...g.roles.cache.values()].filter(r => !welcome.roleProblem(g, r)).sort((a, b) => b.position - a.position).map(r => ({ id: r.id, name: r.name })),
       welcome: welcome.config(g.id),
     };
@@ -111,4 +116,6 @@ async function channelName(id) {
   return ch?.name || null;
 }
 
-module.exports = { start, state, channelName, guildList, syncSlash, enabled: () => state.configured };
+const guildOf = id => client?.guilds.cache.get(String(id || "")) || null;
+const tickets = () => cmds?.tickets || null;
+module.exports = { start, state, channelName, guildList, guildOf, tickets, syncSlash, enabled: () => state.configured };

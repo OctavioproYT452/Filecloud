@@ -508,7 +508,7 @@ module.exports = function build(D) {
     await reply(i, { embeds: [emb("Tus favoritos", f.map(x => md(P(x.path))).join("\n") || "*No tienes favoritos todavía.*")] });
   }, "user");
   add(pubOpt(cmd("comandos", "Comandos propios de este servidor (creados desde la web)")), async i => {
-    const l = custom.list().commands.filter(c => c.activo && c.acceso !== "admin"), pf = custom.prefix();
+    const l = custom.list().commands.filter(c => c.activo && c.acceso !== "admin" && c.tipo !== "boton"), pf = custom.prefix();
     const line = c => `${c.tipo === "slash" ? "**/" + c.name + "**" : c.tipo === "prefijo" ? "**" + pf + c.name + "**" : "*" + md(c.name) + "* (responde a un mensaje)"}${c.descripcion ? " · " + md(c.descripcion) : ""}`;
     await reply(i, { embeds: [emb("Comandos propios", l.slice(0, 40).map(line).join("\n") || "*Todavía no hay comandos propios.*")] }, isPub(i, false));
   });
@@ -518,6 +518,10 @@ module.exports = function build(D) {
     logger.log("admin", `**${md(i.user.username)}** borró ${r.size} mensaje(s) en <#${i.channel.id}> con /limpiar`);
     await say(i, `Borrados ${r.size} mensaje(s).`);
   });
+
+  // ===== Tickets (botón para abrir, rol de soporte que reclama y cierra) =====
+  const tk = require("./tickets")(D);
+  add(tk.builder, tk.run, "guildadmin");
 
   // ---------- ejecución ----------
   const byName = new Map(C.map(c => [c.b.name, c]));
@@ -550,5 +554,5 @@ module.exports = function build(D) {
     }
   }
 
-  return { json: C.map(c => c.b.toJSON()), names: C.map(c => c.b.name), run: runCommand, submitLink, submitWelcome };
+  return { json: C.map(c => c.b.toJSON()), names: C.map(c => c.b.name), run: runCommand, submitLink, submitWelcome, tickets: tk };
 };

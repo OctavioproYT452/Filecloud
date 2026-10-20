@@ -1,18 +1,21 @@
-# Versión 2.10.8
+# Versión 2.10.11
 
-El editor de comandos de Discord puede programar comandos con IA leyendo la wiki.
+Nuevo panel de Discord en su propia página, más claro y menos cargado.
 
 ## Novedades
-- **Botón ✨ IA en el editor:** describes lo que quieres (y, si quieres, el tipo de comando) y la IA configurada escribe el comando FCScript completo: nombre, tipo, descripción, acceso, opciones y código, más unas notas de uso.
-- **Lee toda la wiki:** en cada petición recibe las guías, las recetas y la referencia de las funciones con sus ejemplos, y se le prohíbe inventar funciones.
-- **Se comprueba y se corrige sola:** el resultado pasa por el analizador de FCScript; si hay errores se le devuelven a la IA para que los arregle (hasta 2 reintentos).
-- **No guarda nada:** el comando aparece en el editor sin guardar, para que lo revises, lo pruebes y lo guardes tú. Con un comando abierto puedes pedirle modificaciones sobre él.
-- **Límites:** solo administradores; una petición a la vez; cuenta un uso (aunque haya reintentos) del límite de IA del administrador; cada petición envía unos 10 000 tokens de contexto, así que conviene un modelo con buena ventana de contexto. Queda anotado en el registro del bot.
-- Nueva API `POST /api/admin/discord/cmds/ai` y nueva función interna `ai.session` (sesiones largas de IA sin recortar respuestas).
+- **`/admin/discord-panel.html`** con menú lateral (en móvil, pestañas arriba) y una sección por pantalla en lugar de una sola página larga:
+  - **Estado:** conexión del bot, invitación, mensaje de prueba, cifras (servidores, cuentas vinculadas, tickets abiertos), avisos de intents y permisos que faltan, y accesos rápidos.
+  - **Actividad:** canales de registros y de actualizaciones, eventos que se registran y acciones permitidas a los usuarios.
+  - **Tickets:** configuración y envío del panel en dos tarjetas, con la lista de tickets abiertos.
+  - **Bienvenidas:** ajustes y mensaje con vista previa en vivo, lado a lado.
+  - **Comandos propios:** accesos al editor y a la wiki.
+- **Selector de servidor** (solo si el bot está en más de uno) para Tickets y Bienvenidas: se ve un servidor cada vez en lugar de una tarjeta por servidor. Se recuerda el último elegido.
+- En **Admin → Discord** queda un resumen con el estado y botones que llevan al panel (cada tarjeta abre su sección). El editor de comandos también enlaza al panel.
+- Sin cambios en la API ni en la base de datos.
 
 ## Archivos modificados
-- Nuevo: `src/discord/script/aigen.js`.
-- Modificados: `src/ai/ask.js`, `src/ai/index.js`, `src/discord/custom.js`, `src/routes/discord-custom.js`, `src/discord/script/wiki.js`, `public/js/dc-editor.js`, `README.md`, `RELEASE.md`, `package.json`, `data/version.json`.
+- Nuevos: `public/admin/discord-panel.html`, `public/js/dc-panel.js`, `public/dc-panel.css`.
+- Modificados: `public/js/admin.js` (la sección de Discord pasa a ser un resumen), `public/admin/discord.html`, `README.md`, `RELEASE.md`, `package.json`, `data/version.json`.
 
 ## Actualizar
-Copia los archivos y reinicia. Sin cambios en la base de datos ni dependencias nuevas.
+Copia los archivos y reinicia. Sin dependencias nuevas.
