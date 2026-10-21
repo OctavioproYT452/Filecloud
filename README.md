@@ -11,7 +11,7 @@ Sube, organiza, edita y comparte archivos desde cualquier dispositivo, con usuar
 
 </div>
 
-> **Versión 2.12.0.** Qué ha cambiado en esta versión: consulta [RELEASE.md](RELEASE.md).
+> **Versión 2.12.1.** Qué ha cambiado en esta versión: consulta [RELEASE.md](RELEASE.md).
 
 ---
 
@@ -211,6 +211,10 @@ Notas:
 - No se puede compartir la carpeta raíz. Si el dueño renombra o mueve la carpeta, la colaboración la sigue; si la borra, se elimina.
 - Los permisos se comprueban siempre en el servidor, no solo en la interfaz.
 
+### Estadísticas de uso (2.12.1)
+
+Botón **Estadísticas** de la barra del panel (o del menú de usuario): muestra con barras cuánto ocupas **por tipo** (imágenes, vídeos, audio, documentos, comprimidos, código y otros), las **carpetas que más pesan** y los **archivos antiguos** (sin modificar desde hace más de un año, los 25 más pesados). Desde los antiguos se puede mandar un archivo a la **papelera**. Análisis acotado (30 000 archivos, 20 s) y solo de lectura: no cambia nada en la base de datos.
+
 ### Limpieza de espacio
 
 Botón **Limpieza** de la barra del panel (o del menú de usuario): analiza tu carpeta y muestra los **25 archivos más grandes** y los **duplicados** (mismo contenido, comprobado con SHA-256, no solo el nombre), con el espacio que sobra. Cada archivo tiene un botón para moverlo a la papelera. Revisa hasta 30 000 archivos; si tienes más, avisa de que el análisis es parcial. Ruta: `GET /api/cleanup`.
@@ -344,7 +348,7 @@ Disponible en `/admin/` solo para administradores. Usa el mismo menú de usuario
 - La versión instalada está en `data/version.json`:
 
   ```json
-  { "version": "2.12.0" }
+  { "version": "2.12.1" }
   ```
 
 - Cada 2 minutos el servidor lee ese archivo local y lo compara con el `data/version.json` publicado en GitHub. Si el de GitHub es más nuevo (se comparan los números: `2.10` es mayor que `2.9`), los **administradores** ven un aviso de nueva versión con instrucciones para actualizar.
@@ -472,6 +476,8 @@ $footer[Tu espacio: $fcSpace de $fcQuota]
 **Roles de autoservicio (2.10.11):** `$grantRole[idRol]` y `$revokeRole[idRol]` los ejecuta el **bot**, así que quien usa el comando no necesita permisos (ideal para el captcha). El bot necesita «Gestionar roles», su rol debe estar por encima del rol a dar, y por seguridad se rechazan roles con permisos de gestión, de integraciones y @everyone. `$canGrantRole` y `$botHasPerm` permiten comprobarlo antes.
 
 **Hablar de otra persona (2.10.11):** `$isLinked`, `$isFcAdmin`, `$fcUser`, `$fcSpace`, `$fcQuota` y `$fcPercent` aceptan un ID o mención de Discord (`$fcSpace[$mentioned[1]]`), igual que `$username`, `$avatar`, `$hasRole`, `$getUserVar`… Así `!perfil @juan` muestra el perfil de Juan. Ver la guía «Hablar de otra persona» de la wiki.
+
+**Novedades de FCScript en la 2.12.1:** `$average`, `$median`, `$dice`, `$coinFlip` (matemáticas), `$isPalindrome`, `$initials` (texto), `$weekday` y `$daysUntil` (tiempo). Ya están en la wiki y en el editor.
 
 **Programar con IA (2.10.11):** en el editor, el botón **✨ IA** recibe una descripción («un comando que…»), la IA lee **toda la wiki** (guías, recetas y las 178 funciones con ejemplo), escribe el comando, lo pasa por el analizador y se corrige sola si hay errores (hasta 2 reintentos). Nunca guarda nada: el resultado aparece en el editor para revisarlo, probarlo y guardarlo. También puede modificar el comando abierto. Cuenta un uso del límite de IA del administrador y envía unos 10 000 tokens de contexto por petición. API: `POST /api/admin/discord/cmds/ai` (solo administradores).
 
@@ -656,6 +662,7 @@ Todas las rutas `/api/*` devuelven JSON y requieren sesión, salvo `login`, `reg
 | `GET` | `/api/download`, `/api/preview`, `/api/zip`, `/api/file-content` | Lectura y descarga. |
 | `POST` / `GET` | `/api/share`, `/api/shares`, `/api/share/revoke` | Enlaces compartidos. |
 | `GET` / `POST` | `/api/trash`, `/api/trash/restore`, `/api/trash/delete`, `/api/trash/empty` | Papelera de reciclaje. |
+| `GET` | `/api/stats` | Espacio por tipo, carpetas más pesadas y archivos antiguos. |
 | `GET` | `/api/cleanup` | Archivos más grandes y duplicados. |
 | `GET` | `/api/collab/shared` | Carpetas que otros han compartido conmigo (dueño y rol). |
 | `GET` / `POST` | `/api/collab/folder`, `/api/collab/add`, `/api/collab/role`, `/api/collab/remove`, `/api/collab/mine`, `/api/collab/roles` | Gestión de colaboradores (dueño); `remove` también permite abandonar una carpeta compartida. |

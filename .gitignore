@@ -5,7 +5,8 @@ hosting/*
 data/filecloud.db
 data/filecloud.db-shm
 data/filecloud.db-wal
-data/users.json.migrado
 data/discord-commands/
-!data/discord-commands/.gitkeep
+data/trash/
 .env
+data/users.json.migrado
+

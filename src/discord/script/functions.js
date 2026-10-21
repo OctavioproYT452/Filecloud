@@ -249,6 +249,12 @@ F(C6, "shuffle", "a;b;c;…", "Mezcla las opciones y las devuelve separadas por 
 F(C6, "sort", "a;b;c;…", "Ordena las opciones alfabéticamente (o de menor a mayor si son números) y las devuelve separadas por coma.", (c, a) => [...a].sort((x, y) => { const p = R.num(x), q = R.num(y); return !isNaN(p) && !isNaN(q) ? p - q : String(x).localeCompare(String(y), "es"); }).join(", "), { min: 1 });
 F(C6, "unique", "a;b;c;…", "Quita las opciones repetidas y las devuelve separadas por coma.", (c, a) => [...new Set(a.map(x => String(x).trim()))].join(", "), { min: 1 });
 F(C6, "lines", "texto", "Cuenta las líneas de un texto.", (c, a) => S(a[0]).split(/\r?\n/).length, { min: 1 });
+F(C5, "median", "a;b;…", "Mediana (el valor del medio) de varios números.", (c, a) => { const v = a.map(x => N(x)).sort((x, y) => x - y), m = v.length >> 1; return v.length % 2 ? v[m] : +((v[m - 1] + v[m]) / 2).toFixed(6); }, { min: 1 });
+F(C5, "coinFlip", "", "Lanza una moneda: cara o cruz.", () => Math.random() < 0.5 ? "🪙 cara" : "🪙 cruz");
+F(C5, "average", "a;b;…", "Promedio de varios números.", (c, a) => +(a.reduce((s, x) => s + N(x), 0) / a.length).toFixed(6), { min: 1 });
+F(C5, "dice", "[dados];[caras]", "Tira dados (1 por defecto, de 6 caras; máx. 20 dados y 1000 caras). Ej.: $dice[2;6] → «🎲 4 + 2 = 6».", (c, a) => { const n = Math.min(20, Math.max(1, Math.floor(N(a[0], 1)))), f = Math.min(1000, Math.max(2, Math.floor(N(a[1], 6)))); const r = Array.from({ length: n }, () => 1 + Math.floor(Math.random() * f)); return n === 1 ? `🎲 ${r[0]}` : `🎲 ${r.join(" + ")} = ${r.reduce((x, y) => x + y, 0)}`; });
+F(C6, "isPalindrome", "texto", "true si el texto se lee igual al derecho y al revés (ignora mayúsculas, acentos y símbolos).", (c, a) => { const t = S(a[0]).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9ñ]/g, ""); return t.length > 0 && t === [...t].reverse().join(""); }, { min: 1 });
+F(C6, "initials", "texto;[máx]", "Iniciales de cada palabra en mayúsculas (máx. 10). Ej.: «juan pérez» → JP.", (c, a) => S(a[0]).split(/\s+/).filter(Boolean).map(w => [...w][0].toUpperCase()).join("").slice(0, Math.min(10, Math.max(1, N(a[1], 10)))), { min: 1 });
 // =================== Tiempo ===================
 const C7 = "Tiempo";
 F(C7, "unix", "", "Segundos desde 1970 (ahora).", () => Math.floor(Date.now() / 1000));
@@ -260,6 +266,8 @@ F(C7, "uptime", "", "Tiempo que lleva encendido el servidor.", () => human(proce
 F(C7, "parseDate", "fecha", "Convierte «2026-12-25» o «2026-12-25 18:30» en segundos Unix (hora del servidor).", (c, a) => { const m = /^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2}))?$/.exec(S(a[0]).trim()); if (!m) throw Error("usa el formato AAAA-MM-DD o AAAA-MM-DD HH:mm"); const d = new Date(+m[1], +m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0)); if (isNaN(d)) throw Error("fecha no válida"); return Math.floor(d / 1000); }, { min: 1 });
 F(C7, "timeAgo", "unix", "Tiempo transcurrido desde un instante: «hace 2 h 5 min» (o «dentro de…» si es futuro).", (c, a) => { const d = Math.floor(Date.now() / 1000) - N(a[0]); return (d >= 0 ? "hace " : "dentro de ") + human(Math.abs(d)); }, { min: 1 });
 F(C7, "daysBetween", "unix1;unix2", "Días enteros entre dos instantes.", (c, a) => Math.floor(Math.abs(N(a[1]) - N(a[0])) / 86400), { min: 2 });
+F(C7, "daysUntil", "unix", "Días enteros que faltan para un instante (0 si ya pasó).", (c, a) => Math.max(0, Math.ceil((N(a[0]) - Date.now() / 1000) / 86400)), { min: 1 });
+F(C7, "weekday", "[unix]", "Nombre del día de la semana (lunes, martes…) de un instante; hoy si no se indica.", (c, a) => ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"][(a[0] ? new Date(N(a[0]) * 1000) : new Date()).getDay()]);
 
 // =================== File Cloud ===================
 const C8 = "File Cloud";
