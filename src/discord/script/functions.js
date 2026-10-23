@@ -128,7 +128,11 @@ F(C2, "ephemeral", "", "Solo quien usó el comando ve la respuesta (comandos sla
 F(C2, "deleteCommand", "", "Borra el mensaje que escribió el usuario (comandos de mensaje).", c => { c.out.del = true; return ""; }, { q: true });
 F(C2, "addReaction", "emoji", "Reacciona al mensaje del usuario (comandos de mensaje).", async (c, a) => { if (c.kind === "slash" || c.kind === "test") return say(c, "reaccionaría con " + a[0]); await c.msg.react(S(a[0]).trim()).catch(() => { throw Error("emoji no válido"); }); }, { min: 1 });
 F(C2, "sendMessage", "idCanal;texto", "Envía un mensaje a otro canal del mismo servidor.", async (c, a) => { const g = sameGuild(c); await act(c, `enviaría «${S(a[1]).slice(0, 40)}» al canal ${a[0]}`, async () => { const ch = await g.channels.fetch(id(a[0])).catch(() => null); if (!ch?.isTextBased?.()) throw Error("ese canal no existe o no es de texto"); await ch.send({ content: S(a[1]).slice(0, 2000), allowedMentions: { parse: [] } }); }); }, { min: 2 });
-F(C2, "sendDM", "texto", "Envía un mensaje privado a quien usó el comando.", async (c, a) => act(c, `enviaría un privado: «${S(a[0]).slice(0, 40)}»`, async () => { await c.user.send({ content: S(a[0]).slice(0, 2000), allowedMentions: { parse: [] } }).catch(() => { throw Error("no se pudo enviar el privado (¿los tiene cerrados?)"); }); }), { min: 1 });
+F(C2, "sendDM", "texto  o  idUsuario;texto", "Envía un mensaje privado a quien usó el comando, o al usuario con esa ID si la pones primero.", async (c, a) => {
+  const to = a.length > 1 && /^(<@!?)?\d{15,22}>?$/.test(S(a[0]).trim()); // con ID: $sendDM[id;texto]; sin ID funciona como siempre
+  const text = S(to ? a.slice(1).join(";") : a[0]).slice(0, 2000), w = to ? await who(c, a[0]) : { id: c.user.id, user: c.user };
+  await act(c, `enviaría un privado${to ? " a " + w.id : ""}: «${text.slice(0, 40)}»`, async () => { await w.user.send({ content: text, allowedMentions: { parse: [] } }).catch(() => { throw Error("no se pudo enviar el privado (¿los tiene cerrados?)"); }); });
+}, { min: 1 });
 
 // =================== Botones ===================
 // Los botones se envían con el mensaje. Al pulsarlos se ejecuta un comando de tipo «Botón» cuyo texto activador coincide con el id del botón.

@@ -1,3 +1,16 @@
+# Versión 2.12.3
+
+`$sendDM` ahora también puede escribirle a otro usuario por su ID.
+
+## Novedades
+- **FCScript, `$sendDM` con ID de usuario:** `$sendDM[123456789012345678;Hola]` envía el mensaje privado al usuario con esa ID (también acepta una mención, p. ej. `$sendDM[$mentioned;Hola]`). Si no pones ID, funciona igual que antes: `$sendDM[Hola]` se lo manda a quien usó el comando. Si el usuario tiene los privados cerrados, el comando lo indica con un error. Aparece actualizado en la wiki y el editor.
+
+## Archivos modificados
+- `src/discord/script/functions.js`, `src/discord/script/wiki.js`
+- `README.md`, `RELEASE.md`, `package.json`, `data/version.json`
+
+---
+
 # Versión 2.12.2
 
 Corrección de errores en los temas.

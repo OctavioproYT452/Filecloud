@@ -141,7 +141,7 @@ const E = {
   hasRole: ["$if[$hasRole[123456789012345678]==true]Eres VIP$endif", ""], hasPerm: ["$if[$hasPerm[ManageMessages]==true]…$endif", "permisos de Discord: ManageMessages, BanMembers, Administrator…"],
   title: ["$title[Hola]", ""], description: ["$description[Texto principal]", ""], color: ["$color[#ff5555]", ""], footer: ["$footer[Pie]", ""], image: ["$image[https://…/foto.png]", "solo enlaces http(s)"],
   addField: ["$addField[Nivel;$getUserVar[nivel;1];yes]", "tercer argumento: yes = en línea"], ephemeral: ["$ephemeral", "solo en slash"], sendMessage: ["$sendMessage[123456789012345678;Hola al canal]", "canal del mismo servidor"],
-  sendDM: ["$sendDM[Te escribo por privado]", ""], addReaction: ["$addReaction[👍]", "solo prefijo/mensaje"], deleteCommand: ["$deleteCommand", "borra el mensaje del usuario"],
+  sendDM: ["$sendDM[Te escribo por privado]", "con ID: $sendDM[123456789012345678;Hola] lo envía a ese usuario"], addReaction: ["$addReaction[👍]", "solo prefijo/mensaje"], deleteCommand: ["$deleteCommand", "borra el mensaje del usuario"],
   onlyIf: ["$onlyIf[$message!=;Escribe algo.]", "si no se cumple, para y muestra el mensaje"], onlyAdmin: ["$onlyAdmin[Solo admins.]", ""], onlyPerms: ["$onlyPerms[BanMembers,KickMembers;Sin permiso.]", ""],
   onlyRoles: ["$onlyRoles[111,222;Necesitas un rol.]", ""], onlyLinked: ["$onlyLinked", "exige cuenta de File Cloud vinculada"], cooldown: ["$cooldown[30;Espera 30 segundos.]", "por persona y comando"],
   stop: ["$stop[Cancelado]", ""], default: ["$default[$message;nada]", "→ nada, si no se escribió nada"], set: ["$set[x;5]", ""], get: ["$get[x]", "→ 5"],

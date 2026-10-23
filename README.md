@@ -11,7 +11,7 @@ Sube, organiza, edita y comparte archivos desde cualquier dispositivo, con usuar
 
 </div>
 
-> **Versión 2.12.1.** Qué ha cambiado en esta versión: consulta [RELEASE.md](RELEASE.md).
+> **Versión 2.12.3.** Qué ha cambiado en esta versión: consulta [RELEASE.md](RELEASE.md).
 
 ---
 
@@ -348,7 +348,7 @@ Disponible en `/admin/` solo para administradores. Usa el mismo menú de usuario
 - La versión instalada está en `data/version.json`:
 
   ```json
-  { "version": "2.12.2" }
+  { "version": "2.12.3" }
   ```
 
 - Cada 2 minutos el servidor lee ese archivo local y lo compara con el `data/version.json` publicado en GitHub. Si el de GitHub es más nuevo (se comparan los números: `2.10` es mayor que `2.9`), los **administradores** ven un aviso de nueva versión con instrucciones para actualizar.
@@ -469,7 +469,7 @@ $footer[Tu espacio: $fcSpace de $fcQuota]
 
 **Sintaxis:** `$funcion` o `$funcion[arg1;arg2]` (se pueden anidar). Escapes: `\$ \; \[ \]`. Comentarios: líneas que empiezan por `//` o `$c[texto]`. Bloques: `$if / $elseif / $else / $endif`, `$for[var;desde;hasta] … $endfor` y `$while[cond] … $endwhile` (máx. 200 vueltas). Operadores: `== != > < >= <= ~=` (contiene), `&&`, `||`.
 
-**Funciones (178):** contexto (`$username`, `$message[1]`, `$option[x]`, `$mentioned`, `$serverName`, `$hasRole`…), respuesta (`$title`, `$description`, `$color`, `$addField`, `$ephemeral`, `$sendMessage`, `$sendDM`, `$addReaction`…), lógica (`$onlyIf`, `$onlyAdmin`, `$onlyPerms`, `$onlyRoles`, `$onlyLinked`, `$cooldown`, `$stop`, `$set/$get`), variables guardadas por usuario, servidor o globales (`$setUserVar`, `$getServerVar`, `$topUserVar`…), matemáticas (`$calc`, `$random`, `$round`…), texto (`$upper`, `$replace`, `$split`, `$contains`, `$choose`…), tiempo (`$date`, `$discordTime`, `$duration`), File Cloud (`$fcUser`, `$fcSpace`, `$fcQuota`, `$fcUsers`, `$fcVersion`) y moderación (`$giveRole`, `$takeRole`, `$kick`, `$ban`, `$timeout`, `$deleteMessages`). La lista completa, con descripción de cada una, está en el panel *Funciones* del editor.
+**Funciones (178):** contexto (`$username`, `$message[1]`, `$option[x]`, `$mentioned`, `$serverName`, `$hasRole`…), respuesta (`$title`, `$description`, `$color`, `$addField`, `$ephemeral`, `$sendMessage`, `$sendDM` (también a otro usuario por ID), `$addReaction`…), lógica (`$onlyIf`, `$onlyAdmin`, `$onlyPerms`, `$onlyRoles`, `$onlyLinked`, `$cooldown`, `$stop`, `$set/$get`), variables guardadas por usuario, servidor o globales (`$setUserVar`, `$getServerVar`, `$topUserVar`…), matemáticas (`$calc`, `$random`, `$round`…), texto (`$upper`, `$replace`, `$split`, `$contains`, `$choose`…), tiempo (`$date`, `$discordTime`, `$duration`), File Cloud (`$fcUser`, `$fcSpace`, `$fcQuota`, `$fcUsers`, `$fcVersion`) y moderación (`$giveRole`, `$takeRole`, `$kick`, `$ban`, `$timeout`, `$deleteMessages`). La lista completa, con descripción de cada una, está en el panel *Funciones* del editor.
 
 **Novedades de FCScript en la 2.10.11:** tarjetas completas (`$footerIcon`, `$authorIcon`, `$authorUrl`, `$titleUrl`), captcha con imagen (`$genCaptcha` genera un PNG sin dependencias, lo incluye en la tarjeta y guarda el código en la variable de usuario `captcha`; `$checkCaptcha` y `$clearCaptcha` lo verifican y lo borran), contadores (`$incUserVar`, `$incServerVar`, `$incGlobalVar`, `$rankUserVar`), utilidades de texto, números y fechas (`$progressBar`, `$percent`, `$randomString`, `$truncate`, `$parseDate`, `$timeAgo`…), más moderación (`$setNickname`, `$unban`, `$slowmode`) y **funciones de IA** (`$ai`, `$aiSummarize`, `$aiTranslate`, `$aiClassify`, `$aiSentiment`, `$aiModerate`…) que usan la IA configurada en el panel. Las funciones de IA solo envían y reciben texto, tratan lo que escribe el usuario como datos, limitan a 3 llamadas por ejecución y cuentan en el límite de IA de la cuenta vinculada (o 10 por hora si no la hay); en comandos slash el bot responde «pensando…» mientras espera.
 
