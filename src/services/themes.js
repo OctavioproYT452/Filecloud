@@ -29,7 +29,7 @@ const withMu = (t, uuid) => t && (t.bgf || t.btf) && uuid ? { ...t, mu: uuid } :
 const userTheme = u => { try { return withMu(cleanTheme(JSON.parse(u?.theme || "null")), u?.uuid || u?.owner_uuid); } catch { return null; } };
 const FIT = { cover: "cover", contain: "contain", fill: "100% 100%" };
 const themeCss = t => { if (!t) return ""; const m = f => `/tm/${t.mu}/${encodeURIComponent(f)}`, hasM = !!t.mu;
-  return ":root{" + [...COLORS.filter(k => t[k]).map(k => `--${k}:${t[k]}`), t.r !== undefined && `--r:${t.r}px`, t.font && `--font:${FONTS[t.font]}`, t.sp && `--sp:${t.sp}`,
+  return ":root:not([data-live]){" + [...COLORS.filter(k => t[k]).map(k => `--${k}:${t[k]}`), t.r !== undefined && `--r:${t.r}px`, t.font && `--font:${FONTS[t.font]}`, t.sp && `--sp:${t.sp}`,
     hasM && t.bgf && `--bgs:"${m(t.bgf)}";--bgk:${isVideo(t.bgf) ? "video" : "image"};--bgfit:${t.bgfit};--bgdim:${t.bgdim / 100};--bgblur:${t.bgblur}px`,
     hasM && t.btf && `--btu:url("${m(t.btf)}");--btfit:${FIT[t.btfit]};--btdim:${t.btdim / 100}`].filter(Boolean).join(";") + "}"; };
 

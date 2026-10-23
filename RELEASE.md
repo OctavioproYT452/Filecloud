@@ -1,3 +1,17 @@
+# Versión 2.12.2
+
+Corrección de errores en los temas.
+
+## Correcciones
+- **Colores que se mezclaban al cambiar de tema:** lo que un tema no definía (colores, bordes, fuente, espaciado) volvía a los valores del tema guardado en vez de a los por defecto, y los colores se veían mal. Ahora, al probar o aplicar un tema, todo lo que no define vuelve al valor por defecto.
+- **Fondo animado (GIF/vídeo/imagen) que no se quitaba, no se ponía o no cambiaba** al poner un tema o cambiar entre temas ya creados (Mis temas, predeterminados y comunidad, también con «Probar» y al cerrar sin aplicar). El fondo y la imagen de los botones del tema anterior ya no se quedan.
+
+## Archivos modificados
+- `public/js/common.js`, `src/services/themes.js`
+- `README.md`, `RELEASE.md`, `package.json`, `data/version.json`
+
+---
+
 # Versión 2.12.1
 
 Estadísticas de uso en la web y 8 funciones nuevas de FCScript.

@@ -31,11 +31,11 @@ P('Claro suave','#f4f1ec','#ffffff','#efe9e0','#2b2118','#7a6b5a','#d97706','#ff
 P('Nórdico','#eceff4','#ffffff','#e1e6ee','#2e3440','#6b7690','#5e81ac','#ffffff',10),
 P('Papel','#fafafa','#ffffff','#f0f0f0','#111111','#666666','#111111','#ffffff',2,'serif'),
 P('Menta','#eefaf4','#ffffff','#dff3e9','#0f2a1d','#4f7a63','#10b981','#ffffff',22,'rounded','1.25')];
-function applyTheme(t){const s=document.documentElement.style;CK.forEach(([k])=>t[k]?s.setProperty('--'+k,t[k]):s.removeProperty('--'+k));
+function applyTheme(t){t=t||{};const R=document.documentElement,s=R.style;R.dataset.live='1';/* desde aquí manda el tema en vivo: se ignora el de theme.css, así lo que el tema no define vuelve al valor por defecto */CK.forEach(([k])=>t[k]?s.setProperty('--'+k,t[k]):s.removeProperty('--'+k));
 t.r!=null?s.setProperty('--r',t.r+'px'):s.removeProperty('--r');t.font?s.setProperty('--font',FONTS[t.font]):s.removeProperty('--font');t.sp?s.setProperty('--sp',t.sp):s.removeProperty('--sp');
 const u=f=>'/tm/'+t.mu+'/'+encodeURIComponent(f),FIT={cover:'cover',contain:'contain',fill:'100% 100%'},o=(k,v)=>s.setProperty('--'+k,v);
-if(t.mu&&t.bgf){o('bgs',JSON.stringify(u(t.bgf)));o('bgk',/\.(mp4|webm)$/i.test(t.bgf)?'video':'image');o('bgfit',t.bgfit||'cover');o('bgdim',(t.bgdim||0)/100);o('bgblur',(t.bgblur||0)+'px')}else['bgs','bgk','bgfit','bgdim','bgblur'].forEach(k=>o(k,' '));
-if(t.mu&&t.btf){o('btu',`url("${u(t.btf)}")`);o('btfit',FIT[t.btfit]||'cover');o('btdim',(t.btdim||0)/100)}else['btu','btfit','btdim'].forEach(k=>o(k,' '));
+if(t.mu&&t.bgf){o('bgs',JSON.stringify(u(t.bgf)));o('bgk',/\.(mp4|webm)$/i.test(t.bgf)?'video':'image');o('bgfit',t.bgfit||'cover');o('bgdim',(t.bgdim||0)/100);o('bgblur',(t.bgblur||0)+'px')}else['bgs','bgk','bgfit','bgdim','bgblur'].forEach(k=>s.removeProperty('--'+k));
+if(t.mu&&t.btf){o('btu',`url("${u(t.btf)}")`);o('btfit',FIT[t.btfit]||'cover');o('btdim',(t.btdim||0)/100)}else['btu','btfit','btdim'].forEach(k=>s.removeProperty('--'+k));
 window.fcBg&&fcBg()}
 const HEX=/^#[0-9a-f]{6}$/i;
 const normHex=v=>{v=String(v||'').trim();if(/^([0-9a-f]{3}|[0-9a-f]{6})$/i.test(v))v='#'+v;if(/^#[0-9a-f]{3}$/i.test(v))v='#'+[...v.slice(1)].map(c=>c+c).join('');return HEX.test(v)?v.toLowerCase():null};
