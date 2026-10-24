@@ -7,6 +7,8 @@ data/synapsebox.db-shm
 data/synapsebox.db-wal
 data/discord-commands/
 data/trash/
+data/plugin-data/
+data/plugins/
 .env
 data/users.json.migrado
 
