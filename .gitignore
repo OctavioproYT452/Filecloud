@@ -12,3 +12,5 @@ data/plugins/
 .env
 data/users.json.migrado
 
+data/plugin-data/
+data/plugins/
