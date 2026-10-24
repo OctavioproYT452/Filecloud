@@ -136,7 +136,7 @@ const G = [
 ];
 
 // Ejemplos: nombre -> [código, resultado]; n: nota extra
-// Funciones nuevas de ESTA versión (2.14.0): la wiki las marca con «Nuevo». En cada versión se reemplaza por las que se añadan, no se acumulan.
+// Funciones nuevas de ESTA versión (2.15.0, sin funciones nuevas): la wiki las marca con «Nuevo». En cada versión se reemplaza por las que se añadan, no se acumulan.
 const NEW = "httpGet httpPost httpPut httpPatch httpDelete httpAddHeader httpStatus httpResult jsonParse json jsonSet jsonSetString jsonUnset jsonClear jsonExists jsonStringify jsonPretty jsonArray jsonArrayAppend jsonArrayUnshift jsonArrayPop jsonArrayShift jsonArrayCount jsonArrayIndex jsonArrayReverse jsonArraySort jsonJoinArray".split(" ");// Categorías: icono y explicación corta para la wiki
 const CATS = {
   "Contexto": ["👤", "Quién usa el comando, dónde y qué escribió."], "Respuesta": ["💬", "Mensaje, tarjeta (embed), imágenes, captcha y envíos."],

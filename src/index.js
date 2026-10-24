@@ -23,9 +23,13 @@ app.use(security.body);
 app.use(security.csrf); // protección CSRF: el origen debe coincidir con el host
 app.use(session);
 app.use(require("./discord/activity")); // registro de actividad hacia Discord (no hace nada si el bot no está configurado)
+const plugins = require("./services/plugins");
+app.use(plugins.assets);     // archivos de los plugins activos: /plugins/<id>/…
+app.use(plugins.middleware); // rutas y middleware de los plugins: van ANTES que las rutas de SynapseBox para poder cambiarlas
 ai.init(); // Agente de IA: la configuración se lee de la base de datos al iniciar (y cuando el admin la cambia)
 
 // ---------- rutas de la API y páginas públicas ----------
+app.use(require("./routes/plugins"));
 app.use(require("./routes/auth"));
 app.use(require("./routes/security"));
 app.use(require("./routes/files"));
@@ -49,6 +53,7 @@ app.use(require("./routes/office"));
 app.get(["/", "/index.html"], (req, res, next) => req.user ? res.redirect("/panel.html") : next());
 app.get(["/panel.html", "/themes.html"], (req, res, next) => req.user ? next() : res.redirect("/"));
 app.use("/admin", (req, res, next) => req.user?.is_admin ? next() : res.redirect("/"));
+app.use(plugins.html); // inyecta los plugins activos en las páginas HTML
 app.use(express.static(PUBLIC));
 app.use((err, req, res, next) => res.status(500).json({ error: "Error interno" }));
 
@@ -66,5 +71,6 @@ setTimeout(() => require("./services/trash").sweep().catch(() => { }), 20000).un
 if (!get("SELECT COUNT(*) n FROM users").n)
   console.warn("AVISO: no hay usuarios en la base de datos. Si vienes de la versión anterior, copia tu users.json a data/ y reinicia; o crea un usuario con: node tools/reset-password.js <usuario> <contraseña> --admin");
 ver.start();
+plugins.init(app).then(() => plugins.emit("server:start", {})); // carga los plugins activados
 discord.start(); // bot de Discord opcional: solo arranca si hay DISCORD_TOKEN en .env
 app.listen(PORT, () => { console.log(`SynapseBox corriendo en http://localhost:${PORT}`); console.log("Agente de IA: " + ai.describe()); });

@@ -11,7 +11,7 @@ Sube, organiza, edita y comparte archivos desde cualquier dispositivo, con usuar
 
 </div>
 
-> **Versión 2.14.0.** Qué ha cambiado en esta versión: consulta [RELEASE.md](RELEASE.md).
+> **Versión 2.15.0.** Qué ha cambiado en esta versión: consulta [RELEASE.md](RELEASE.md).
 
 ---
 
@@ -25,6 +25,7 @@ Sube, organiza, edita y comparte archivos desde cualquier dispositivo, con usuar
 6. [Guía de uso](#guía-de-uso)
 7. [Temas y personalización](#temas-y-personalización)
 8. [Panel de administración](#panel-de-administración)
+   - Relacionado: [Plugins](#plugins)
    - Relacionado: [Visor de documentos](#visor-de-documentos) y [Acceso WebDAV](#acceso-webdav)
 9. [Agente de IA (opcional)](#agente-de-ia-opcional)
 10. [Bot de Discord (opcional)](#bot-de-discord-opcional)
@@ -77,6 +78,7 @@ Sube, organiza, edita y comparte archivos desde cualquier dispositivo, con usuar
 - Base de datos **SQLite** local, sin servidor externo.
 - Contraseñas con `scrypt`, sesiones en base de datos, 2FA (TOTP) opcional y protección contra fuerza bruta.
 - **Sin registros de actividad en el servidor**, para no consumir disco ni memoria (si activas el bot de Discord, la actividad se envía a Discord sin guardarse aquí).
+- **Plugins en Node.js** (2.15): cambian iconos, imágenes, funciones y comportamiento; se activan y desactivan desde el admin y se comparten en un repositorio de GitHub.
 - Iconos SVG propios, sin librerías de iconos ni de interfaz externas.
 
 ## Requisitos
@@ -341,6 +343,7 @@ Disponible en `/admin/` solo para administradores. Usa el mismo menú de usuario
 - **Usuarios:** alta, edición de cuota y rol, suspensión, cambio de contraseña, cierre de sesiones, explorador de archivos y eliminación.
 - **Enlaces:** todos los enlaces compartidos, con opción de revocarlos.
 - **IA:** activar o desactivar el agente de IA, elegir Grok, OpenAI (ChatGPT), Gemini u Ollama, API key, modelo y límite de usos (ver [Agente de IA](#agente-de-ia-opcional)).
+- **Plugins:** ver [Plugins](#plugins).
 - **Ajustes:** registro público, cuota por defecto y anuncio global.
 
 ### Actualizaciones
@@ -348,7 +351,7 @@ Disponible en `/admin/` solo para administradores. Usa el mismo menú de usuario
 - La versión instalada está en `data/version.json`:
 
   ```json
-  { "version": "2.14.0" }
+  { "version": "2.15.0" }
   ```
 
 - Cada 2 minutos el servidor lee ese archivo local y lo compara con el `data/version.json` publicado en GitHub. Si el de GitHub es más nuevo (se comparan los números: `2.10` es mayor que `2.9`), los **administradores** ven un aviso de nueva versión con instrucciones para actualizar.
@@ -535,6 +538,35 @@ Estado del bot, enlace de invitación, canales de registros y de actualizaciones
 - Quien controle una cuenta de Discord vinculada puede usar sus comandos. Por eso `/archivos` y `/buscar` son de solo lectura y las acciones sobre archivos (`/enlaces crear`, `/ia`) se pueden desactivar.
 - El canal de registros muestra nombres de archivos y de usuarios: dale acceso solo a quien deba verlos.
 
+## Plugins
+
+Desde la 2.15 SynapseBox admite plugins escritos en Node.js. Un plugin es una carpeta con un `plugin.json` y, según lo que haga, `server.js` (servidor), `client.js` (se carga en todas las páginas) y `style.css`. Pueden sustituir iconos e imágenes (`api.serveFile`), añadir o reemplazar rutas (se montan antes que las de SynapseBox), leer la base de datos, guardar sus propios datos y modificar el HTML de cualquier página.
+
+> ⚠️ **Los plugins tienen acceso total al servidor.** Instala solo los que vengan de fuentes de confianza.
+
+**Admin → Plugins** tiene tres vistas:
+
+- **Instalados:** interruptor para activar o desactivar cada plugin (al instante, sin reiniciar) y botón para desinstalar.
+- **Repositorio:** catálogo de [SynapseBox-Puglins](https://github.com/OctavioproYT452/SynapseBox-Puglins/) agrupado por categoría, con sus imágenes. Botón **Descargar** (o **Actualizar**).
+- **Subir plugin:** formulario con **título, descripción, categoría, de 1 a 5 imágenes (mínimo una) y archivo(s)**, todo obligatorio (la versión es opcional, por defecto 1.0.0). SynapseBox lo sube con `git` con esta estructura:
+
+```
+Categoría/
+└── nombre-del-plugin/
+    ├── plugin.json      # versión, título, descripción, autor, imágenes, archivos
+    ├── images/          # imagen-1.png … imagen-5.png
+    └── server.js, client.js, style.css…   # los archivos del plugin
+```
+
+**Cómo se sube (sin forks, directo al repositorio principal):** el panel crea una rama en `SynapseBox-Puglins` y abre un **pull request** hacia la rama principal. Hace falta una identidad de GitHub con **permiso de escritura en ese repositorio** (GitHub no permite crear ramas ni PR sin autenticarse):
+
+1. **Vincular cuenta (sin claves en archivos):** en *Subir plugin* pulsa «Vincular GitHub», abre el enlace y escribe el código. Es el flujo por código de dispositivo de una OAuth App; hay que poner su `client_id` (público) en `PLUGINS_GITHUB_CLIENT_ID`. La cuenta vinculada debe ser colaboradora del repositorio; si no, el panel lo indica.
+2. **Token en `.env`:** `PLUGINS_GITHUB_TOKEN` con un token *fine-grained* limitado a ese único repositorio (*Contents* y *Pull requests*: Read and write). Con token en `.env` se hace push directo a la rama principal.
+
+`PLUGINS_REPO` cambia el repositorio (por defecto `OctavioproYT452/SynapseBox-Puglins`). Requiere `git` instalado.
+
+Los plugins instalados viven en `data/plugins/` y su estado en `data/plugins-state.json`. La guía completa para crearlos está en la web de documentación de plugins.
+
 ## Seguridad
 
 - **Descomprimir** rechaza ZIP con rutas peligrosas (`..`, absolutas), omite enlaces simbólicos, no admite ZIP con contraseña ni ZIP64, comprueba el CRC y limita lo extraído al espacio libre del usuario (protección contra bombas de compresión).
@@ -564,6 +596,8 @@ Estado del bot, enlace de invitación, canales de registros y de actualizaciones
 │   ├── index.js           # Arranque: Express, middleware, rutas y tareas periódicas
 │   ├── config.js          # Rutas (data, hosting, public), puerto y duración de sesión
 │   ├── version.js         # Comprobación de nuevas versiones
+│   ├── services/plugins.js # Plugins: carga, hooks, inyección HTML, catálogo y subida con git
+│   ├── routes/plugins.js  # API de administración de plugins
 │   ├── discord/script/    # SBScript: analizador (parser.js), intérprete (runtime.js) y funciones (functions.js), HTTP y JSON (httpjson.js), HTTP y JSON (httpjson.js), captcha (captcha.js) y contenido de la wiki (wiki.js)
 │   ├── db/                # Base de datos SQLite
 │   │   ├── index.js       #   Ayudantes get / all / run / now
@@ -657,6 +691,7 @@ Todas las rutas `/api/*` devuelven JSON y requieren sesión, salvo `login`, `reg
 | --- | --- | --- |
 | `POST` | `/api/register`, `/api/login`, `/api/login/2fa`, `/api/logout` | Cuenta y sesión (el registro pide la contraseña dos veces y devuelve los códigos de recuperación; `login/2fa` completa el inicio de sesión con el código TOTP). |
 | `GET`/`POST` | `/api/security`, `/api/2fa/setup`, `/api/2fa/enable`, `/api/2fa/disable`, `/api/recovery/regenerate` | 2FA (TOTP) y códigos de recuperación de la cuenta propia. |
+| `GET`/`POST`/`DELETE` | `/api/admin/plugins`, `/api/admin/plugins/:id/toggle`, `/api/admin/plugins/market`, `/api/admin/plugins/market/install`, `/api/admin/plugins/publish` | Plugins (solo admin): instalados, activar/desactivar, catálogo, descargar y subir al repositorio. |
 | `POST` | `/api/recover/check`, `/api/recover` | Recuperar usuario y contraseña con un código de recuperación (sin sesión). |
 | `GET` | `/api/session` | Estado de la sesión. |
 | `POST` | `/api/password`, `/api/username` | Cambiar contraseña y nombre de usuario. |

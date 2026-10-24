@@ -1,19 +1,20 @@
-# Versión 2.14.0
+# Versión 2.15.0
 
-Funciones HTTP y JSON en SBScript, FCScript pasa a llamarse SBScript y arreglo de los iconos del login.
+Sistema de plugins: amplía SynapseBox con código propio y compártelo en un repositorio de GitHub.
 
 ## Novedades
-- **Funciones HTTP** (como las de BDFD): `$httpGet`, `$httpPost`, `$httpPut`, `$httpPatch`, `$httpDelete`, `$httpAddHeader[nombre;valor]`, `$httpStatus` y `$httpResult[clave;…]` (sin claves devuelve el texto; con claves entra en el JSON de la respuesta). Un último argumento opcional en las peticiones es un mensaje de error propio.
-- **Funciones JSON:** `$jsonParse`, `$json`, `$jsonSet`, `$jsonSetString`, `$jsonUnset`, `$jsonClear`, `$jsonExists`, `$jsonStringify`, `$jsonPretty`, `$jsonArray`, `$jsonArrayAppend`, `$jsonArrayUnshift`, `$jsonArrayPop`, `$jsonArrayShift`, `$jsonArrayCount`, `$jsonArrayIndex`, `$jsonArrayReverse`, `$jsonArraySort` y `$jsonJoinArray`. Las listas empiezan en la posición 0; los corchetes de un JSON escrito a mano se escapan como `\[` y `\]`.
-- **Seguridad de HTTP:** solo `http://` y `https://`; nunca hacia `localhost`, redes privadas ni direcciones internas (se comprueba la IP ya resuelta, también en redirecciones); máximo 5 peticiones por comando, 8 s y 1 MB por respuesta, 3 redirecciones, sin enviar credenciales a otro sitio al redirigir. Los datos JSON solo viven mientras se ejecuta el comando.
-- **FCScript → SBScript:** el lenguaje de comandos propios se llama ahora SBScript. Las funciones `$fcUser`, `$fcSpace`, `$fcQuota`, `$fcPercent`, `$fcUsers` y `$fcVersion` pasan a `$sbUser`, `$sbSpace`, `$sbQuota`, `$sbPercent`, `$sbUsers` y `$sbVersion`. **Los comandos ya creados con los nombres antiguos siguen funcionando.**
-- **Wiki:** categorías nuevas «HTTP» y «JSON» con ejemplos, una guía «HTTP y JSON (APIs)» y una receta para consultar una API. El recuadro **«Nuevo en la versión»** ahora muestra solo las funciones añadidas en esta versión (las 27 de HTTP y JSON), no todas las que se han ido añadiendo.
-- **Generador de comandos con IA del editor:** su wiki está actualizada: conoce las funciones HTTP y JSON, la guía nueva y las reglas para usarlas (valida con `$httpStatus`, mensaje de error, listas desde 0, corchetes escapados en JSON escrito a mano, límites).
+- **Plugins en Node.js:** un plugin puede cambiar iconos, imágenes, CSS, rutas, funciones y comportamiento, tanto en el servidor (`server.js`) como en las páginas (`client.js` y `style.css`). Se guardan en `data/plugins/<id>/`.
+- **Activar y desactivar en caliente:** nueva pestaña **Admin → Plugins**. Los cambios se aplican al instante, sin reiniciar. El estado se guarda en `data/plugins-state.json`.
+- **API para plugins (servidor):** `use`, `get`, `post`, `serveFile`, `serveDir`, `on`/`emit`, `transformHtml`, `inject`, `data` (almacenamiento propio), `db`, `core()`… Los plugins se montan **antes** que las rutas de SynapseBox, así que pueden sustituirlas. SDK de cliente: `window.SynapseBox`.
+- **Descargar plugins:** pestaña «Repositorio» con las imágenes, categorías y botón Descargar/Actualizar, leídos de https://github.com/OctavioproYT452/SynapseBox-Puglins/.
+- **Subir plugins:** formulario con **título, descripción, categoría, versión, de 1 a 5 imágenes (mínimo una) y archivo(s) obligatorios**. Node ejecuta `git` y crea una **rama y un pull request directamente en el repositorio principal (sin forks)** en `Categoría/nombre-del-plugin/` con su `plugin.json`, `images/` y los archivos. La cuenta debe tener permiso de escritura: se vincula desde el panel (código de dispositivo, sin clave en archivos) o con `PLUGINS_GITHUB_TOKEN` (push directo).
+- **Variables nuevas (opcionales):** `PLUGINS_REPO`, `PLUGINS_GITHUB_CLIENT_ID` y `PLUGINS_GITHUB_TOKEN`.
+- **Documentación:** web aparte con la guía para crear plugins y 6 plugins de ejemplo ya incluidos en el repositorio.
 
-## Correcciones
-- **Iconos del login:** los iconos de usuario y candado quedaban arriba del campo y el ojo de «mostrar contraseña» caía fuera de él. Ahora quedan centrados dentro del campo en escritorio y móvil.
+## Seguridad
+- Los plugins se ejecutan con acceso total al servidor: solo se gestionan desde administradores y conviene activar únicamente los de confianza.
+- Rutas de archivos validadas (sin `..`), extensiones permitidas, límites de tamaño (5 MB por archivo, 5 imágenes, 20 archivos), `git` sin shell y token oculto en los errores. El código `server.js` de un plugin nunca se sirve al navegador.
 
 ## Archivos modificados
-- `src/discord/script/httpjson.js` (nuevo), `src/discord/script/functions.js`, `src/discord/script/runtime.js`, `src/discord/script/parser.js`, `src/discord/script/wiki.js`, `src/discord/script/aigen.js`, `src/discord/custom.js`, `src/ai/ask.js`
-- `public/auth.css`, `public/admin/discord-wiki.html`, `public/dc-editor.css`, `public/js/dc-panel.js`, `public/js/dc-editor.js`, `public/js/dc-wiki.js`, `public/js/admin.js`
+- `src/services/plugins.js` (nuevo), `src/routes/plugins.js` (nuevo), `public/plugins-sdk.js` (nuevo), `src/index.js`, `public/admin/index.html`, `public/js/admin.js`, `src/discord/script/wiki.js`, `.env.example`
 - `README.md`, `RELEASE.md`, `package.json`, `data/version.json`
