@@ -30,7 +30,7 @@ module.exports = function build(D) {
   const EPH = MessageFlags.Ephemeral, COLOR = 0x4f8cff;
 
   // ---------- ayudantes de respuesta ----------
-  const emb = (title, desc) => { const e = new EmbedBuilder().setColor(COLOR).setFooter({ text: "File Cloud" }); if (title) e.setTitle(title); if (desc) e.setDescription(String(desc).slice(0, 4000)); return e; };
+  const emb = (title, desc) => { const e = new EmbedBuilder().setColor(COLOR).setFooter({ text: "SynapseBox" }); if (title) e.setTitle(title); if (desc) e.setDescription(String(desc).slice(0, 4000)); return e; };
   // pub = respuesta pública (la ve todo el canal, sin menciones que avisen a nadie). Si no, privada.
   const reply = (i, p, pub) => (i.deferred || i.replied) ? i.editReply(p) : pub ? i.reply({ allowedMentions: { parse: [] }, ...p }) : i.reply({ ...p, flags: EPH });
   const say = (i, text) => reply(i, { content: String(text).slice(0, 1900) });
@@ -50,9 +50,9 @@ module.exports = function build(D) {
   const adminCmd = (name, desc) => cmd(name, "(Admin) " + desc).setDMPermission(false);
 
   // ===== Para todos =====
-  add(pubOpt(cmd("ayuda", "Muestra lo que puede hacer el bot de File Cloud")), async (i, u) => {
+  add(pubOpt(cmd("ayuda", "Muestra lo que puede hacer el bot de SynapseBox")), async (i, u) => {
     const pub = isPub(i, false);
-    const e = emb("Bot de File Cloud", pub ? "Comandos del bot de File Cloud." : "Salvo los marcados como públicos, las respuestas son privadas: solo las ves tú.")
+    const e = emb("Bot de SynapseBox", pub ? "Comandos del bot de SynapseBox." : "Salvo los marcados como públicos, las respuestas son privadas: solo las ves tú.")
       .addFields({ name: "Para todos", value: [
         "**/vincular** · enlaza tu cuenta con usuario, contraseña y 2FA",
         "**/desvincular** · quita el enlace con tu cuenta",
@@ -86,13 +86,13 @@ module.exports = function build(D) {
   }, "maybe");
 
   // Vincular: un formulario privado (solo lo ve quien lo usa) con usuario, contraseña y, si la cuenta lo tiene, el 2FA.
-  add(cmd("vincular", "Vincula tu cuenta de File Cloud con tu Discord (usuario, contraseña y 2FA)"), async i => {
+  add(cmd("vincular", "Vincula tu cuenta de SynapseBox con tu Discord (usuario, contraseña y 2FA)"), async i => {
     const cur = store.userByDiscord(i.user.id);
     if (cur) return say(i, `Ya tienes vinculada la cuenta **${md(cur.username)}**. Si quieres cambiarla, usa **/desvincular** primero.`);
     const field = (id, label, ph, required, max) => new ActionRowBuilder().addComponents(
       new TextInputBuilder().setCustomId(id).setLabel(label).setStyle(TextInputStyle.Short).setPlaceholder(ph).setRequired(required).setMaxLength(max));
-    await i.showModal(new ModalBuilder().setCustomId("fc-link").setTitle("Vincular cuenta de File Cloud").addComponents(
-      field("u", "Nombre de usuario", "Tu usuario de File Cloud", true, 32),
+    await i.showModal(new ModalBuilder().setCustomId("fc-link").setTitle("Vincular cuenta de SynapseBox").addComponents(
+      field("u", "Nombre de usuario", "Tu usuario de SynapseBox", true, 32),
       field("p", "Contraseña", "Solo se comprueba, no se guarda", true, 128),
       field("c", "Código 2FA (solo si lo tienes activado)", "6 dígitos de tu app o un código de recuperación", false, 14)));
   });
@@ -116,10 +116,10 @@ module.exports = function build(D) {
     store.link(row.id, i.user.id, i.user.globalName || i.user.username);
     fails.delete(kd); fails.delete(ku);
     logger.log("cuentas", `**${md(row.username)}** vinculó su cuenta con Discord (${md(i.user.username)})`);
-    await reply(i, { embeds: [emb("Cuenta vinculada", `Ahora eres **${md(row.username)}** en File Cloud. Tu contraseña no se ha guardado.\nPrueba **/cuenta** o **/ayuda**. En la web verás el estado en *Mi perfil → Discord*.`)] });
+    await reply(i, { embeds: [emb("Cuenta vinculada", `Ahora eres **${md(row.username)}** en SynapseBox. Tu contraseña no se ha guardado.\nPrueba **/cuenta** o **/ayuda**. En la web verás el estado en *Mi perfil → Discord*.`)] });
   }
 
-  add(cmd("desvincular", "Quita el enlace entre tu Discord y tu cuenta de File Cloud"), async i => {
+  add(cmd("desvincular", "Quita el enlace entre tu Discord y tu cuenta de SynapseBox"), async i => {
     const u = store.userByDiscord(i.user.id);
     if (!u) return say(i, "No tienes ninguna cuenta vinculada.");
     store.unlink(u.id);
@@ -130,7 +130,7 @@ module.exports = function build(D) {
   add(pubOpt(cmd("cuenta", "Tu cuenta: espacio, 2FA, enlaces y uso de la IA")), async (i, u) => {
     const pub = isPub(i, false);
     const used = await usage(u), lim = limitB(u), pct = Number.isFinite(lim) ? used / lim * 100 : 0;
-    const e = emb("Tu cuenta de File Cloud").addFields(
+    const e = emb("Tu cuenta de SynapseBox").addFields(
       { name: "Usuario", value: `${md(u.username)}${u.is_admin ? " · administrador" : ""}`, inline: true },
       { name: "Verificación en dos pasos", value: u.totp_on ? "Activada" : "Desactivada", inline: true },
       { name: "Espacio", value: `${fmt(used)} de ${Number.isFinite(lim) ? fmt(lim) : "sin límite"}${Number.isFinite(lim) ? "\n" + bar(pct) : ""}` },
@@ -154,7 +154,7 @@ module.exports = function build(D) {
       const s = await fsp.stat(path.join(dir, e.name)).catch(() => null);
       lines.push(`${md(e.name)}${s ? " — " + fmt(s.size) : ""}`);
     }
-    await reply(i, { embeds: [emb(`Carpeta ${P(rel)}`, lines.join("\n") || "*Está vacía.*").setFooter({ text: `File Cloud · ${dirs} carpeta(s) y ${es.length - dirs} archivo(s)${es.length > shown.length ? ` · mostrando ${shown.length}` : ""}` })] });
+    await reply(i, { embeds: [emb(`Carpeta ${P(rel)}`, lines.join("\n") || "*Está vacía.*").setFooter({ text: `SynapseBox · ${dirs} carpeta(s) y ${es.length - dirs} archivo(s)${es.length > shown.length ? ` · mostrando ${shown.length}` : ""}` })] });
   }, "user");
 
   add(cmd("buscar", "Busca archivos y carpetas por nombre").addStringOption(o => o.setName("texto").setDescription("Parte del nombre que buscas").setRequired(true).setMinLength(2).setMaxLength(100)), async (i, u) => {
@@ -172,7 +172,7 @@ module.exports = function build(D) {
       }
     };
     await walk(root, 0);
-    await reply(i, { embeds: [emb(`Resultados para «${q.slice(0, 60)}»`, out.length ? out.map(r => `${r.dir ? "**" + md(P(r.rel)) + "**/" : md(P(r.rel))}`).join("\n") : "*No hay coincidencias.*").setFooter({ text: out.length >= 25 ? "File Cloud · mostrando los primeros 25" : "File Cloud" })] });
+    await reply(i, { embeds: [emb(`Resultados para «${q.slice(0, 60)}»`, out.length ? out.map(r => `${r.dir ? "**" + md(P(r.rel)) + "**/" : md(P(r.rel))}`).join("\n") : "*No hay coincidencias.*").setFooter({ text: out.length >= 25 ? "SynapseBox · mostrando los primeros 25" : "SynapseBox" })] });
   }, "user");
 
   add(cmd("enlaces", "Mira, crea o revoca tus enlaces para compartir")
@@ -186,7 +186,7 @@ module.exports = function build(D) {
       const rows = all("SELECT * FROM shares WHERE user_id=? AND (expires_at IS NULL OR expires_at>?) ORDER BY created_at DESC LIMIT 15", u.id, now());
       const total = get("SELECT COUNT(*) n FROM shares WHERE user_id=? AND (expires_at IS NULL OR expires_at>?)", u.id, now()).n;
       const lines = rows.map(s => `**${s.token.slice(0, 8)}** · ${code(P(s.path))} · ${s.expires_at ? `caduca <t:${unix(s.expires_at)}:R>` : "no caduca"}${s.pw ? " · con contraseña" : ""}${publicUrl() ? "\n" + shareUrl(s.token) : ""}`);
-      return reply(i, { embeds: [emb("Tus enlaces", lines.join("\n") || "*No tienes enlaces activos.*").setFooter({ text: `File Cloud · ${total} activo(s)${total > rows.length ? ` · mostrando ${rows.length}` : ""} · revoca con /enlaces revocar` })] });
+      return reply(i, { embeds: [emb("Tus enlaces", lines.join("\n") || "*No tienes enlaces activos.*").setFooter({ text: `SynapseBox · ${total} activo(s)${total > rows.length ? ` · mostrando ${rows.length}` : ""} · revoca con /enlaces revocar` })] });
     }
     if (sub === "crear") {
       if (!store.actionsOn()) throw Error("Un administrador ha desactivado las acciones sobre archivos desde Discord");
@@ -214,7 +214,7 @@ module.exports = function build(D) {
     if (sub === "ver") {
       const items = tr.list(u), sm = tr.summary(u);
       const lines = items.slice(0, 15).map(t => `**${t.id.slice(0, 6)}** · ${code(t.path)} · ${fmt(t.size)} · se elimina <t:${unix(t.expires_at)}:R>`);
-      return reply(i, { embeds: [emb("Tu papelera", lines.join("\n") || "*La papelera está vacía.*").setFooter({ text: `File Cloud · ${sm.count} elemento(s)${items.length > 15 ? " · mostrando 15" : ""} · restaura con /papelera restaurar` })] });
+      return reply(i, { embeds: [emb("Tu papelera", lines.join("\n") || "*La papelera está vacía.*").setFooter({ text: `SynapseBox · ${sm.count} elemento(s)${items.length > 15 ? " · mostrando 15" : ""} · restaura con /papelera restaurar` })] });
     }
     if (!store.actionsOn()) throw Error("Un administrador ha desactivado las acciones sobre archivos desde Discord");
     if (sub === "vaciar") { const n = await tr.empty(u); logger.log("borrados", `**${md(u.username)}** vació su papelera *(desde Discord)*`); return say(i, `Papelera vaciada (${n} elemento${n === 1 ? "" : "s"}).`); }
@@ -235,13 +235,13 @@ module.exports = function build(D) {
     const acts = (r.actions || []).slice(0, 10).map(a => `${a.ok ? "•" : "✗"} ${md(a.text)}`).join("\n");
     const e = emb(null, String(r.reply || "Hecho.").slice(0, 3500));
     if (acts) e.addFields({ name: "Acciones realizadas", value: acts.slice(0, 1000) });
-    const s = r.usage; if (s) e.setFooter({ text: `File Cloud · IA${s.limit >= 0 ? ` · ${s.used}/${s.limit} usos por ${s.period === "day" ? "día" : "hora"}` : ""}` });
+    const s = r.usage; if (s) e.setFooter({ text: `SynapseBox · IA${s.limit >= 0 ? ` · ${s.used}/${s.limit} usos por ${s.period === "day" ? "día" : "hora"}` : ""}` });
     await reply(i, { embeds: [e] });
   }, "user");
 
-  add(privOpt(cmd("version", "Versión instalada de File Cloud y si hay una nueva")), async i => {
+  add(privOpt(cmd("version", "Versión instalada de SynapseBox y si hay una nueva")), async i => {
     const v = ver.info();
-    await reply(i, { embeds: [emb("File Cloud", v.url).addFields(
+    await reply(i, { embeds: [emb("SynapseBox", v.url).addFields(
       { name: "Instalada", value: v.current, inline: true },
       { name: "Última publicada", value: v.latest || "sin comprobar", inline: true },
       { name: "Estado", value: v.available ? "Hay una versión nueva" : "Todo al día", inline: true },
@@ -306,7 +306,7 @@ module.exports = function build(D) {
         { name: "Prefijo de comandos propios", value: md(custom.prefix()), inline: true },
         { name: "Se registra", value: Object.entries(store.EVENTS).map(([k, l]) => `${store.eventOn(k) ? "✓" : "✗"} ${l}`).join("\n") },
         { name: "Acciones sobre archivos desde Discord (enlaces e IA)", value: store.actionsOn() ? "Permitidas" : "Desactivadas" })
-        .setFooter({ text: "File Cloud · los eventos y las acciones se cambian en la web: Admin → Discord" })] });
+        .setFooter({ text: "SynapseBox · los eventos y las acciones se cambian en la web: Admin → Discord" })] });
     }
     if (sub === "prefijo") { custom.setPrefix(i.options.getString("texto")); logger.log("admin", `${adminLine(u)} cambió el prefijo de los comandos propios`); return say(i, `Prefijo de los comandos propios: **${md(custom.prefix())}**`); }
     if (sub === "quitar") {
@@ -315,7 +315,7 @@ module.exports = function build(D) {
       return say(i, `Listo: ya no se usa el canal de ${w === "log" ? "registros" : "actualizaciones"}.`);
     }
     const ch = i.options.getChannel("canal"), w = sub === "registros" ? "log" : "update";
-    try { await logger.sendTo(ch.id, { embeds: [{ color: 0x2ecc71, title: w === "log" ? "Canal de registros configurado" : "Canal de actualizaciones configurado", description: `Configurado por ${md(u.username)}. ${w === "log" ? "Aquí se publicará lo que haga cada usuario." : "Aquí se avisará cuando haya una versión nueva."}`, footer: { text: "File Cloud" } }] }); }
+    try { await logger.sendTo(ch.id, { embeds: [{ color: 0x2ecc71, title: w === "log" ? "Canal de registros configurado" : "Canal de actualizaciones configurado", description: `Configurado por ${md(u.username)}. ${w === "log" ? "Aquí se publicará lo que haga cada usuario." : "Aquí se avisará cuando haya una versión nueva."}`, footer: { text: "SynapseBox" } }] }); }
     catch (e) { throw Error(`No puedo escribir en ${ch}. Dale al bot permiso para ver el canal, enviar mensajes e insertar enlaces. (${e.message})`); }
     store.setChannel(w, ch.id);
     if (w === "update") updates.announce().catch(() => { });
@@ -327,7 +327,7 @@ module.exports = function build(D) {
     const pub = isPub(i, false);
     await defer(i, pub);
     const [l, m, d] = await Promise.all([si.currentLoad(), si.mem(), si.fsSize()]), dk = d[0] || {};
-    await reply(i, { embeds: [emb("Servidor de File Cloud").addFields(
+    await reply(i, { embeds: [emb("Servidor de SynapseBox").addFields(
       { name: "CPU", value: bar(l.currentLoad), inline: true },
       { name: "Memoria", value: `${fmt(m.total - m.available)} de ${fmt(m.total)}\n${bar((m.total - m.available) / m.total * 100)}`, inline: true },
       { name: "Disco", value: dk.size ? `${fmt(dk.used)} de ${fmt(dk.size)}\n${bar(dk.used / dk.size * 100)}` : "—", inline: true },
@@ -342,7 +342,7 @@ module.exports = function build(D) {
     const q = (i.options.getString("buscar") || "").trim().toLowerCase();
     const us = all("SELECT username,is_admin,suspended,max_space_mb,used_bytes FROM users ORDER BY username").filter(u => !q || u.username.toLowerCase().includes(q));
     const lines = us.slice(0, 25).map(u => `**${md(u.username)}** · ${u.is_admin ? "admin" : "usuario"}${u.suspended ? " · suspendido" : ""} · ${fmt(u.used_bytes)}${u.max_space_mb < 0 ? "" : " de " + fmt(u.max_space_mb * 1048576)}`);
-    await reply(i, { embeds: [emb(`Cuentas (${us.length})`, lines.join("\n") || "*No hay coincidencias.*").setFooter({ text: us.length > 25 ? "File Cloud · mostrando 25; afina con «buscar»" : "File Cloud" })] });
+    await reply(i, { embeds: [emb(`Cuentas (${us.length})`, lines.join("\n") || "*No hay coincidencias.*").setFooter({ text: us.length > 25 ? "SynapseBox · mostrando 25; afina con «buscar»" : "SynapseBox" })] });
   }, "admin");
 
   const target = i => {
@@ -405,7 +405,7 @@ module.exports = function build(D) {
   }, "admin");
 
 
-  // ===== Bienvenidas (administradores de File Cloud o quien pueda gestionar el servidor de Discord) =====
+  // ===== Bienvenidas (administradores de SynapseBox o quien pueda gestionar el servidor de Discord) =====
   const who = (i, u) => u ? adminLine(u) : `**${md(i.user.username)}** *(Discord)*`;
   const chName = id => id ? `<#${id}>` : "No configurado";
   const showVars = () => welcome.VARS.map(([k, d]) => `\`${k}\` · ${d}`).join("\n");
@@ -435,8 +435,8 @@ module.exports = function build(D) {
         { name: "Formato", value: cfg.embed ? "Tarjeta" : "Texto", inline: true },
         { name: "Título", value: fmtTxt(cfg.title) },
         { name: "Mensaje", value: fmtTxt(cfg.message) });
-      if (!hasIntent) e.addFields({ name: "⚠ Falta un permiso del bot", value: "Activa **Server Members Intent** en discord.com/developers/applications → Bot → Privileged Gateway Intents y reinicia File Cloud. Sin él no puedo ver quién entra." });
-      return reply(i, { embeds: [e.setFooter({ text: "File Cloud · también se edita en la web: Admin → Discord" })] });
+      if (!hasIntent) e.addFields({ name: "⚠ Falta un permiso del bot", value: "Activa **Server Members Intent** en discord.com/developers/applications → Bot → Privileged Gateway Intents y reinicia SynapseBox. Sin él no puedo ver quién entra." });
+      return reply(i, { embeds: [e.setFooter({ text: "SynapseBox · también se edita en la web: Admin → Discord" })] });
     }
     if (sub === "mensaje") {
       const tIn = new TextInputBuilder().setCustomId("t").setLabel("Título (opcional)").setStyle(TextInputStyle.Short).setRequired(false).setMaxLength(welcome.MAX_TITLE);
@@ -448,7 +448,7 @@ module.exports = function build(D) {
     }
     if (sub === "canal") {
       const ch = i.options.getChannel("canal");
-      try { await logger.sendTo(ch.id, { embeds: [{ color: 0x2ecc71, title: "Canal de bienvenidas configurado", description: `Configurado por ${md(i.user.username)}. Aquí se saludará a quien entre al servidor (cuando las bienvenidas estén activadas).`, footer: { text: "File Cloud" } }] }); }
+      try { await logger.sendTo(ch.id, { embeds: [{ color: 0x2ecc71, title: "Canal de bienvenidas configurado", description: `Configurado por ${md(i.user.username)}. Aquí se saludará a quien entre al servidor (cuando las bienvenidas estén activadas).`, footer: { text: "SynapseBox" } }] }); }
       catch (e) { throw Error(`No puedo escribir en ${ch}. Dale al bot permiso para ver el canal, enviar mensajes e insertar enlaces. (${e.message})`); }
       welcome.save(g.id, { channel_id: ch.id });
       logger.log("admin", `${who(i, u)} configuró el canal de bienvenidas de **${md(g.name)}**`);
@@ -468,7 +468,7 @@ module.exports = function build(D) {
     }
     if (sub === "activar" || sub === "desactivar") {
       const on = sub === "activar";
-      if (on && !i.client.options.intents.has(D.GatewayIntentBits.GuildMembers)) throw Error("El bot no tiene activado el permiso «Server Members Intent» (Developer Portal → Bot → Privileged Gateway Intents) y no puede ver quién entra. Actívalo y reinicia File Cloud");
+      if (on && !i.client.options.intents.has(D.GatewayIntentBits.GuildMembers)) throw Error("El bot no tiene activado el permiso «Server Members Intent» (Developer Portal → Bot → Privileged Gateway Intents) y no puede ver quién entra. Actívalo y reinicia SynapseBox");
       welcome.save(g.id, { enabled: on });
       logger.log("admin", `${who(i, u)} ${on ? "activó" : "desactivó"} las bienvenidas de **${md(g.name)}**`);
       return say(i, on ? `Bienvenidas activadas${welcome.config(g.id).channel_id ? " en " + chName(welcome.config(g.id).channel_id) : ""}. Pruébalo con **/bienvenida probar**.` : "Bienvenidas desactivadas.");
@@ -490,7 +490,7 @@ module.exports = function build(D) {
   async function submitWelcome(i) {
     if (!i.inGuild() || !i.guild) return say(i, "Esto solo funciona dentro de un servidor.");
     const user = store.userByDiscord(i.user.id), okUser = user && !user.suspended && user.is_admin;
-    if (!okUser && !i.memberPermissions?.has(PermissionFlagsBits.ManageGuild)) return say(i, "Necesitas ser administrador de File Cloud o poder gestionar el servidor.");
+    if (!okUser && !i.memberPermissions?.has(PermissionFlagsBits.ManageGuild)) return say(i, "Necesitas ser administrador de SynapseBox o poder gestionar el servidor.");
     try { welcome.save(i.guild.id, { title: i.fields.getTextInputValue("t"), message: i.fields.getTextInputValue("m") }); }
     catch (e) { return say(i, "No se guardó: " + GENERIC(e)); }
     logger.log("admin", `${who(i, okUser ? user : null)} editó el mensaje de bienvenida de **${md(i.guild.name)}**`);
@@ -506,7 +506,7 @@ module.exports = function build(D) {
   add(privOpt(cmd("elegir", "Elige una opción al azar").addStringOption(o => o.setName("opciones").setDescription("Opciones separadas por comas: pizza, tacos, sushi").setRequired(true).setMaxLength(500))), async i => {
     const o = i.options.getString("opciones").split(",").map(x => x.trim()).filter(Boolean);
     if (o.length < 2) throw Error("Escribe al menos dos opciones separadas por comas");
-    await reply(i, { embeds: [emb("🤔 Elijo…", `**${md(o[crypto.randomInt(o.length)])}**`).setFooter({ text: `File Cloud · entre ${o.length} opciones` })] }, isPub(i, true));
+    await reply(i, { embeds: [emb("🤔 Elijo…", `**${md(o[crypto.randomInt(o.length)])}**`).setFooter({ text: `SynapseBox · entre ${o.length} opciones` })] }, isPub(i, true));
   });
   add(guildOnly(cmd("encuesta", "Crea una encuesta con reacciones")).addStringOption(o => o.setName("pregunta").setDescription("La pregunta").setRequired(true).setMaxLength(200))
     .addStringOption(o => o.setName("opcion1").setDescription("Opción 1").setRequired(true).setMaxLength(80)).addStringOption(o => o.setName("opcion2").setDescription("Opción 2").setRequired(true).setMaxLength(80))
@@ -554,13 +554,13 @@ module.exports = function build(D) {
     try {
       if (c.need === "user" || c.need === "admin") {
         if (!user) return say(i, "Primero vincula tu cuenta con **/vincular**.");
-        if (user.suspended) return say(i, "Tu cuenta de File Cloud está suspendida.");
-        if (c.need === "admin" && !user.is_admin) return say(i, "Este comando es solo para administradores de File Cloud.");
+        if (user.suspended) return say(i, "Tu cuenta de SynapseBox está suspendida.");
+        if (c.need === "admin" && !user.is_admin) return say(i, "Este comando es solo para administradores de SynapseBox.");
       }
       if (c.need === "guildadmin") {
         if (!i.inGuild() || !i.guild) return say(i, "Este comando solo funciona dentro de un servidor.");
         const okUser = user && !user.suspended && user.is_admin;
-        if (!okUser && !i.memberPermissions?.has(PermissionFlagsBits.ManageGuild)) return say(i, "Este comando es para administradores de File Cloud o para quien pueda gestionar este servidor de Discord.");
+        if (!okUser && !i.memberPermissions?.has(PermissionFlagsBits.ManageGuild)) return say(i, "Este comando es para administradores de SynapseBox o para quien pueda gestionar este servidor de Discord.");
       }
       if (user?.suspended) user = null;
       await c.fn(i, user);

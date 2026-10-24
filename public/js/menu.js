@@ -12,7 +12,7 @@ function build(){const ai=$('#aiBtn');
   acts=[];const item=(i,t,d,f,href,cls='')=>{const k=f?acts.push(f)-1:'',inner=`<span class="mic">${ic(i)}</span><span class="grow"><b>${t}</b>${d?`<small>${d}</small>`:''}</span>`;
     return href?`<a class="mi ${cls}" href="${href}" role="menuitem">${inner}</a>`:`<button type="button" class="mi ${cls}" role="menuitem" data-k="${k}">${inner}</button>`};
   const sp=$('#space')?.textContent||'',pc=$('#pct')?.textContent||'',w=$('#bar i')?.style.width||'0%',bc=$('#bar')?.className||'bar';
-  m.innerHTML=`<div class="uhead"><span class="uav lg">${esc(ini(me.user))}</span><div class="grow" style="min-width:0"><div class="uname">${esc(me.user)}${me.admin?' <span class="badge ad">ADMIN</span>':''}</div><small>Tu cuenta en File Cloud</small></div></div>
+  m.innerHTML=`<div class="uhead"><span class="uav lg">${esc(ini(me.user))}</span><div class="grow" style="min-width:0"><div class="uname">${esc(me.user)}${me.admin?' <span class="badge ad">ADMIN</span>':''}</div><small>Tu cuenta en SynapseBox</small></div></div>
   <div class="uquota"><div class="row"><small class="grow">${esc(sp)}</small><small>${esc(pc)}</small></div><div class="${bc}"><i style="width:${w}"></i></div></div>`+
   G.map(([g,l])=>`<div class="ugrp">${g}</div>`+l.map(x=>item(...x)).join('')).join('')+`<hr>`+item('logout','Cerrar sesión','Salir de este dispositivo',()=>logout(),null,'out')}
 function open(){build();m.classList.add('open');scrim.classList.add('on');toggler().forEach(b=>b.setAttribute('aria-expanded',true))}

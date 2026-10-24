@@ -1,8 +1,8 @@
 // Comprueba cada 2 minutos si hay una versión más reciente publicada en GitHub.
 const fs = require("fs");
 const { VERSION_FILE } = require("./config");
-const REMOTE = process.env.FILECLOUD_VERSION_URL || "https://raw.githubusercontent.com/OctavioproYT452/Filecloud/HEAD/data/version.json";
-const REPO = process.env.FILECLOUD_REPO_URL || "https://github.com/OctavioproYT452/Filecloud";
+const REMOTE = process.env.SYNAPSEBOX_VERSION_URL || process.env.FILECLOUD_VERSION_URL || "https://raw.githubusercontent.com/OctavioproYT452/SynapseBox/HEAD/data/version.json";
+const REPO = process.env.SYNAPSEBOX_REPO_URL || process.env.FILECLOUD_REPO_URL || "https://github.com/OctavioproYT452/SynapseBox";
 let versionActual = "0", versionRemota = null;
 const listeners = []; // funciones que se avisan tras cada comprobación (las usa el bot de Discord)
 

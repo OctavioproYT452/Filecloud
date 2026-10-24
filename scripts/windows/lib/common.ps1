@@ -1,4 +1,4 @@
-# File Cloud - funciones comunes de los instaladores de Windows (se cargan con "." desde install.ps1).
+# SynapseBox - funciones comunes de los instaladores de Windows (se cargan con "." desde install.ps1).
 
 function Has($c) { [bool](Get-Command $c -ErrorAction SilentlyContinue) }
 function RefreshPath { $env:Path = [Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [Environment]::GetEnvironmentVariable('Path','User') }

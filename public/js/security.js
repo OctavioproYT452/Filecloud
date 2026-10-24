@@ -2,7 +2,7 @@
 function showCodes(list,title='Códigos de recuperación'){
   const d=dialog(title,`<p class="muted" style="margin-top:0">Guárdalos ahora: <b>no volverán a mostrarse</b>. Cada código sirve una sola vez para recuperar tu cuenta si olvidas tu usuario o contraseña.</p><div class="codes">${list.map((c,i)=>`<code style="--d:${i}">${esc(c)}</code>`).join('')}</div><div class="row" style="margin-top:12px"><button type="button" class="btn ghost sm" data-cp>${ic('copy')} Copiar</button><button type="button" class="btn ghost sm" data-dl>${ic('download')} Descargar .txt</button></div>`);
   $('[data-cp]',d).onclick=async()=>{try{await navigator.clipboard.writeText(list.join('\n'));toast('Códigos copiados')}catch{toast('No se pudo copiar',1)}};
-  $('[data-dl]',d).onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['File Cloud - códigos de recuperación (un solo uso cada uno)\n\n'+list.join('\n')+'\n'],{type:'text/plain'}));a.download='filecloud-codigos-recuperacion.txt';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}}
+  $('[data-dl]',d).onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['SynapseBox - códigos de recuperación (un solo uso cada uno)\n\n'+list.join('\n')+'\n'],{type:'text/plain'}));a.download='synapsebox-codigos-recuperacion.txt';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}}
 
 async function security(){
   const s=await api('/api/security');

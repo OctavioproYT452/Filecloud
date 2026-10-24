@@ -1,4 +1,4 @@
-# File Cloud - instalación de Node.js y de las dependencias del proyecto (se carga con "." después de common.ps1).
+# SynapseBox - instalación de Node.js y de las dependencias del proyecto (se carga con "." después de common.ps1).
 
 # Instala Node.js LTS si falta.
 function Ensure-Node {

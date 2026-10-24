@@ -1,4 +1,4 @@
-# File Cloud - detección del sistema e instalación de Node.js (se carga con "source" después de common.sh).
+# SynapseBox - detección del sistema e instalación de Node.js (se carga con "source" después de common.sh).
 
 node_ok()     { command -v node >/dev/null 2>&1 && command -v npm >/dev/null 2>&1 && [ "$(node -p 'process.versions.node.split(".")[0]')" -ge 18 ]; }
 node_modern() { node -e 'const [a,b]=process.versions.node.split(".").map(Number);process.exit(a>22||(a===22&&b>=13)?0:1)'; }

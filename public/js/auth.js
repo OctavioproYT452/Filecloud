@@ -35,7 +35,7 @@ const leave=()=>{card.classList.add('leave');setTimeout(()=>location.href='/pane
 $('#cOk').onchange=e=>$('#cGo').disabled=!e.target.checked;
 $('#cGo').onclick=()=>pend&&pend();
 $('#cCopy').onclick=async()=>{try{await navigator.clipboard.writeText(codes.join('\n'));toast('Códigos copiados')}catch{toast('No se pudo copiar',1)}};
-$('#cDl').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['File Cloud - códigos de recuperación (un solo uso cada uno)\n\n'+codes.join('\n')+'\n'],{type:'text/plain'}));a.download='filecloud-codigos-recuperacion.txt';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
+$('#cDl').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['SynapseBox - códigos de recuperación (un solo uso cada uno)\n\n'+codes.join('\n')+'\n'],{type:'text/plain'}));a.download='synapsebox-codigos-recuperacion.txt';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
 
 // inicio de sesión / registro
 $('#f').onsubmit=async e=>{e.preventDefault();const b=$('#go'),err=$('#e');err.textContent='';

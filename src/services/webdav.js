@@ -57,7 +57,7 @@ const props = (rel, st, isRoot, extra) => {
 async function handle(req, res) {
   const u0 = login(req);
   if (u0 === "locked") return send(res, 429, { "Retry-After": "900" }, "Demasiados intentos");
-  if (!u0) return send(res, 401, { "WWW-Authenticate": 'Basic realm="File Cloud", charset="UTF-8"' }, "Autenticación necesaria");
+  if (!u0) return send(res, 401, { "WWW-Authenticate": 'Basic realm="SynapseBox", charset="UTF-8"' }, "Autenticación necesaria");
   const u = u0, root = base(u);
   await fsp.mkdir(root, { recursive: true });
   const url = (req.originalUrl || req.url).split("?")[0];
@@ -92,7 +92,7 @@ async function handle(req, res) {
     const SEC = { "Content-Security-Policy": "sandbox", "X-Content-Type-Options": "nosniff" };
     if (st.isDirectory()) {
       const items = (await fsp.readdir(f, { withFileTypes: true })).map(e => `<li><a href="${esc(href(rel ? rel + "/" + e.name : e.name, e.isDirectory()))}">${esc(e.name)}${e.isDirectory() ? "/" : ""}</a></li>`).join("");
-      const body = `<!doctype html><meta charset="utf-8"><title>File Cloud WebDAV</title><h3>/${esc(rel)}</h3><ul>${items}</ul>`;
+      const body = `<!doctype html><meta charset="utf-8"><title>SynapseBox WebDAV</title><h3>/${esc(rel)}</h3><ul>${items}</ul>`;
       return send(res, 200, { ...SEC, "Content-Type": "text/html; charset=utf-8" }, m === "HEAD" ? "" : body);
     }
     const size = st.size; let start = 0, end = size - 1, code = 200;

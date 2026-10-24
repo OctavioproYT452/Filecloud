@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
-# File Cloud - instalación en una línea (Linux y macOS):
-#   curl -fsSL https://raw.githubusercontent.com/OctavioproYT452/Filecloud/HEAD/get.sh | bash
+# SynapseBox - instalación en una línea (Linux y macOS):
+#   curl -fsSL https://raw.githubusercontent.com/OctavioproYT452/SynapseBox/HEAD/get.sh | bash
 # Instala git si falta, clona el repositorio y ejecuta scripts/unix/install.sh.
-# Variables opcionales: FILECLOUD_DIR (destino, por defecto ~/Filecloud), FILECLOUD_REPO, FILECLOUD_START=1
+# Variables opcionales: SYNAPSEBOX_DIR (destino, por defecto ~/SynapseBox), SYNAPSEBOX_REPO, SYNAPSEBOX_START=1
 main() {
   set -euo pipefail
   export DEBIAN_FRONTEND=noninteractive
-  local REPO="${FILECLOUD_REPO:-https://github.com/OctavioproYT452/Filecloud.git}"
-  local DIR="${FILECLOUD_DIR:-$HOME/Filecloud}"
+  local REPO="${SYNAPSEBOX_REPO:-${FILECLOUD_REPO:-https://github.com/OctavioproYT452/SynapseBox.git}}"
+  local DIR="${SYNAPSEBOX_DIR:-${FILECLOUD_DIR:-$HOME/SynapseBox}}"
+  # Instalación anterior (File Cloud): si existe ~/Filecloud y no hay ~/SynapseBox, se sigue usando esa carpeta para no perder los datos.
+  if [ -z "${SYNAPSEBOX_DIR:-}${FILECLOUD_DIR:-}" ] && [ -d "$HOME/Filecloud/.git" ] && [ ! -e "$HOME/SynapseBox" ]; then DIR="$HOME/Filecloud"; fi
   local SUDO=""
   if [ "$(id -u)" -ne 0 ] && command -v sudo >/dev/null 2>&1; then SUDO="sudo"; fi
 
@@ -27,7 +29,7 @@ main() {
   if [ -d "$DIR/.git" ]; then
     printf '\033[1;36m==>\033[0m Actualizando %s…\n' "$DIR"; git -C "$DIR" pull --ff-only
   elif [ -e "$DIR" ] && [ -n "$(ls -A "$DIR" 2>/dev/null)" ]; then
-    echo "La carpeta $DIR ya existe y no está vacía. Usa FILECLOUD_DIR=/otra/ruta" >&2; exit 1
+    echo "La carpeta $DIR ya existe y no está vacía. Usa SYNAPSEBOX_DIR=/otra/ruta" >&2; exit 1
   else
     printf '\033[1;36m==>\033[0m Clonando en %s…\n' "$DIR"; git clone --depth 1 "$REPO" "$DIR"
   fi

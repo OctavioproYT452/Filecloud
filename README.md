@@ -1,6 +1,6 @@
 <div align="center">
 
-# File Cloud
+# SynapseBox
 
 **Tu propia nube de archivos, ligera y autoalojada.**
 Sube, organiza, edita y comparte archivos desde cualquier dispositivo, con usuarios, cuotas de espacio y un panel de administración.
@@ -11,7 +11,7 @@ Sube, organiza, edita y comparte archivos desde cualquier dispositivo, con usuar
 
 </div>
 
-> **Versión 2.12.3.** Qué ha cambiado en esta versión: consulta [RELEASE.md](RELEASE.md).
+> **Versión 2.13.0.** Qué ha cambiado en esta versión: consulta [RELEASE.md](RELEASE.md).
 
 ---
 
@@ -93,30 +93,30 @@ La base de datos usa `node:sqlite` si tu Node lo incluye (22.13 o superior) y `b
 **Linux y macOS** (instala git y Node.js si faltan, clona el repositorio y ejecuta el instalador):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/OctavioproYT452/Filecloud/HEAD/get.sh | bash
+curl -fsSL https://raw.githubusercontent.com/OctavioproYT452/SynapseBox/HEAD/get.sh | bash
 ```
 
 **Windows** (PowerShell):
 
 ```powershell
-irm https://raw.githubusercontent.com/OctavioproYT452/Filecloud/HEAD/get.ps1 | iex
+irm https://raw.githubusercontent.com/OctavioproYT452/SynapseBox/HEAD/get.ps1 | iex
 ```
 
-Se instala en `~/Filecloud` (Linux/macOS) o `%USERPROFILE%\Filecloud` (Windows). Variables opcionales:
+Se instala en `~/SynapseBox` (Linux/macOS) o `%USERPROFILE%\SynapseBox` (Windows). Variables opcionales:
 
 | Variable | Descripción |
 | --- | --- |
-| `FILECLOUD_DIR` | Carpeta de destino. |
-| `FILECLOUD_REPO` | URL del repositorio (para usar un _fork_). |
-| `FILECLOUD_START=1` | (Linux/macOS) arranca el servidor al terminar. |
+| `SYNAPSEBOX_DIR` | Carpeta de destino. |
+| `SYNAPSEBOX_REPO` | URL del repositorio (para usar un _fork_). |
+| `SYNAPSEBOX_START=1` | (Linux/macOS) arranca el servidor al terminar. |
 
 Si ya existe la carpeta de destino como repositorio, se actualiza con `git pull`.
 
 ### Opción 2: clonar y ejecutar el instalador
 
 ```bash
-git clone https://github.com/OctavioproYT452/Filecloud.git
-cd Filecloud
+git clone https://github.com/OctavioproYT452/SynapseBox.git
+cd SynapseBox
 bash scripts/unix/install.sh        # Linux y macOS
 ```
 
@@ -127,8 +127,8 @@ Los instaladores detectan el sistema (apt, dnf/yum, pacman, zypper, apk, Homebre
 ### Opción 3: manual
 
 ```bash
-git clone https://github.com/OctavioproYT452/Filecloud.git
-cd Filecloud
+git clone https://github.com/OctavioproYT452/SynapseBox.git
+cd SynapseBox
 npm install
 ```
 
@@ -156,7 +156,7 @@ Variables de entorno:
 | `TRUST_PROXY` | _(vacío)_ | Pon `1` si estás detrás de un proxy inverso (Nginx, Caddy, Cloudflare…) para obtener la IP real y las cookies `Secure`. |
 | `DISCORD_TOKEN` | _(vacío)_ | Token del bot de Discord. Sin él, el bot no se activa. Ver [Bot de Discord](#bot-de-discord-opcional). |
 | `DISCORD_GUILD_ID` | _(vacío)_ | (Opcional) ID de tu servidor de Discord: los comandos aparecen al instante solo en él. |
-| `PUBLIC_URL` | _(vacío)_ | (Opcional) Dirección pública de tu File Cloud, sin barra final (ej. `https://nube.ejemplo.com`). El bot la usa para dar enlaces completos. |
+| `PUBLIC_URL` | _(vacío)_ | (Opcional) Dirección pública de tu SynapseBox, sin barra final (ej. `https://nube.ejemplo.com`). El bot la usa para dar enlaces completos. |
 | `DISCORD_UPDATE_ROLE_ID` | _(vacío)_ | (Opcional) ID de un rol de Discord al que se menciona cuando hay una versión nueva. |
 
 Puedes definirlas en el entorno o, más cómodo, en un archivo **`.env`** en la raíz del proyecto (los instaladores lo crean a partir de `.env.example`; no se sube a GitHub). Las variables del entorno tienen prioridad sobre el `.env`.
@@ -282,7 +282,7 @@ Formato del archivo (también se acepta un objeto con solo los valores del tema)
 
 ```json
 {
-  "filecloud": "theme",
+  "synapsebox": "theme",
   "version": 1,
   "name": "Mi tema",
   "theme": {
@@ -296,7 +296,7 @@ Formato del archivo (también se acepta un objeto con solo los valores del tema)
 ```
 
 - `r`: redondeo de 0 a 28. `font`: `system`, `serif`, `mono` o `rounded`. `sp` (densidad): `0.8`, `1` o `1.25`.
-- Los paquetes usan `{"filecloud": "theme-pack", "themes": [ {…}, {…} ]}`.
+- Los paquetes usan `{"synapsebox": "theme-pack", "themes": [ {…}, {…} ]}`.
 - Los valores se validan al importar: solo se aceptan colores hex y los valores anteriores, así que un archivo ajeno no puede introducir código.
 
 ### Comunidad de temas
@@ -348,14 +348,14 @@ Disponible en `/admin/` solo para administradores. Usa el mismo menú de usuario
 - La versión instalada está en `data/version.json`:
 
   ```json
-  { "version": "2.12.3" }
+  { "version": "2.13.0" }
   ```
 
 - Cada 2 minutos el servidor lee ese archivo local y lo compara con el `data/version.json` publicado en GitHub. Si el de GitHub es más nuevo (se comparan los números: `2.10` es mayor que `2.9`), los **administradores** ven un aviso de nueva versión con instrucciones para actualizar.
 - El aviso se puede cerrar, pero vuelve a aparecer cada vez que se abre el panel, el de administración o la comunidad de temas, hasta que actualices.
 - Para actualizar: `git pull`, `npm install` y reiniciar el servidor. `data/version.json` es el único archivo de `data/` que se versiona.
 - **Para publicar una versión nueva** (mantenedores): sube el número en `data/version.json` y haz _push_.
-- Variables opcionales: `FILECLOUD_VERSION_URL` (otra URL de comprobación, útil en _forks_) y `FILECLOUD_REPO_URL` (enlace que muestra el aviso).
+- Variables opcionales: `SYNAPSEBOX_VERSION_URL` (otra URL de comprobación, útil en _forks_) y `SYNAPSEBOX_REPO_URL` (enlace que muestra el aviso).
 
 ## Agente de IA (opcional)
 
@@ -369,7 +369,7 @@ Al terminar `npm install`, los instaladores (`scripts/unix/install.sh`, `scripts
      - **Google Gemini:** API key gratuita o de pago en <https://aistudio.google.com/apikey>. Modelo por defecto: `gemini-2.5-flash`.
      - **Ollama:** indicas la URL (por defecto `http://localhost:11434`) y el modelo (por defecto `llama3.1`; instálalo con `ollama pull llama3.1`).
 
-Puedes repetir el asistente con `npm run setup-ai`. Para instalaciones sin teclado: `FILECLOUD_AI=none|grok|openai|gemini|ollama` junto con `FILECLOUD_AI_KEY`, `FILECLOUD_AI_MODEL` y `FILECLOUD_OLLAMA_URL`. Si no hay terminal interactiva, no se cambia nada y la IA queda desactivada.
+Puedes repetir el asistente con `npm run setup-ai`. Para instalaciones sin teclado: `SYNAPSEBOX_AI=none|grok|openai|gemini|ollama` junto con `SYNAPSEBOX_AI_KEY`, `SYNAPSEBOX_AI_MODEL` y `SYNAPSEBOX_OLLAMA_URL`. Si no hay terminal interactiva, no se cambia nada y la IA queda desactivada.
 
 ### Activar, cambiar o desactivar desde el panel
 
@@ -387,12 +387,12 @@ El agente trabaja **únicamente dentro de la carpeta del usuario que lo usa** (p
 
 - Las rutas se validan en el servidor (no se confía en el modelo): se rechazan `..`, rutas absolutas hacia fuera, caracteres de control y enlaces simbólicos, y no se puede operar sobre la carpeta raíz.
 - Se respeta la cuota de almacenamiento del usuario.
-- La API key se guarda en la base de datos (`data/filecloud.db`) y nunca se devuelve al navegador. Protege esa carpeta y sus copias de seguridad.
+- La API key se guarda en la base de datos (`data/synapsebox.db`) y nunca se devuelve al navegador. Protege esa carpeta y sus copias de seguridad.
 - Con Grok, OpenAI o Gemini, lo que el usuario escriba y el contenido de los archivos que el agente lea se envían a xAI, OpenAI o Google respectivamente; con Ollama todo queda en tu servidor. Tenlo en cuenta al elegir proveedor.
 
 ## Bot de Discord (opcional)
 
-Un bot que se conecta a tu servidor de Discord con el token que pongas en el `.env`. **Sin `DISCORD_TOKEN` no se carga nada** y File Cloud funciona exactamente igual que siempre. Con él obtienes:
+Un bot que se conecta a tu servidor de Discord con el token que pongas en el `.env`. **Sin `DISCORD_TOKEN` no se carga nada** y SynapseBox funciona exactamente igual que siempre. Con él obtienes:
 
 - **Vinculación de cuentas** con un formulario que solo ve el usuario (nombre de usuario, contraseña y, si tiene 2FA, el código). La vinculación se guarda en la base de datos y aparece en **Mi perfil → Discord** en la web, donde también se puede desvincular.
 - **Registro de actividad** en un canal de Discord: qué hizo cada usuario (subidas, borrados, enlaces, cambios de cuenta, acciones de admin…). **No se guarda nada en el servidor**: los eventos esperan unos segundos en memoria (máximo 100) y se envían agrupados a Discord. Nunca se envían contraseñas, códigos, claves ni enlaces completos.
@@ -404,8 +404,8 @@ Un bot que se conecta a tu servidor de Discord con el token que pongas en el `.e
 
 1. Crea una aplicación en <https://discord.com/developers/applications>, entra en **Bot**, pulsa **Reset Token** y copia el token. Para las **bienvenidas** activa también **Server Members Intent** (en la misma página, _Privileged Gateway Intents_); sin él el bot funciona igual, pero no puede ver quién entra.
 2. Pégalo en el `.env`: `DISCORD_TOKEN=tu_token`. Opcional: `DISCORD_GUILD_ID` (comandos al instante en tu servidor), `PUBLIC_URL` y `DISCORD_UPDATE_ROLE_ID`.
-3. Reinicia File Cloud. En la consola aparece el enlace de invitación (también en **Admin → Discord**); invita al bot a tu servidor. Necesita ver los canales, enviar mensajes e insertar enlaces.
-4. En Discord, un administrador de File Cloud se vincula con `/vincular` y configura los canales: `/config registros #canal` y `/config actualizaciones #canal`. El bot comprueba que puede escribir en el canal antes de guardarlo.
+3. Reinicia SynapseBox. En la consola aparece el enlace de invitación (también en **Admin → Discord**); invita al bot a tu servidor. Necesita ver los canales, enviar mensajes e insertar enlaces.
+4. En Discord, un administrador de SynapseBox se vincula con `/vincular` y configura los canales: `/config registros #canal` y `/config actualizaciones #canal`. El bot comprueba que puede escribir en el canal antes de guardarlo.
 
 > `npm install` instala `discord.js` como dependencia opcional. Si falta, el servidor arranca igualmente y **Admin → Discord** lo indica.
 
@@ -432,7 +432,7 @@ Un bot que se conecta a tu servidor de Discord con el token que pongas en el `.e
 | `/comandos [publico]` | Todos | Lista los comandos propios del servidor (los creados en el editor web). |
 | `/limpiar cantidad` | Quien tenga «Gestionar mensajes» | Borra de 1 a 100 mensajes recientes del canal. |
 | `/ayuda [publico]` | Todos | Lista los comandos. |
-| `/bienvenida ver · canal · mensaje · formato · activar · desactivar · probar · variables · restablecer` | Admins de File Cloud o quien pueda gestionar el servidor | Configura el mensaje de bienvenida de ese servidor (ver abajo). |
+| `/bienvenida ver · canal · mensaje · formato · activar · desactivar · probar · variables · restablecer` | Admins de SynapseBox o quien pueda gestionar el servidor | Configura el mensaje de bienvenida de ese servidor (ver abajo). |
 | `/config ver · registros · actualizaciones · prefijo · quitar` | Admins | Canales del bot y prefijo de los comandos propios. |
 | `/servidor [publico]` | Admins | CPU, memoria, disco y totales. |
 | `/usuarios [buscar]` · `/usuario nombre` | Admins | Lista de cuentas y detalle de una. |
@@ -440,14 +440,14 @@ Un bot que se conecta a tu servidor de Discord con el token que pongas en el `.e
 | `/anuncio [texto]` · `/registro activo` | Admins | Anuncio global y registro público. |
 | `/actualizar` | Admins | Comprueba ahora si hay una versión nueva y la anuncia. |
 
-Ser «admin» en el bot significa tener una cuenta vinculada que sea administradora en File Cloud: se comprueba en cada uso, así que quitar el rol o suspender la cuenta surte efecto al instante.
+Ser «admin» en el bot significa tener una cuenta vinculada que sea administradora en SynapseBox: se comprueba en cada uso, así que quitar el rol o suspender la cuenta surte efecto al instante.
 
 ### Comandos propios (FCScript)
 
 Desde **Admin → Discord → Abrir el editor de comandos** (`/admin/discord.html`, solo administradores) puedes crear tus propios comandos con **FCScript**, un lenguaje sencillo inspirado en BDScript de BDFD.
 
 - **Tipos:** *slash* (`/comando`, con opciones de texto, número, usuario, canal, rol…), *prefijo* (`!comando`, con alias; el prefijo se cambia en el editor o con `/config prefijo`) y *mensaje* (responde cuando alguien escribe un texto: exacto, que lo contenga o que empiece así).
-- **Acceso por comando:** todos, solo cuentas vinculadas, solo admins de File Cloud, o admins y gestores del servidor.
+- **Acceso por comando:** todos, solo cuentas vinculadas, solo admins de SynapseBox, o admins y gestores del servidor.
 - **Carpetas:** organiza los comandos en carpetas (hasta 3 niveles), arrastra un comando a una carpeta para moverlo, renómbralas o bórralas.
 - **Archivos:** al guardar, cada comando se escribe como un archivo `.fcs` en `data/discord-commands/<carpeta>/`. Se compilan una sola vez y se ejecutan desde la memoria; puedes hacer copia de seguridad de esa carpeta o editar los archivos a mano (se leen al reiniciar).
 - **Wiki:** `/admin/discord-wiki.html` (también desde el editor) con guías, recetas y la referencia de las 178 funciones con ejemplos, filtros por categoría, marca de «nuevo» y buscador (tecla `/`).
@@ -469,7 +469,7 @@ $footer[Tu espacio: $fcSpace de $fcQuota]
 
 **Sintaxis:** `$funcion` o `$funcion[arg1;arg2]` (se pueden anidar). Escapes: `\$ \; \[ \]`. Comentarios: líneas que empiezan por `//` o `$c[texto]`. Bloques: `$if / $elseif / $else / $endif`, `$for[var;desde;hasta] … $endfor` y `$while[cond] … $endwhile` (máx. 200 vueltas). Operadores: `== != > < >= <= ~=` (contiene), `&&`, `||`.
 
-**Funciones (178):** contexto (`$username`, `$message[1]`, `$option[x]`, `$mentioned`, `$serverName`, `$hasRole`…), respuesta (`$title`, `$description`, `$color`, `$addField`, `$ephemeral`, `$sendMessage`, `$sendDM` (también a otro usuario por ID), `$addReaction`…), lógica (`$onlyIf`, `$onlyAdmin`, `$onlyPerms`, `$onlyRoles`, `$onlyLinked`, `$cooldown`, `$stop`, `$set/$get`), variables guardadas por usuario, servidor o globales (`$setUserVar`, `$getServerVar`, `$topUserVar`…), matemáticas (`$calc`, `$random`, `$round`…), texto (`$upper`, `$replace`, `$split`, `$contains`, `$choose`…), tiempo (`$date`, `$discordTime`, `$duration`), File Cloud (`$fcUser`, `$fcSpace`, `$fcQuota`, `$fcUsers`, `$fcVersion`) y moderación (`$giveRole`, `$takeRole`, `$kick`, `$ban`, `$timeout`, `$deleteMessages`). La lista completa, con descripción de cada una, está en el panel *Funciones* del editor.
+**Funciones (178):** contexto (`$username`, `$message[1]`, `$option[x]`, `$mentioned`, `$serverName`, `$hasRole`…), respuesta (`$title`, `$description`, `$color`, `$addField`, `$ephemeral`, `$sendMessage`, `$sendDM` (también a otro usuario por ID), `$addReaction`…), lógica (`$onlyIf`, `$onlyAdmin`, `$onlyPerms`, `$onlyRoles`, `$onlyLinked`, `$cooldown`, `$stop`, `$set/$get`), variables guardadas por usuario, servidor o globales (`$setUserVar`, `$getServerVar`, `$topUserVar`…), matemáticas (`$calc`, `$random`, `$round`…), texto (`$upper`, `$replace`, `$split`, `$contains`, `$choose`…), tiempo (`$date`, `$discordTime`, `$duration`), SynapseBox (`$fcUser`, `$fcSpace`, `$fcQuota`, `$fcUsers`, `$fcVersion`) y moderación (`$giveRole`, `$takeRole`, `$kick`, `$ban`, `$timeout`, `$deleteMessages`). La lista completa, con descripción de cada una, está en el panel *Funciones* del editor.
 
 **Novedades de FCScript en la 2.10.11:** tarjetas completas (`$footerIcon`, `$authorIcon`, `$authorUrl`, `$titleUrl`), captcha con imagen (`$genCaptcha` genera un PNG sin dependencias, lo incluye en la tarjeta y guarda el código en la variable de usuario `captcha`; `$checkCaptcha` y `$clearCaptcha` lo verifican y lo borran), contadores (`$incUserVar`, `$incServerVar`, `$incGlobalVar`, `$rankUserVar`), utilidades de texto, números y fechas (`$progressBar`, `$percent`, `$randomString`, `$truncate`, `$parseDate`, `$timeAgo`…), más moderación (`$setNickname`, `$unban`, `$slowmode`) y **funciones de IA** (`$ai`, `$aiSummarize`, `$aiTranslate`, `$aiClassify`, `$aiSentiment`, `$aiModerate`…) que usan la IA configurada en el panel. Las funciones de IA solo envían y reciben texto, tratan lo que escribe el usuario como datos, limitan a 3 llamadas por ejecución y cuentan en el límite de IA de la cuenta vinculada (o 10 por hora si no la hay); en comandos slash el bot responde «pensando…» mientras espera.
 
@@ -487,7 +487,7 @@ $footer[Tu espacio: $fcSpace de $fcQuota]
 
 ### Tickets de soporte
 
-Sistema ya hecho, con botón para abrir tickets. Se configura **desde la web (Admin → Discord → Panel de Discord → Tickets)**: rol de soporte, categoría, canal de transcripciones, máximo por persona, envío del panel con el botón (canal, título y texto) y lista de tickets abiertos con quién los atiende. También con estos comandos, para quien tenga «Gestionar servidor» (o sea admin de File Cloud):
+Sistema ya hecho, con botón para abrir tickets. Se configura **desde la web (Admin → Discord → Panel de Discord → Tickets)**: rol de soporte, categoría, canal de transcripciones, máximo por persona, envío del panel con el botón (canal, título y texto) y lista de tickets abiertos con quién los atiende. También con estos comandos, para quien tenga «Gestionar servidor» (o sea admin de SynapseBox):
 
 | Comando | Qué hace |
 |---|---|
@@ -685,24 +685,24 @@ Todas las rutas `/api/*` devuelven JSON y requieren sesión, salvo `login`, `reg
 
 ```bash
 npm install -g pm2
-TRUST_PROXY=1 pm2 start server.js --name file-cloud
+TRUST_PROXY=1 pm2 start server.js --name synapsebox
 pm2 save && pm2 startup
 ```
 
 ### Con systemd
 
 ```ini
-# /etc/systemd/system/file-cloud.service
+# /etc/systemd/system/synapsebox.service
 [Unit]
-Description=File Cloud
+Description=SynapseBox
 After=network.target
 
 [Service]
-WorkingDirectory=/opt/file-cloud
+WorkingDirectory=/opt/synapsebox
 ExecStart=/usr/bin/node server.js
 Environment=PORT=3001 TRUST_PROXY=1
 Restart=always
-User=filecloud
+User=synapsebox
 
 [Install]
 WantedBy=multi-user.target

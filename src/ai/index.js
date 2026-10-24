@@ -1,4 +1,4 @@
-// Agente de IA de File Cloud (Grok de xAI, OpenAI/ChatGPT, Google Gemini u Ollama).
+// Agente de IA de SynapseBox (Grok de xAI, OpenAI/ChatGPT, Google Gemini u Ollama).
 // - La configuración vive en la tabla "settings" de la base de datos y se lee al iniciar el servidor (init / reload).
 // - El agente SOLO puede tocar la carpeta del usuario que lo usa: listar, leer, crear carpetas/archivos, mover, copiar y borrar.
 //   No existe ninguna herramienta para ejecutar nada: los archivos que crea son datos (modo 0644, nunca ejecutables).

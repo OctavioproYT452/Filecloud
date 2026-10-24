@@ -1,4 +1,4 @@
-# File Cloud - funciones comunes de los instaladores de Linux y macOS (se carga con "source").
+# SynapseBox - funciones comunes de los instaladores de Linux y macOS (se carga con "source").
 export DEBIAN_FRONTEND=noninteractive
 
 info() { printf '\033[1;36m==>\033[0m %s\n' "$*"; }

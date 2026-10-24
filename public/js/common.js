@@ -44,7 +44,7 @@ function parseThemeFile(text){let j;try{j=JSON.parse(text.replace(/^\uFEFF/,''))
   const arr=Array.isArray(j?.themes)?j.themes:[j];const out=arr.map(x=>({name:String(x?.name||'Tema importado').replace(/[\u0000-\u001f]/g,'').trim().slice(0,40)||'Tema importado',theme:cleanT(x?.theme||x)})).filter(x=>Object.keys(x.theme).length);
   if(!out.length)throw Error('El archivo no contiene ningún tema válido');return out}
 function downloadJSON(name,obj){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(obj,null,2)],{type:'application/json'}));a.download=(name.replace(/[^\w\-]+/g,'_')||'tema')+'.json';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
-const themeFile=(name,theme)=>({filecloud:'theme',version:1,name,theme});
+const themeFile=(name,theme)=>({synapsebox:'theme',version:1,name,theme});
 
 async function appearance(){
 const[{theme},{themes},ses]=await Promise.all([api('/api/theme'),api('/api/themes'),api('/api/session')]);let t={...(theme||{})},saved=false,mine=themes;
@@ -104,7 +104,7 @@ d.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)re
     if(ds.d!==undefined){const m=mine[+ds.d];if(await yes('Eliminar tema',`¿Eliminar "${m.name}" de tus temas?`)){await api('/api/themes',{name:m.name},'DELETE');await reload()}return}
     if(ds.act==='saveas'){const n=await ask('Guardar como tema','Nombre del tema','Mi tema');if(n){await api('/api/themes',{name:n,theme:full()});await reload();toast('Guardado en Mis temas')}}
     if(ds.act==='export'){const n=await ask('Exportar tema','Nombre del tema','Mi tema');if(n)downloadJSON(n,themeFile(n,full()))}
-    if(ds.act==='exportall'){if(!mine.length)return toast('No tienes temas guardados que exportar',1);downloadJSON('mis-temas',{filecloud:'theme-pack',version:1,themes:mine.map(m=>themeFile(m.name,m.theme))})}
+    if(ds.act==='exportall'){if(!mine.length)return toast('No tienes temas guardados que exportar',1);downloadJSON('mis-temas',{synapsebox:'theme-pack',version:1,themes:mine.map(m=>themeFile(m.name,m.theme))})}
   }catch(x){toast(x.message,1)}});
 d.addEventListener('input',e=>{const x=e.target,ds=x.dataset;
   if(ds.k)t[ds.k]=x.value;
@@ -128,4 +128,4 @@ function updateNotice(s){if(!s?.update?.available)return;const m=$('main');if(!m
   const d=document.createElement('div');d.id='upd';d.className='card banner';
   d.innerHTML=`${ic('refresh')}<span class="grow"><b>Nueva versión disponible: ${esc(s.update.latest)}</b> (instalada: ${esc(s.update.current)}). <a href="#" data-how>Cómo actualizar</a> · <a href="${esc(s.update.url)}" target="_blank" rel="noopener">Ver en GitHub</a></span><button class="more" aria-label="Cerrar aviso">${ic('x')}</button>`;
   m.prepend(d);$('.more',d).onclick=()=>d.remove();
-  $('[data-how]',d).onclick=e=>{e.preventDefault();dialog('Actualizar File Cloud',`<p>En la carpeta del proyecto, en el servidor:</p><pre class="code">git pull\nnpm install</pre><p>Después reinicia el servidor (por ejemplo <code>pm2 restart file-cloud</code> o <code>systemctl restart file-cloud</code>). Tus usuarios y archivos no se tocan.</p>`)}}
+  $('[data-how]',d).onclick=e=>{e.preventDefault();dialog('Actualizar SynapseBox',`<p>En la carpeta del proyecto, en el servidor:</p><pre class="code">git pull\nnpm install</pre><p>Después reinicia el servidor (por ejemplo <code>pm2 restart synapsebox</code> o <code>systemctl restart synapsebox</code>). Tus usuarios y archivos no se tocan.</p>`)}}

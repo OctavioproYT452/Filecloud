@@ -17,7 +17,7 @@ function knowledge() {
 }
 const SYSTEM = () => {
   const k = knowledge();
-  return `Eres un experto en FCScript, el lenguaje de comandos propios del bot de Discord de File Cloud. Tu trabajo: convertir lo que pide el administrador en UN comando FCScript correcto.
+  return `Eres un experto en FCScript, el lenguaje de comandos propios del bot de Discord de SynapseBox. Tu trabajo: convertir lo que pide el administrador en UN comando FCScript correcto.
 
 Reglas estrictas:
 - Usa SOLO funciones que existan en la REFERENCIA de abajo, con sus argumentos tal como están indicados ([x] = opcional). No inventes funciones ni sintaxis de otros lenguajes. Los nombres no distinguen mayúsculas.

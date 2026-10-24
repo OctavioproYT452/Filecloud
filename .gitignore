@@ -2,9 +2,9 @@ node_modules/
 package-lock.json
 hosting/*
 !hosting/.gitkeep
-data/filecloud.db
-data/filecloud.db-shm
-data/filecloud.db-wal
+data/synapsebox.db
+data/synapsebox.db-shm
+data/synapsebox.db-wal
 data/discord-commands/
 data/trash/
 .env

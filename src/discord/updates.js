@@ -38,10 +38,10 @@ async function announce(force = false) {
     await logger.sendTo(ch, {
       content: role ? `<@&${role}>` : undefined, allowedMentions: role ? { roles: [role] } : { parse: [] },
       embeds: [{
-        color: 0x2ecc71, title: "Hay una versión nueva de File Cloud", url: info.url,
+        color: 0x2ecc71, title: "Hay una versión nueva de SynapseBox", url: info.url,
         description: `Versión instalada **${info.current}** → nueva versión **${info.latest}**${n.text ? "\n\n" + n.text : ""}`.slice(0, 3800),
         fields: [...(n.files ? [{ name: "Archivos modificados", value: n.files.slice(0, 1000) }] : []), { name: "Cómo actualizar", value: "`git pull`, `npm install` y reiniciar el servidor." }, { name: "Notas completas", value: info.url + "/blob/HEAD/RELEASE.md" }],
-        footer: { text: "File Cloud · aviso de actualización" },
+        footer: { text: "SynapseBox · aviso de actualización" },
       }],
     });
     store.setS("discord_update_announced", info.latest);
@@ -61,10 +61,10 @@ async function notify(by) {
   await logger.sendTo(ch, {
     content: role ? `<@&${role}>` : undefined, allowedMentions: role ? { roles: [role] } : { parse: [] },
     embeds: [{
-      color: 0x2ecc71, title: info.available ? "Nueva actualización de File Cloud" : "Información de la última versión de File Cloud", url: info.url,
+      color: 0x2ecc71, title: info.available ? "Nueva actualización de SynapseBox" : "Información de la última versión de SynapseBox", url: info.url,
       description: `${info.available ? `Versión instalada **${info.current}** → nueva versión **${info.latest}**` : `Última versión en GitHub: **${info.latest}** (instalada: **${info.current}**)`}${n.text ? "\n\n" + n.text : ""}`.slice(0, 3800),
       fields: [...(n.files ? [{ name: "Archivos modificados", value: n.files.slice(0, 1000) }] : []), { name: "Cómo actualizar", value: "`git pull`, `npm install` y reiniciar el servidor." }, { name: "Notas completas", value: info.url + "/blob/HEAD/RELEASE.md" }],
-      footer: { text: "File Cloud · aviso enviado por " + String(by || "un administrador").slice(0, 60) },
+      footer: { text: "SynapseBox · aviso enviado por " + String(by || "un administrador").slice(0, 60) },
     }],
   });
   if (info.available) store.setS("discord_update_announced", info.latest);

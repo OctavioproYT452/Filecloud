@@ -50,9 +50,9 @@ function vset(ctx, sc, key, name, value) {
 function vdel(ctx, sc, key, name) { if (ctx.dry) ctx.dryVars?.delete(`${sc}|${key}|${name}`); else run("DELETE FROM discord_vars WHERE scope=? AND key=? AND name=?", sc, key, name); }
 const num2 = (v) => { const x = R.num(v); return isNaN(x) ? 0 : x; };
 
-// Cuenta de File Cloud de quien usa el comando o, si se indica un ID/mención de Discord, de esa persona (null si no está vinculada o está suspendida)
+// Cuenta de SynapseBox de quien usa el comando o, si se indica un ID/mención de Discord, de esa persona (null si no está vinculada o está suspendida)
 function fcOf(ctx, v) { const uid = id(v); if (!uid || uid === ctx.user.id) return ctx.fc || null; const u = dstore.userByDiscord(uid); return u && !u.suspended ? u : null; }
-const fcNeed = (ctx, v) => { const u = fcOf(ctx, v); if (!u) throw Error(id(v) && id(v) !== ctx.user.id ? "esa persona no tiene la cuenta de File Cloud vinculada" : "necesita la cuenta vinculada"); return u; };
+const fcNeed = (ctx, v) => { const u = fcOf(ctx, v); if (!u) throw Error(id(v) && id(v) !== ctx.user.id ? "esa persona no tiene la cuenta de SynapseBox vinculada" : "necesita la cuenta vinculada"); return u; };
 
 // ---- calculadora segura (sin eval) ----
 function calc(src) {
@@ -103,8 +103,8 @@ F(C1, "ownerId", "", "ID del dueño del servidor.", c => c.guild?.ownerId ?? "")
 F(C1, "isOwner", "[id]", "true si el usuario es el dueño del servidor.", (c, a) => (c.guild?.ownerId ?? "") === (id(a[0]) || c.user.id));
 F(C1, "boostCount", "", "Número de mejoras (boosts) del servidor.", c => c.guild?.premiumSubscriptionCount ?? 0);
 F(C1, "channelTopic", "", "Tema del canal actual (vacío si no tiene).", c => c.channel?.topic ?? "");
-F(C1, "isFcAdmin", "[idUsuario]", "true si esa persona (por defecto, quien usa el comando) tiene su cuenta de File Cloud vinculada y es administrador.", (c, a) => !!fcOf(c, a[0])?.is_admin);
-F(C1, "isLinked", "[idUsuario]", "true si esa persona (por defecto, quien usa el comando) tiene una cuenta de File Cloud vinculada.", (c, a) => !!fcOf(c, a[0]));
+F(C1, "isFcAdmin", "[idUsuario]", "true si esa persona (por defecto, quien usa el comando) tiene su cuenta de SynapseBox vinculada y es administrador.", (c, a) => !!fcOf(c, a[0])?.is_admin);
+F(C1, "isLinked", "[idUsuario]", "true si esa persona (por defecto, quien usa el comando) tiene una cuenta de SynapseBox vinculada.", (c, a) => !!fcOf(c, a[0]));
 
 // =================== Respuesta ===================
 const C2 = "Respuesta";
@@ -159,10 +159,10 @@ F(CB, "isButtonClick", "", "true si el comando se ejecuta porque alguien pulsó 
 // =================== Lógica ===================
 const C3 = "Lógica y control";
 F(C3, "onlyIf", "condición;mensajeSiFalla", "Detiene el comando (y muestra el mensaje) si la condición no se cumple.", async (c, a) => { if (!(await R.cond(c, a[0] || []))) throw new R.Stop(a[1] ? await R.ev(c, a[1]) : ""); }, { lazy: true, min: 1, q: true });
-F(C3, "onlyAdmin", "[mensaje]", "Solo para administradores de File Cloud (vinculados) o con permiso «Gestionar servidor».", (c, a) => { if (!(c.fc?.is_admin || perm(c, "ManageGuild"))) throw new R.Stop(S(a[0], "Solo los administradores pueden usar este comando.")); }, { q: true });
+F(C3, "onlyAdmin", "[mensaje]", "Solo para administradores de SynapseBox (vinculados) o con permiso «Gestionar servidor».", (c, a) => { if (!(c.fc?.is_admin || perm(c, "ManageGuild"))) throw new R.Stop(S(a[0], "Solo los administradores pueden usar este comando.")); }, { q: true });
 F(C3, "onlyPerms", "permisos;[mensaje]", "Solo quien tenga TODOS los permisos de Discord (separados por coma).", (c, a) => { for (const p of S(a[0]).split(",")) if (p.trim() && !perm(c, p)) throw new R.Stop(S(a[1], "No tienes permiso para usar este comando.")); }, { q: true, min: 1 });
 F(C3, "onlyRoles", "idRoles;[mensaje]", "Solo quien tenga alguno de esos roles (IDs separados por coma).", (c, a) => { if (c.dry) return; const ok = S(a[0]).split(",").some(r => c.member?.roles?.cache?.has?.(id(r))); if (!ok) throw new R.Stop(S(a[1], "No tienes el rol necesario.")); }, { q: true, min: 1 });
-F(C3, "onlyLinked", "[mensaje]", "Solo para quien haya vinculado su cuenta de File Cloud.", (c, a) => { if (!c.fc) throw new R.Stop(S(a[0], "Primero vincula tu cuenta con /vincular.")); }, { q: true });
+F(C3, "onlyLinked", "[mensaje]", "Solo para quien haya vinculado su cuenta de SynapseBox.", (c, a) => { if (!c.fc) throw new R.Stop(S(a[0], "Primero vincula tu cuenta con /vincular.")); }, { q: true });
 F(C3, "cooldown", "segundos;[mensaje]", "Limita cada cuánto puede usarlo cada persona (máx. 1 día).", (c, a) => { if (c.dry) return; const k = c.cmd.id + "|" + c.user.id, t = Date.now(), s = Math.min(86400, N(a[0], 5)), nx = cool.get(k) || 0; if (t < nx) throw new R.Stop(S(a[1], `Espera ${human((nx - t) / 1000 + 0.99)} para usarlo otra vez.`)); cool.set(k, t + s * 1000); if (cool.size > 5000) for (const [x, v] of cool) if (v < t) cool.delete(x); }, { q: true, min: 1 });
 F(C3, "checkCaptcha", "texto", "true si el texto coincide con el captcha que se le generó a quien usa el comando (sin distinguir mayúsculas). Si acierta, el captcha se borra; tras 5 fallos seguidos también se invalida.", (c, a) => {
   const code = vget(c, "user", c.user.id, "captcha"); if (!code) return false;
@@ -273,14 +273,14 @@ F(C7, "daysBetween", "unix1;unix2", "Días enteros entre dos instantes.", (c, a)
 F(C7, "daysUntil", "unix", "Días enteros que faltan para un instante (0 si ya pasó).", (c, a) => Math.max(0, Math.ceil((N(a[0]) - Date.now() / 1000) / 86400)), { min: 1 });
 F(C7, "weekday", "[unix]", "Nombre del día de la semana (lunes, martes…) de un instante; hoy si no se indica.", (c, a) => ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"][(a[0] ? new Date(N(a[0]) * 1000) : new Date()).getDay()]);
 
-// =================== File Cloud ===================
-const C8 = "File Cloud";
-F(C8, "fcUser", "[idUsuario]", "Usuario de File Cloud vinculado a esa persona (por defecto, quien usa el comando); vacío si no hay.", (c, a) => fcOf(c, a[0])?.username ?? "");
+// =================== SynapseBox ===================
+const C8 = "SynapseBox";
+F(C8, "fcUser", "[idUsuario]", "Usuario de SynapseBox vinculado a esa persona (por defecto, quien usa el comando); vacío si no hay.", (c, a) => fcOf(c, a[0])?.username ?? "");
 F(C8, "fcSpace", "[idUsuario]", "Espacio usado por esa persona (requiere cuenta vinculada).", async (c, a) => fmtB(await usage(fcNeed(c, a[0]))));
 F(C8, "fcQuota", "[idUsuario]", "Espacio total de la cuenta vinculada de esa persona.", (c, a) => { const l = limitB(fcNeed(c, a[0])); return Number.isFinite(l) ? fmtB(l) : "sin límite"; });
 F(C8, "fcPercent", "[idUsuario]", "Porcentaje de espacio usado por esa persona.", async (c, a) => { const u = fcNeed(c, a[0]), l = limitB(u); return Number.isFinite(l) ? Math.round(await usage(u) / l * 100) : 0; });
-F(C8, "fcUsers", "", "Número de cuentas del servidor de File Cloud.", () => get("SELECT COUNT(*) n FROM users").n);
-F(C8, "fcVersion", "", "Versión instalada de File Cloud.", () => ver.info().current);
+F(C8, "fcUsers", "", "Número de cuentas del servidor de SynapseBox.", () => get("SELECT COUNT(*) n FROM users").n);
+F(C8, "fcVersion", "", "Versión instalada de SynapseBox.", () => ver.info().current);
 
 // =================== Moderación (el que usa el comando debe tener el permiso en Discord) ===================
 const C9 = "Moderación";
@@ -318,7 +318,7 @@ F(C9, "revokeRole", "idRol", "Quita un rol a quien usa el comando, lo hace el bo
 F(C9, "canGrantRole", "idRol", "true si el bot puede dar ese rol con $grantRole (existe, está por debajo del bot y no es peligroso). Para avisar al admin con un mensaje claro.", (c, a) => { if (c.dry) return true; try { grantable(sameGuild(c), id(a[0])); return true; } catch { return false; } }, { min: 1 });
 F(C9, "botHasPerm", "permiso", "true si el BOT tiene ese permiso de Discord en el servidor (ManageRoles, BanMembers…).", (c, a) => c.dry ? true : !!c.guild?.members?.me?.permissions?.has?.(S(a[0]).trim()), { min: 1 });
 
-// =================== IA (usa la IA configurada en File Cloud) ===================
+// =================== IA (usa la IA configurada en SynapseBox) ===================
 // Sin herramientas: la IA solo recibe el texto y devuelve texto; nunca toca archivos. Máx. 3 llamadas por ejecución.
 // Los textos de usuario se pasan como DATOS (no como instrucciones). Se cuentan en el límite de IA de la cuenta vinculada, o 10 por hora si no hay.
 const CA = "IA";

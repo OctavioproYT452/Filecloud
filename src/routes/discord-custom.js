@@ -57,7 +57,7 @@ router.post("/api/admin/discord/channel", needAdmin, wrap(async (req, res) => {
   if (!cid) { store.setChannel(w, null); return res.json({ success: true }); }
   if (!dc.state.ready) throw Error("El bot no está conectado");
   if (!dc.guildList().some(g => g.channels.some(c => c.id === cid))) throw Error("Ese canal no existe o el bot no puede escribir en él");
-  await logger.sendTo(cid, { embeds: [{ color: 0x2ecc71, title: w === "log" ? "Canal de registros configurado" : "Canal de actualizaciones configurado", description: `Configurado por ${logger.md(req.user.username)} desde la web.`, footer: { text: "File Cloud" } }] }).catch(e => { throw Error("El bot no puede escribir en ese canal: " + e.message); });
+  await logger.sendTo(cid, { embeds: [{ color: 0x2ecc71, title: w === "log" ? "Canal de registros configurado" : "Canal de actualizaciones configurado", description: `Configurado por ${logger.md(req.user.username)} desde la web.`, footer: { text: "SynapseBox" } }] }).catch(e => { throw Error("El bot no puede escribir en ese canal: " + e.message); });
   store.setChannel(w, cid); if (w === "update") updates.announce().catch(() => { });
   log(req, `configuró el canal de ${w === "log" ? "registros" : "actualizaciones"}`); res.json({ success: true });
 }));

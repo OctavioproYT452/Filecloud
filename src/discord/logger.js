@@ -39,7 +39,7 @@ async function flush() {
   if (omitted) lines.unshift(`*… ${omitted} evento(s) anteriores omitidos por exceso de actividad*`);
   for (const l of lines) { if (len + l.length > 3800) { pages.push([]); len = 0; } pages[pages.length - 1].push(l); len += l.length + 1; }
   for (const p of pages.slice(0, 4)) {
-    try { await sendTo(ch, { embeds: [{ color: 0x4f8cff, description: p.join("\n"), footer: { text: "File Cloud · registro de actividad" } }] }); }
+    try { await sendTo(ch, { embeds: [{ color: 0x4f8cff, description: p.join("\n"), footer: { text: "SynapseBox · registro de actividad" } }] }); }
     catch (e) { if (Date.now() - warned > 6e4) { warned = Date.now(); console.warn("[Discord] No se pudo enviar al canal de registros:", e.message); } break; }
   }
 }

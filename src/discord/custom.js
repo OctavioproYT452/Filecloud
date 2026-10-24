@@ -164,7 +164,7 @@ function allowed(c, fc, member) {
   if (a === "admin") return !!fc?.is_admin;
   return !!(fc?.is_admin || member?.permissions?.has?.("ManageGuild"));
 }
-const NOPE = { vinculados: "Primero vincula tu cuenta con **/vincular**.", admin: "Este comando es solo para administradores de File Cloud.", gestores: "Este comando es para administradores de File Cloud o quien gestione el servidor." };
+const NOPE = { vinculados: "Primero vincula tu cuenta con **/vincular**.", admin: "Este comando es solo para administradores de SynapseBox.", gestores: "Este comando es para administradores de SynapseBox o quien gestione el servidor." };
 function userOf(did) { const u = store.userByDiscord(did); return u && !u.suspended ? u : null; }
 
 async function runSlash(i) {

@@ -65,7 +65,7 @@ function build(cfg, c) {
   const body = render(cfg.message, c).slice(0, cfg.embed ? 3800 : 1900), title = cfg.title ? render(cfg.title, c).slice(0, 250) : "";
   const allowedMentions = c.id ? { parse: [], users: [String(c.id)] } : { parse: [] };
   if (!cfg.embed) return { content: (title ? `**${title}**\n` : "") + body, allowedMentions };
-  return { content: undefined, allowedMentions, embeds: [{ color: 0x2ecc71, title: title || undefined, description: body, footer: { text: c.server + " · File Cloud" } }] };
+  return { content: undefined, allowedMentions, embeds: [{ color: 0x2ecc71, title: title || undefined, description: body, footer: { text: c.server + " · SynapseBox" } }] };
 }
 
 // ¿Puede el bot dar este rol? (no es @everyone, no es de una integración, el bot tiene «Gestionar roles» y el rol queda por debajo del suyo)
@@ -88,7 +88,7 @@ async function onJoin(m) {
     try {
       const role = m.guild.roles.cache.get(cfg.role_id), why = roleProblem(m.guild, role);
       if (why) throw Error(role ? why : "El rol ya no existe");
-      await m.roles.add(role, "Rol automático de bienvenida (File Cloud)");
+      await m.roles.add(role, "Rol automático de bienvenida (SynapseBox)");
     } catch (e) { console.warn(`[Discord] No se pudo dar el rol de bienvenida en ${m.guild.name}:`, e.message); }
   }
   if (cfg.channel_id) {

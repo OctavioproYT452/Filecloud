@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// File Cloud - configuración inicial del agente de IA. Lo ejecutan install.sh / install.ps1 justo después de "npm install".
+// SynapseBox - configuración inicial del agente de IA. Lo ejecutan install.sh / install.ps1 justo después de "npm install".
 // Pregunta si quieres un agente de IA (Grok de xAI, OpenAI/ChatGPT, Google Gemini u Ollama) y guarda la respuesta en la base de datos.
 // El servidor la lee al arrancar: si dijiste que no, toda la IA queda oculta (el admin puede activarla luego desde su panel).
 //
@@ -7,7 +7,7 @@
 //   node tools/setup-ai.js --force    vuelve a preguntar aunque ya esté configurada
 //   node tools/setup-ai.js --skip     no pregunta ni cambia nada
 // Instalación sin teclado (variables de entorno):
-//   FILECLOUD_AI=none | grok | openai | gemini | ollama   FILECLOUD_AI_KEY=...   FILECLOUD_AI_MODEL=...   FILECLOUD_OLLAMA_URL=http://localhost:11434
+//   SYNAPSEBOX_AI=none | grok | openai | gemini | ollama   SYNAPSEBOX_AI_KEY=...   SYNAPSEBOX_AI_MODEL=...   SYNAPSEBOX_OLLAMA_URL=http://localhost:11434
 const fs = require("fs"), tty = require("tty"), readline = require("readline");
 const ai = require("../src/ai");
 
@@ -22,10 +22,10 @@ function openInput() {
 }
 
 async function fromEnv() {
-  const p = String(process.env.FILECLOUD_AI || "").toLowerCase();
+  const p = String(process.env.SYNAPSEBOX_AI || process.env.FILECLOUD_AI || "").toLowerCase();
   if (!p) return false;
-  if (p !== "none" && ![...ai.CLOUD, "ollama"].includes(p)) throw Error("FILECLOUD_AI debe ser none, grok, openai, gemini u ollama");
-  ai.save({ provider: p, api_key: process.env.FILECLOUD_AI_KEY, model: process.env.FILECLOUD_AI_MODEL, url: process.env.FILECLOUD_OLLAMA_URL });
+  if (p !== "none" && ![...ai.CLOUD, "ollama"].includes(p)) throw Error("SYNAPSEBOX_AI debe ser none, grok, openai, gemini u ollama");
+  ai.save({ provider: p, api_key: process.env.SYNAPSEBOX_AI_KEY || process.env.FILECLOUD_AI_KEY, model: process.env.SYNAPSEBOX_AI_MODEL || process.env.FILECLOUD_AI_MODEL, url: process.env.SYNAPSEBOX_OLLAMA_URL || process.env.FILECLOUD_OLLAMA_URL });
   ok("IA configurada desde variables de entorno: " + (p === "none" ? "sin IA" : ai.describe()));
   return true;
 }
@@ -48,7 +48,7 @@ async function main() {
   const askUntil = async (q, valid, again) => { for (;;) { const a = await ask(q); const v = valid(a); if (v !== null && v !== undefined) return v; console.log(again); } };
   const yesNo = q => askUntil(q + " (s/n): ", a => /^(s|si|sí|y|yes)$/i.test(a) ? true : /^(n|no)$/i.test(a) ? false : null, "Responde s (sí) o n (no).");
 
-  console.log("\n" + c("1", "Agente de IA para File Cloud") + "\nLos usuarios podrán pedirle que cree carpetas y archivos, y que mueva, copie o borre\nelementos, siempre solo dentro de su propia carpeta (nunca ejecuta nada).\n");
+  console.log("\n" + c("1", "Agente de IA para SynapseBox") + "\nLos usuarios podrán pedirle que cree carpetas y archivos, y que mueva, copie o borre\nelementos, siempre solo dentro de su propia carpeta (nunca ejecuta nada).\n");
   try {
     if (!await yesNo("¿Quieres configurar un agente de IA?")) {
       ai.save({ provider: "none" });

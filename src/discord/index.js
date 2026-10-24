@@ -1,4 +1,4 @@
-// Bot de Discord de File Cloud (OPCIONAL). Solo se activa si en el archivo .env hay un DISCORD_TOKEN.
+// Bot de Discord de SynapseBox (OPCIONAL). Solo se activa si en el archivo .env hay un DISCORD_TOKEN.
 // Sin token no se carga nada: el servidor funciona exactamente igual que siempre.
 //   - Vincular cuentas con un formulario privado (usuario, contraseña y 2FA).
 //   - Registro de actividad en un canal (sin guardar nada en disco) y avisos de actualización en otro.

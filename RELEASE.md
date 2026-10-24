@@ -1,57 +1,20 @@
-# Versión 2.12.3
+# Versión 2.13.0
 
-`$sendDM` ahora también puede escribirle a otro usuario por su ID.
-
-## Novedades
-- **FCScript, `$sendDM` con ID de usuario:** `$sendDM[123456789012345678;Hola]` envía el mensaje privado al usuario con esa ID (también acepta una mención, p. ej. `$sendDM[$mentioned;Hola]`). Si no pones ID, funciona igual que antes: `$sendDM[Hola]` se lo manda a quien usó el comando. Si el usuario tiene los privados cerrados, el comando lo indica con un error. Aparece actualizado en la wiki y el editor.
-
-## Archivos modificados
-- `src/discord/script/functions.js`, `src/discord/script/wiki.js`
-- `README.md`, `RELEASE.md`, `package.json`, `data/version.json`
-
----
-
-# Versión 2.12.2
-
-Corrección de errores en los temas.
-
-## Correcciones
-- **Colores que se mezclaban al cambiar de tema:** lo que un tema no definía (colores, bordes, fuente, espaciado) volvía a los valores del tema guardado en vez de a los por defecto, y los colores se veían mal. Ahora, al probar o aplicar un tema, todo lo que no define vuelve al valor por defecto.
-- **Fondo animado (GIF/vídeo/imagen) que no se quitaba, no se ponía o no cambiaba** al poner un tema o cambiar entre temas ya creados (Mis temas, predeterminados y comunidad, también con «Probar» y al cerrar sin aplicar). El fondo y la imagen de los botones del tema anterior ya no se quedan.
-
-## Archivos modificados
-- `public/js/common.js`, `src/services/themes.js`
-- `README.md`, `RELEASE.md`, `package.json`, `data/version.json`
-
----
-
-# Versión 2.12.1
-
-Estadísticas de uso en la web y 8 funciones nuevas de FCScript.
+File Cloud pasa a llamarse **SynapseBox**.
 
 ## Novedades
-- **Estadísticas** (botón en la barra del panel y en el menú de usuario): espacio usado **por tipo de archivo**, **carpetas que más pesan** y **archivos antiguos** (más de 365 días sin modificar). Los antiguos se pueden mandar a la **papelera** desde ahí.
-- Nueva ruta `GET /api/stats` (solo lectura, máximo 30 000 archivos y 20 s). Sin cambios en la base de datos.
-- **FCScript, 8 funciones nuevas:** `$average[a;b;…]`, `$median[a;b;…]`, `$dice[dados;caras]`, `$coinFlip` (Matemáticas); `$isPalindrome[texto]`, `$initials[texto;máx]` (Texto); `$weekday[unix]`, `$daysUntil[unix]` (Tiempo). Aparecen solas en la wiki y el editor. Las funciones existentes no cambian.
+- **Nuevo nombre en todo el proyecto:** web (títulos, textos, correos y avisos), bot de Discord, wiki y editor de FCScript, instaladores, README y archivos de descarga (`synapsebox-codigos-recuperacion.txt`). El paquete ahora es `synapsebox`.
+- **Nuevo repositorio:** https://github.com/OctavioproYT452/SynapseBox. El comprobador de versiones, `get.sh`, `get.ps1` y el aviso de actualización apuntan ya al repositorio nuevo.
+- **Icono nuevo:** favicon vectorial (un cubo conectado por nodos, en degradado azul-cian), `apple-touch-icon` para iOS y el mismo cubo como logo en la barra superior y la pantalla de acceso.
+- Los temas exportados usan ahora la clave `synapsebox`; los archivos de temas antiguos (con `filecloud`) siguen importándose sin problema.
+
+## Compatibilidad con instalaciones anteriores
+- **La base de datos se renombra sola** de `data/filecloud.db` a `data/synapsebox.db` al arrancar (con sus archivos `-wal`/`-shm`). No se pierde ningún dato.
+- Las variables `FILECLOUD_*` antiguas (`FILECLOUD_VERSION_URL`, `FILECLOUD_REPO_URL`, `FILECLOUD_AI*`, `FILECLOUD_DIR`, `FILECLOUD_REPO`, `FILECLOUD_START`) siguen funcionando; las nuevas son `SYNAPSEBOX_*`.
+- Si ya tenías `~/Filecloud` (o `%USERPROFILE%\Filecloud`), `get.sh` y `get.ps1` siguen usando esa carpeta para no duplicar la instalación. Para actualizar a mano: `git pull` (GitHub redirige el nombre antiguo) o `git remote set-url origin https://github.com/OctavioproYT452/SynapseBox.git`.
+- **FCScript** conserva su nombre y las funciones `$fc…` (`$fcUser`, `$fcSpace`…) para que no se rompan los comandos ya creados.
 
 ## Archivos modificados
-- `src/routes/stats.js` (nuevo), `src/index.js`
-- `src/discord/script/functions.js`
-- `public/js/panel.js`, `public/js/menu.js`, `public/panel.html`
-- `README.md`, `RELEASE.md`, `package.json`, `data/version.json`
-
----
-
-# Versión 2.12.0
-
-Herramienta para recuperar espacio.
-
-## Novedades
-- **Limpieza de espacio** (botón en la barra del panel y en el menú de usuario): los 25 archivos más grandes y los grupos de **archivos duplicados** (mismo contenido, por SHA-256) con el espacio que se puede liberar. Eliminar desde ahí manda el archivo a la **papelera**, así que se puede deshacer.
-- Análisis acotado para no cargar el servidor: máximo 30 000 archivos y no calcula huellas de archivos de más de 512 MB. Si se queda corto, lo indica.
-- Nueva ruta `GET /api/cleanup`. Sin cambios en la base de datos.
-
-## Archivos modificados
-- `src/routes/cleanup.js` (nuevo), `src/index.js`
-- `public/js/panel.js`, `public/js/menu.js`, `public/panel.html`
-- `README.md`, `RELEASE.md`, `package.json`, `data/version.json`
+- Cambio de nombre en: `README.md`, `.env.example`, `package.json`, `get.sh`, `get.ps1`, `scripts/**`, `tools/**`, `src/**` (incl. `src/discord/**`, `src/version.js`, `src/db/connection.js`) y `public/**`
+- Icono: `public/favicon.svg` (nuevo), `public/apple-touch-icon.png` (nuevo), `public/icons.svg`, todas las páginas `public/**/*.html`, `src/views/share-helpers.js`
+- `RELEASE.md`, `package.json`, `data/version.json`

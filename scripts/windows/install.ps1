@@ -1,4 +1,4 @@
-# File Cloud - instalador para Windows (PowerShell 5.1 o superior).
+# SynapseBox - instalador para Windows (PowerShell 5.1 o superior).
 # Instala Node.js (LTS) si falta y ejecuta "npm install".   Uso:  .\scripts\windows\install.ps1   (o -Start para arrancar al terminar)
 param([switch]$Start)
 $ErrorActionPreference = 'Stop'
@@ -16,6 +16,6 @@ if (-not (Test-Path .env) -and (Test-Path .env.example)) { Copy-Item .env.exampl
 Write-Host "==> Configuración del agente de IA..." -ForegroundColor Cyan
 node tools/setup-ai.js   # pregunta si quieres IA (Grok, OpenAI, Gemini u Ollama); nunca interrumpe la instalación
 
-Write-Host " OK File Cloud listo. Inicia con:  npm start   (http://localhost:3001)" -ForegroundColor Green
+Write-Host " OK SynapseBox listo. Inicia con:  npm start   (http://localhost:3001)" -ForegroundColor Green
 Write-Host "    El primer usuario que se registre será administrador."
 if ($Start) { npm start }

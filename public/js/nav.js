@@ -6,7 +6,7 @@ const item=(i,t,d,f,href,cls='')=>{const k=f?acts.push(f)-1:'',inner=`<span clas
   return href?`<a class="mi ${cls}" href="${href}" role="menuitem">${inner}</a>`:`<button type="button" class="mi ${cls}" role="menuitem" data-k="${k}">${inner}</button>`};
 const build=()=>{acts=[];const G=[['Ir a',[['home','Mis archivos','Volver a tu panel',null,'/panel.html'],...(s.admin&&page!=='admin'?[['settings','Administración','Usuarios, espacio y ajustes',null,'/admin/']]:[]),...(page!=='themes'?[['globe','Comunidad de temas','Temas de otros usuarios',null,'/themes.html']]:[])]],
   ['Personalización',[['palette','Apariencia','Temas, colores y tipografía',()=>appearance()]]]];
-  m.innerHTML=`<div class="uhead"><span class="uav lg">${esc(ini(s.user))}</span><div class="grow" style="min-width:0"><div class="uname">${esc(s.user)}${s.admin?' <span class="badge ad">ADMIN</span>':''}</div><small>Tu cuenta en File Cloud</small></div></div>`+
+  m.innerHTML=`<div class="uhead"><span class="uav lg">${esc(ini(s.user))}</span><div class="grow" style="min-width:0"><div class="uname">${esc(s.user)}${s.admin?' <span class="badge ad">ADMIN</span>':''}</div><small>Tu cuenta en SynapseBox</small></div></div>`+
   G.map(([g,l])=>`<div class="ugrp">${g}</div>`+l.map(x=>item(...x)).join('')).join('')+'<hr>'+item('logout','Cerrar sesión','Salir de este dispositivo',()=>logout(),null,'out')};
 const isOpen=()=>m.classList.contains('open'),close=()=>{m.classList.remove('open');scrim.classList.remove('on');btn.setAttribute('aria-expanded',false)};
 btn.onclick=()=>{if(!s)return;if(isOpen())return close();build();m.classList.add('open');scrim.classList.add('on');btn.setAttribute('aria-expanded',true)};

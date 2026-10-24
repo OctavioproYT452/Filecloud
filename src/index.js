@@ -67,4 +67,4 @@ if (!get("SELECT COUNT(*) n FROM users").n)
   console.warn("AVISO: no hay usuarios en la base de datos. Si vienes de la versión anterior, copia tu users.json a data/ y reinicia; o crea un usuario con: node tools/reset-password.js <usuario> <contraseña> --admin");
 ver.start();
 discord.start(); // bot de Discord opcional: solo arranca si hay DISCORD_TOKEN en .env
-app.listen(PORT, () => { console.log(`File Cloud corriendo en http://localhost:${PORT}`); console.log("Agente de IA: " + ai.describe()); });
+app.listen(PORT, () => { console.log(`SynapseBox corriendo en http://localhost:${PORT}`); console.log("Agente de IA: " + ai.describe()); });

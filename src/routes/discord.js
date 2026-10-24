@@ -52,7 +52,7 @@ router.post("/api/admin/discord/welcome", needAdmin, wrap(async (req, res) => {
   if (b.title !== undefined) patch.title = String(b.title);
   if (b.embed !== undefined) patch.embed = !!b.embed;
   if (b.enabled !== undefined) patch.enabled = !!b.enabled;
-  if (patch.enabled && !dc.state.members) throw Error("El bot no tiene activado «Server Members Intent» (Developer Portal → Bot → Privileged Gateway Intents). Actívalo y reinicia File Cloud");
+  if (patch.enabled && !dc.state.members) throw Error("El bot no tiene activado «Server Members Intent» (Developer Portal → Bot → Privileged Gateway Intents). Actívalo y reinicia SynapseBox");
   welcome.save(g.id, patch);
   logger.log("admin", `**${logger.md(req.user.username)}** *(admin, por la web)* cambió las bienvenidas de **${logger.md(g.name)}**`);
   res.json({ success: true });
@@ -92,7 +92,7 @@ router.post("/api/admin/discord/test", needAdmin, wrap(async (req, res) => {
   const sent = [];
   for (const [w, label] of [["log", "registros"], ["update", "actualizaciones"]]) {
     const id = store.channel(w); if (!id) continue;
-    await logger.sendTo(id, { embeds: [{ color: 0x4f8cff, title: "Mensaje de prueba", description: `El canal de ${label} funciona. Enviado por ${logger.md(req.user.username)} desde el panel web.`, footer: { text: "File Cloud" } }] })
+    await logger.sendTo(id, { embeds: [{ color: 0x4f8cff, title: "Mensaje de prueba", description: `El canal de ${label} funciona. Enviado por ${logger.md(req.user.username)} desde el panel web.`, footer: { text: "SynapseBox" } }] })
       .catch(e => { throw Error(`No se pudo escribir en el canal de ${label}: ${e.message}`); });
     sent.push(label);
   }

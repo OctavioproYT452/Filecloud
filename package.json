@@ -1,7 +1,7 @@
 {
-  "name": "file-cloud",
-  "version": "2.12.3",
-  "description": "File Cloud - gestión de archivos por usuario",
+  "name": "synapsebox",
+  "version": "2.13.0",
+  "description": "SynapseBox - gestión de archivos por usuario",
   "main": "server.js",
   "scripts": { "start": "node server.js", "reset-password": "node tools/reset-password.js", "setup-ai": "node tools/setup-ai.js --force" },
   "author": "Jesús Octavio Olivera Silva",
