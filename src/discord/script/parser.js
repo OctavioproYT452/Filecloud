@@ -1,4 +1,4 @@
-// FCScript: analizador del lenguaje de comandos propios (parecido a BDScript de BDFD).
+// SBScript: analizador del lenguaje de comandos propios (parecido a BDScript de BDFD).
 // Convierte el código en un árbol UNA sola vez (se guarda en caché) y señala los errores con su línea y columna.
 //   Funciones:  $nombre   o   $nombre[arg1;arg2]      Bloques: $if / $elseif / $else / $endif, $for / $endfor, $while / $endwhile
 //   Escapes:    \$  \;  \[  \]  \\       Comentarios: líneas que empiezan por //   o   $c[texto]

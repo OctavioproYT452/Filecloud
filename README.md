@@ -11,7 +11,7 @@ Sube, organiza, edita y comparte archivos desde cualquier dispositivo, con usuar
 
 </div>
 
-> **Versión 2.13.0.** Qué ha cambiado en esta versión: consulta [RELEASE.md](RELEASE.md).
+> **Versión 2.14.0.** Qué ha cambiado en esta versión: consulta [RELEASE.md](RELEASE.md).
 
 ---
 
@@ -348,7 +348,7 @@ Disponible en `/admin/` solo para administradores. Usa el mismo menú de usuario
 - La versión instalada está en `data/version.json`:
 
   ```json
-  { "version": "2.13.0" }
+  { "version": "2.14.0" }
   ```
 
 - Cada 2 minutos el servidor lee ese archivo local y lo compara con el `data/version.json` publicado en GitHub. Si el de GitHub es más nuevo (se comparan los números: `2.10` es mayor que `2.9`), los **administradores** ven un aviso de nueva versión con instrucciones para actualizar.
@@ -442,9 +442,9 @@ Un bot que se conecta a tu servidor de Discord con el token que pongas en el `.e
 
 Ser «admin» en el bot significa tener una cuenta vinculada que sea administradora en SynapseBox: se comprueba en cada uso, así que quitar el rol o suspender la cuenta surte efecto al instante.
 
-### Comandos propios (FCScript)
+### Comandos propios (SBScript)
 
-Desde **Admin → Discord → Abrir el editor de comandos** (`/admin/discord.html`, solo administradores) puedes crear tus propios comandos con **FCScript**, un lenguaje sencillo inspirado en BDScript de BDFD.
+Desde **Admin → Discord → Abrir el editor de comandos** (`/admin/discord.html`, solo administradores) puedes crear tus propios comandos con **SBScript**, un lenguaje sencillo inspirado en BDScript de BDFD.
 
 - **Tipos:** *slash* (`/comando`, con opciones de texto, número, usuario, canal, rol…), *prefijo* (`!comando`, con alias; el prefijo se cambia en el editor o con `/config prefijo`) y *mensaje* (responde cuando alguien escribe un texto: exacto, que lo contenga o que empiece así).
 - **Acceso por comando:** todos, solo cuentas vinculadas, solo admins de SynapseBox, o admins y gestores del servidor.
@@ -464,24 +464,29 @@ $if[$option[texto]==]
 $else
   Dijiste: $option[texto]
 $endif
-$footer[Tu espacio: $fcSpace de $fcQuota]
+$footer[Tu espacio: $sbSpace de $sbQuota]
 ```
 
 **Sintaxis:** `$funcion` o `$funcion[arg1;arg2]` (se pueden anidar). Escapes: `\$ \; \[ \]`. Comentarios: líneas que empiezan por `//` o `$c[texto]`. Bloques: `$if / $elseif / $else / $endif`, `$for[var;desde;hasta] … $endfor` y `$while[cond] … $endwhile` (máx. 200 vueltas). Operadores: `== != > < >= <= ~=` (contiene), `&&`, `||`.
 
-**Funciones (178):** contexto (`$username`, `$message[1]`, `$option[x]`, `$mentioned`, `$serverName`, `$hasRole`…), respuesta (`$title`, `$description`, `$color`, `$addField`, `$ephemeral`, `$sendMessage`, `$sendDM` (también a otro usuario por ID), `$addReaction`…), lógica (`$onlyIf`, `$onlyAdmin`, `$onlyPerms`, `$onlyRoles`, `$onlyLinked`, `$cooldown`, `$stop`, `$set/$get`), variables guardadas por usuario, servidor o globales (`$setUserVar`, `$getServerVar`, `$topUserVar`…), matemáticas (`$calc`, `$random`, `$round`…), texto (`$upper`, `$replace`, `$split`, `$contains`, `$choose`…), tiempo (`$date`, `$discordTime`, `$duration`), SynapseBox (`$fcUser`, `$fcSpace`, `$fcQuota`, `$fcUsers`, `$fcVersion`) y moderación (`$giveRole`, `$takeRole`, `$kick`, `$ban`, `$timeout`, `$deleteMessages`). La lista completa, con descripción de cada una, está en el panel *Funciones* del editor.
+**Funciones (205):** contexto (`$username`, `$message[1]`, `$option[x]`, `$mentioned`, `$serverName`, `$hasRole`…), respuesta (`$title`, `$description`, `$color`, `$addField`, `$ephemeral`, `$sendMessage`, `$sendDM` (también a otro usuario por ID), `$addReaction`…), lógica (`$onlyIf`, `$onlyAdmin`, `$onlyPerms`, `$onlyRoles`, `$onlyLinked`, `$cooldown`, `$stop`, `$set/$get`), variables guardadas por usuario, servidor o globales (`$setUserVar`, `$getServerVar`, `$topUserVar`…), matemáticas (`$calc`, `$random`, `$round`…), texto (`$upper`, `$replace`, `$split`, `$contains`, `$choose`…), tiempo (`$date`, `$discordTime`, `$duration`), SynapseBox (`$sbUser`, `$sbSpace`, `$sbQuota`, `$sbUsers`, `$sbVersion`) y moderación (`$giveRole`, `$takeRole`, `$kick`, `$ban`, `$timeout`, `$deleteMessages`). La lista completa, con descripción de cada una, está en el panel *Funciones* del editor.
 
-**Novedades de FCScript en la 2.10.11:** tarjetas completas (`$footerIcon`, `$authorIcon`, `$authorUrl`, `$titleUrl`), captcha con imagen (`$genCaptcha` genera un PNG sin dependencias, lo incluye en la tarjeta y guarda el código en la variable de usuario `captcha`; `$checkCaptcha` y `$clearCaptcha` lo verifican y lo borran), contadores (`$incUserVar`, `$incServerVar`, `$incGlobalVar`, `$rankUserVar`), utilidades de texto, números y fechas (`$progressBar`, `$percent`, `$randomString`, `$truncate`, `$parseDate`, `$timeAgo`…), más moderación (`$setNickname`, `$unban`, `$slowmode`) y **funciones de IA** (`$ai`, `$aiSummarize`, `$aiTranslate`, `$aiClassify`, `$aiSentiment`, `$aiModerate`…) que usan la IA configurada en el panel. Las funciones de IA solo envían y reciben texto, tratan lo que escribe el usuario como datos, limitan a 3 llamadas por ejecución y cuentan en el límite de IA de la cuenta vinculada (o 10 por hora si no la hay); en comandos slash el bot responde «pensando…» mientras espera.
+**Novedades de SBScript en la 2.10.11:** tarjetas completas (`$footerIcon`, `$authorIcon`, `$authorUrl`, `$titleUrl`), captcha con imagen (`$genCaptcha` genera un PNG sin dependencias, lo incluye en la tarjeta y guarda el código en la variable de usuario `captcha`; `$checkCaptcha` y `$clearCaptcha` lo verifican y lo borran), contadores (`$incUserVar`, `$incServerVar`, `$incGlobalVar`, `$rankUserVar`), utilidades de texto, números y fechas (`$progressBar`, `$percent`, `$randomString`, `$truncate`, `$parseDate`, `$timeAgo`…), más moderación (`$setNickname`, `$unban`, `$slowmode`) y **funciones de IA** (`$ai`, `$aiSummarize`, `$aiTranslate`, `$aiClassify`, `$aiSentiment`, `$aiModerate`…) que usan la IA configurada en el panel. Las funciones de IA solo envían y reciben texto, tratan lo que escribe el usuario como datos, limitan a 3 llamadas por ejecución y cuentan en el límite de IA de la cuenta vinculada (o 10 por hora si no la hay); en comandos slash el bot responde «pensando…» mientras espera.
 
 **Roles de autoservicio (2.10.11):** `$grantRole[idRol]` y `$revokeRole[idRol]` los ejecuta el **bot**, así que quien usa el comando no necesita permisos (ideal para el captcha). El bot necesita «Gestionar roles», su rol debe estar por encima del rol a dar, y por seguridad se rechazan roles con permisos de gestión, de integraciones y @everyone. `$canGrantRole` y `$botHasPerm` permiten comprobarlo antes.
 
-**Hablar de otra persona (2.10.11):** `$isLinked`, `$isFcAdmin`, `$fcUser`, `$fcSpace`, `$fcQuota` y `$fcPercent` aceptan un ID o mención de Discord (`$fcSpace[$mentioned[1]]`), igual que `$username`, `$avatar`, `$hasRole`, `$getUserVar`… Así `!perfil @juan` muestra el perfil de Juan. Ver la guía «Hablar de otra persona» de la wiki.
+**Hablar de otra persona (2.10.11):** `$isLinked`, `$isFcAdmin`, `$sbUser`, `$sbSpace`, `$sbQuota` y `$sbPercent` aceptan un ID o mención de Discord (`$sbSpace[$mentioned[1]]`), igual que `$username`, `$avatar`, `$hasRole`, `$getUserVar`… Así `!perfil @juan` muestra el perfil de Juan. Ver la guía «Hablar de otra persona» de la wiki.
 
-**Novedades de FCScript en la 2.12.1:** `$average`, `$median`, `$dice`, `$coinFlip` (matemáticas), `$isPalindrome`, `$initials` (texto), `$weekday` y `$daysUntil` (tiempo). Ya están en la wiki y en el editor.
+**Novedades de SBScript en la 2.12.1:** `$average`, `$median`, `$dice`, `$coinFlip` (matemáticas), `$isPalindrome`, `$initials` (texto), `$weekday` y `$daysUntil` (tiempo). Ya están en la wiki y en el editor.
+
+**Novedades de SBScript en la 2.14.0:** el lenguaje se llama ahora **SBScript** (antes FCScript) y las funciones de SynapseBox pasan de `$fcUser`, `$fcSpace`, `$fcQuota`, `$fcPercent`, `$fcUsers`, `$fcVersion` a `$sbUser`, `$sbSpace`, `$sbQuota`, `$sbPercent`, `$sbUsers`, `$sbVersion` (los comandos guardados con los nombres antiguos siguen funcionando). Además llegan las funciones **HTTP** y **JSON** de BDFD:
+- **HTTP:** `$httpGet`, `$httpPost`, `$httpPut`, `$httpPatch`, `$httpDelete` (el 2.º/3.er argumento opcional es un mensaje de error propio), `$httpAddHeader[nombre;valor]`, `$httpStatus` y `$httpResult[clave;…]` (sin claves devuelve el texto; con claves entra en el JSON de la respuesta). Por seguridad solo se permiten direcciones `http://` y `https://` públicas (nunca `localhost`, redes privadas ni `169.254.x.x`), con un máximo de 5 peticiones, 8 s y 1 MB por comando.
+- **JSON:** `$jsonParse`, `$json[clave;…]`, `$jsonSet`, `$jsonSetString`, `$jsonUnset`, `$jsonClear`, `$jsonExists`, `$jsonStringify`, `$jsonPretty`, `$jsonArray`, `$jsonArrayAppend`, `$jsonArrayUnshift`, `$jsonArrayPop`, `$jsonArrayShift`, `$jsonArrayCount`, `$jsonArrayIndex`, `$jsonArrayReverse`, `$jsonArraySort` y `$jsonJoinArray`. Las listas empiezan en la posición 0 y los corchetes de un JSON escrito a mano se escapan como `\[` y `\]`.
+- Ejemplo: `$httpGet[https://api.example.com/usuario/1;No pude consultar la API.]` + `$jsonParse[$httpResult]` + `$title[$json[name]]`.
 
 **Programar con IA (2.10.11):** en el editor, el botón **✨ IA** recibe una descripción («un comando que…»), la IA lee **toda la wiki** (guías, recetas y las 178 funciones con ejemplo), escribe el comando, lo pasa por el analizador y se corrige sola si hay errores (hasta 2 reintentos). Nunca guarda nada: el resultado aparece en el editor para revisarlo, probarlo y guardarlo. También puede modificar el comando abierto. Cuenta un uso del límite de IA del administrador y envía unos 10 000 tokens de contexto por petición. API: `POST /api/admin/discord/cmds/ai` (solo administradores).
 
-**Botones (2.10.11):** `$addButton[etiqueta;id;estilo;emoji]` y `$addLinkButton[etiqueta;url]` añaden botones al mensaje (hasta 25). Lo que pasa al pulsarlos se programa en un comando de nuevo tipo **Botón** cuyo activador es el id del botón (exacto o «empieza así», para mandar datos en el id: `rol:123`). Dentro puedes usar `$buttonId`, `$buttonArg[n]`, `$updateMessage` (edita el mensaje del botón), `$clearButtons`, `$ephemeral`, etc. Los ids de FCScript llevan el prefijo interno `fcs:`, así que no chocan con los del sistema de tickets.
+**Botones (2.10.11):** `$addButton[etiqueta;id;estilo;emoji]` y `$addLinkButton[etiqueta;url]` añaden botones al mensaje (hasta 25). Lo que pasa al pulsarlos se programa en un comando de nuevo tipo **Botón** cuyo activador es el id del botón (exacto o «empieza así», para mandar datos en el id: `rol:123`). Dentro puedes usar `$buttonId`, `$buttonArg[n]`, `$updateMessage` (edita el mensaje del botón), `$clearButtons`, `$ephemeral`, etc. Los ids de SBScript llevan el prefijo interno `fcs:`, así que no chocan con los del sistema de tickets.
 
 **Seguridad:** lo que escribe un usuario nunca se interpreta como código; los operadores de las condiciones solo cuentan si los escribió el autor; hay límites de pasos (4000), de tiempo (4 s), de bucles, de tamaño (20 000 caracteres por comando, 200 comandos, 60 slash) y de variables guardadas (20 000). Las funciones de moderación comprueban que **quien usa el comando** tenga el permiso de Discord correspondiente. Las menciones masivas (`@everyone` y roles) están desactivadas en las respuestas.
 
@@ -559,7 +564,7 @@ Estado del bot, enlace de invitación, canales de registros y de actualizaciones
 │   ├── index.js           # Arranque: Express, middleware, rutas y tareas periódicas
 │   ├── config.js          # Rutas (data, hosting, public), puerto y duración de sesión
 │   ├── version.js         # Comprobación de nuevas versiones
-│   ├── discord/script/    # FCScript: analizador (parser.js), intérprete (runtime.js) y funciones (functions.js), captcha (captcha.js) y contenido de la wiki (wiki.js)
+│   ├── discord/script/    # SBScript: analizador (parser.js), intérprete (runtime.js) y funciones (functions.js), HTTP y JSON (httpjson.js), HTTP y JSON (httpjson.js), captcha (captcha.js) y contenido de la wiki (wiki.js)
 │   ├── db/                # Base de datos SQLite
 │   │   ├── index.js       #   Ayudantes get / all / run / now
 │   │   ├── connection.js  #   Apertura (node:sqlite o better-sqlite3)
@@ -607,7 +612,7 @@ Estado del bot, enlace de invitación, canales de registros y de actualizaciones
 │   │   ├── logger.js      #   Cola en memoria y envío agrupado al canal de registros
 │   │   ├── updates.js     #   Aviso de versiones nuevas
 │   │   └── store.js       #   Vínculos y ajustes en la base de datos
-│   └── ai/                # Agente de IA (Grok/OpenAI/Gemini/Ollama) y consultas de un turno para FCScript (ask.js)
+│   └── ai/                # Agente de IA (Grok/OpenAI/Gemini/Ollama) y consultas de un turno para SBScript (ask.js)
 │       ├── index.js       #   API pública del módulo
 │       ├── config.js      #   Configuración guardada en la base de datos
 │       ├── validate.js    #   Validación de URL, modelo, clave y límites

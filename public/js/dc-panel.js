@@ -14,7 +14,7 @@ const wait=async f=>{try{await f()}catch(e){toast(e.message,1)}};
 
 function buildNav(){
   const open=S.guilds.reduce((n,g)=>n+(g.tickets?.open?.length||0),0);
-  nav.innerHTML=SECS.map(([k,e,t])=>`<button data-s="${k}" class="${k===sec?'on':''}"><span class="dp-e">${e}</span>${t}${k==='tickets'&&open?`<small>${open}</small>`:''}</button>`).join('')+'<hr><button data-go="/admin/discord.html"><span class="dp-e">✏️</span>Editor de comandos</button><button data-go="/admin/discord-wiki.html"><span class="dp-e">📖</span>Wiki de FCScript</button>';
+  nav.innerHTML=SECS.map(([k,e,t])=>`<button data-s="${k}" class="${k===sec?'on':''}"><span class="dp-e">${e}</span>${t}${k==='tickets'&&open?`<small>${open}</small>`:''}</button>`).join('')+'<hr><button data-go="/admin/discord.html"><span class="dp-e">✏️</span>Editor de comandos</button><button data-go="/admin/discord-wiki.html"><span class="dp-e">📖</span>Wiki de SBScript</button>';
 }
 function buildGuild(){
   const show=needsGuild(sec)&&S.guilds.length>1;gbar.hidden=!show;if(!show)return;
@@ -37,7 +37,7 @@ function estado(){
    (!s.configured||s.error?card('Cómo activarlo','',setup):
    `<div class="dp-stats"><div class="dp-stat"><b>${s.guilds.length}</b><span>Servidores del bot</span></div><div class="dp-stat"><b>${s.linked}</b><span>Cuentas vinculadas</span></div><div class="dp-stat"><b>${tickets}</b><span>Tickets abiertos</span></div></div>`+
    warns.map(w=>`<div class="dp-warn">⚠️ ${w}</div>`).join('')+
-   `<div class="dp-links">${[['actividad','📡','Actividad','Canales de registro y avisos de actualización'],['tickets','🎫','Tickets','Soporte con botón, rol que reclama y cierra'],['bienvenidas','👋','Bienvenidas','Mensaje y rol automático para quien entra'],['comandos','⚡','Comandos propios','FCScript, botones, captcha e IA']].map(([k,e,t,d])=>`<button class="dp-link" data-s="${k}"><span>${e}</span><b>${t}</b><small>${d}</small></button>`).join('')}</div>`);
+   `<div class="dp-links">${[['actividad','📡','Actividad','Canales de registro y avisos de actualización'],['tickets','🎫','Tickets','Soporte con botón, rol que reclama y cierra'],['bienvenidas','👋','Bienvenidas','Mensaje y rol automático para quien entra'],['comandos','⚡','Comandos propios','SBScript, botones, captcha e IA']].map(([k,e,t,d])=>`<button class="dp-link" data-s="${k}"><span>${e}</span><b>${t}</b><small>${d}</small></button>`).join('')}</div>`);
 }
 
 // ---------- Actividad ----------
@@ -85,8 +85,8 @@ function bienvenidas(){
 
 // ---------- Comandos ----------
 function comandos(){
-  return hd('Comandos propios','Crea tus comandos con FCScript, un lenguaje sencillo parecido a BDScript. Prefijo actual: <b>'+esc(S.prefix||'!')+'</b>')+
-   `<div class="dp-links">${[['/admin/discord.html','✏️','Abrir el editor','Carpetas, resaltado, pruebas y creación con IA (✨)'],['/admin/discord-wiki.html','📖','Wiki de FCScript','Guías, recetas y todas las funciones']].map(([h,e,t,d])=>`<button class="dp-link" data-go="${h}"><span>${e}</span><b>${t}</b><small>${d}</small></button>`).join('')}</div>`+
+  return hd('Comandos propios','Crea tus comandos con SBScript, un lenguaje sencillo parecido a BDScript. Prefijo actual: <b>'+esc(S.prefix||'!')+'</b>')+
+   `<div class="dp-links">${[['/admin/discord.html','✏️','Abrir el editor','Carpetas, resaltado, pruebas y creación con IA (✨)'],['/admin/discord-wiki.html','📖','Wiki de SBScript','Guías, recetas y todas las funciones']].map(([h,e,t,d])=>`<button class="dp-link" data-go="${h}"><span>${e}</span><b>${t}</b><small>${d}</small></button>`).join('')}</div>`+
    `<div class="dp-grid" style="margin-top:16px">${card('Tipos de comando','',`<ul class="muted" style="margin:0;padding-left:18px;line-height:1.8"><li><b>Slash</b> (/comando) con opciones</li><li><b>Prefijo</b> (${esc(S.prefix||'!')}comando)</li><li><b>Mensaje</b>: responde a un texto</li><li><b>Botón</b>: se ejecuta al pulsar un botón</li></ul>`)}${card('Ya incluido en el bot','',`<ul class="muted" style="margin:0;padding-left:18px;line-height:1.8"><li>Sistema de <b>tickets</b> con botón</li><li>Vinculación de cuentas, archivos, enlaces y /ia</li><li>Bienvenidas y registro de actividad</li></ul>`)}</div>`;
 }
 

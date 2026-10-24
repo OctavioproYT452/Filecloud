@@ -1,11 +1,11 @@
-// Wiki de FCScript: guías, recetas y referencia de funciones con buscador, filtros por categoría, "nuevo en esta versión" y resaltado de la sección actual.
+// Wiki de SBScript: guías, recetas y referencia de funciones con buscador, filtros por categoría, "nuevo en esta versión" y resaltado de la sección actual.
 (()=>{
 const nav=$('#wnav'),body=$('#wbody');
 const md=t=>esc(t).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/`([^`]+)`/g,'<code>$1</code>');
 const sig=d=>'$'+d.n+(d.a?'['+d.a+']':'');
 const slug=s=>s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-');
 let W=null,NEW=new Set(),cat='',q='';
-const GICON={inicio:'🚀',sintaxis:'✍️',condiciones:'🔀',variables:'💾',respuestas:'🎨',captcha:'🔒',ia:'🤖',opciones:'🎛️',permisos:'🛡️',limites:'📏',faq:'🩹',otros:'👥',botones:'🔘',tickets:'🎫',recetas:'🍳'};
+const GICON={inicio:'🚀',sintaxis:'✍️',condiciones:'🔀',variables:'💾',respuestas:'🎨',captcha:'🔒',ia:'🤖',http:'🌐',opciones:'🎛️',permisos:'🛡️',limites:'📏',faq:'🩹',otros:'👥',botones:'🔘',tickets:'🎫',recetas:'🍳'};
 const EMBED=`<div class="dc-anat"><div class="dc-anat-card"><div class="dc-a-row"><i>1</i><span class="dc-a-av"></span><b>Autor</b></div><div class="dc-a-row"><i>2</i><b class="dc-a-t">Título del mensaje</b></div><div class="dc-a-cols"><div><div class="dc-a-row"><i>3</i>Texto principal de la tarjeta, puede ocupar varias líneas.</div><div class="dc-a-fields"><div><i>5</i><b>Campo</b><br>valor</div><div><b>Campo</b><br>valor</div></div></div><div class="dc-a-th"><i>4</i></div></div><div class="dc-a-img"><i>6</i>Imagen grande</div><div class="dc-a-row dc-a-foot"><i>7</i><span class="dc-a-av sm"></span>Pie · hora</div></div></div>`;
 function blockHtml(b){
   if(b.t==='p')return`<p>${md(b.v)}</p>`;
@@ -20,7 +20,7 @@ function fnHtml(d){const ex=d.ex||[d.a?sig(d):'$'+d.n,''],id='f-'+slug(d.n);
   return`<article class="dc-fcard" id="${id}"><header><h4><span class="dc-dl">$</span>${esc(d.n)}</h4>${args(d)}${NEW.has(d.n)?`<span class="dc-new">Nuevo</span>`:''}<button class="btn ghost sm dc-link" data-link="${id}" title="Copiar enlace a esta función">🔗</button></header><p>${esc(d.d)}</p><pre><button class="btn ghost sm dc-cp" data-cp>Copiar</button><code>${esc(ex[0])}</code></pre>${ex[1]?`<div class="dc-res">${esc(ex[1])}</div>`:''}</article>`}
 function hero(){
   const news=W.functions.filter(d=>NEW.has(d.n));
-  return`<section class="dc-hero"><h1>Wiki de FCScript</h1><p>Escribe texto normal y usa funciones que empiezan por <code>$</code> donde quieras algo dinámico. Aquí tienes guías, recetas para copiar y las <b>${W.functions.length} funciones</b> con ejemplo.</p>
+  return`<section class="dc-hero"><h1>Wiki de SBScript</h1><p>Escribe texto normal y usa funciones que empiezan por <code>$</code> donde quieras algo dinámico. Aquí tienes guías, recetas para copiar y las <b>${W.functions.length} funciones</b> con ejemplo.</p>
   <div class="dc-start">${[['inicio','🚀','Empieza aquí','Tu primer comando en 5 minutos'],['respuestas','🎨','Tarjetas','Título, imágenes, iconos y campos'],['captcha','🔒','Captcha','Verificación con imagen paso a paso'],['ia','🤖','IA','Resumir, traducir y clasificar'],['recetas','🍳','Recetas','Ejemplos listos para copiar'],['faq','🩹','Problemas','Soluciones a errores típicos']].map(([id,i,t,s])=>`<a class="dc-sc" href="#g-${id}"><span>${i}</span><b>${t}</b><small>${s}</small></a>`).join('')}</div>
   ${news.length?`<div class="dc-newbox"><b>✨ Nuevo en la versión ${esc(W.version||'')}</b> <span class="muted">(${news.length} funciones)</span><div class="dc-chips">${news.map(d=>`<a href="#f-${slug(d.n)}">$${esc(d.n)}</a>`).join('')}</div></div>`:''}</section>`}
 function render(){

@@ -1,4 +1,4 @@
-// Generador de comandos FCScript con IA. La IA lee TODA la wiki (guías, recetas y las funciones con su ejemplo), escribe el comando,
+// Generador de comandos SBScript con IA. La IA lee TODA la wiki (guías, recetas y las funciones con su ejemplo), escribe el comando,
 // se comprueba con el analizador y, si hay errores, se le devuelven para que los corrija (máx. 2 reintentos).
 // Nunca guarda nada: devuelve el código al editor para que la persona lo revise, lo pruebe y lo guarde ella.
 const ai = require("../../ai");
@@ -17,7 +17,7 @@ function knowledge() {
 }
 const SYSTEM = () => {
   const k = knowledge();
-  return `Eres un experto en FCScript, el lenguaje de comandos propios del bot de Discord de SynapseBox. Tu trabajo: convertir lo que pide el administrador en UN comando FCScript correcto.
+  return `Eres un experto en SBScript, el lenguaje de comandos propios del bot de Discord de SynapseBox. Tu trabajo: convertir lo que pide el administrador en UN comando SBScript correcto.
 
 Reglas estrictas:
 - Usa SOLO funciones que existan en la REFERENCIA de abajo, con sus argumentos tal como están indicados ([x] = opcional). No inventes funciones ni sintaxis de otros lenguajes. Los nombres no distinguen mayúsculas.
@@ -26,7 +26,8 @@ Reglas estrictas:
 - Máximo 20000 caracteres de código. Escribe los textos para el usuario en español, a menos que se pida otro idioma.
 - Para comandos slash, define las opciones en la cabecera y léelas con $option[nombre]. Para prefijo/mensaje, usa $message, $message[n] y $mentioned[n].
 - Los botones se ponen con $addButton/$addLinkButton en el mensaje; lo que pasa al pulsarlos se programa en OTRO comando de tipo boton cuyo disparador es el id del botón. Si hacen falta varios comandos (p. ej. un panel y su botón), genera solo el que se pide y explica en NOTAS el comando de tipo boton que falta, con su código. El sistema de tickets ya existe (/tickets): no lo reprogrames.
-- Si lo pedido necesita algo que FCScript no puede hacer, haz lo más cercano posible y explícalo en NOTAS. No prometas funciones inexistentes.
+- HTTP y JSON (estilo BDFD): primero se hace la petición ($httpGet/$httpPost/$httpPut/$httpPatch/$httpDelete, que no escriben nada) y luego se lee con $httpResult[clave;…] y $httpStatus. Para trabajar con la respuesta usa $jsonParse[$httpResult] y $json[clave;…]; en listas la primera posición es 0. Pon siempre un mensaje de error en la petición (último argumento) y valida con $onlyIf[$httpStatus==200;…]. Solo hay http/https públicos, máx. 5 peticiones, 8 s y 1 MB. Si escribes un JSON a mano, sus corchetes se escapan como \\[ y \\]. No inventes APIs ni claves: usa las URLs que dé el administrador y avisa en NOTAS de las claves que debe revisar.
+- Si lo pedido necesita algo que SBScript no puede hacer, haz lo más cercano posible y explícalo en NOTAS. No prometas funciones inexistentes.
 - Usa $cooldown en comandos que puedan abusarse, $onlyIf para validar entradas y los permisos adecuados en moderación. Si usas IA ($ai…), compruébalo con $aiAvailable cuando tenga sentido.
 - Si te dan un comando existente para modificar, devuelve el comando COMPLETO ya modificado.
 
@@ -41,7 +42,7 @@ alias: a, b     (solo prefijo, opcional)
 disparador: texto que activa el comando (tipo mensaje) o id del botón sin el prefijo (tipo boton; letras, números y _ : . -)
 coincidencia: exacta | contiene | empieza     (mensaje: las tres; boton: exacta | empieza)
 ===CODIGO===
-(el código FCScript)
+(el código SBScript)
 ===NOTAS===
 (2-4 líneas en español: qué hace, cómo usarlo y cualquier limitación o ajuste que deba hacer el administrador, como poner un ID de rol)
 

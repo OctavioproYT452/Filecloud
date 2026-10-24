@@ -1,4 +1,4 @@
-// Consulta de un solo turno a la IA configurada, sin herramientas (no puede tocar archivos). La usan las funciones $ai… de FCScript.
+// Consulta de un solo turno a la IA configurada, sin herramientas (no puede tocar archivos). La usan las funciones $ai… de SBScript.
 // Límites: si quien lo usa tiene cuenta vinculada se cuenta en SU límite de IA (el mismo del asistente); si no, 10 usos por hora por persona de Discord.
 // Siempre: un máximo global por hora, 25 s de espera y la respuesta se limpia (sin menciones) antes de usarla.
 const { run, now } = require("../db");
@@ -40,7 +40,7 @@ async function ask({ u = null, did = "0", system = "", prompt, free = false }) {
 }
 
 // Sesión larga (varios mensajes, prompt grande, sin recortar la respuesta). Cuenta UN uso del usuario de SynapseBox aunque haya reintentos.
-// La usa el generador de comandos de FCScript. Devuelve una función chat(messages) que devuelve el texto de la IA.
+// La usa el generador de comandos de SBScript. Devuelve una función chat(messages) que devuelve el texto de la IA.
 const busyGen = new Set();
 async function session(u, fn) {
   if (!enabled()) throw Error("la IA no está configurada en este servidor");

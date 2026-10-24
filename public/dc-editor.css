@@ -1,4 +1,4 @@
-/* Editor de comandos de Discord (FCScript) y su wiki. Todas las clases llevan el prefijo dc- para no chocar con style.css */
+/* Editor de comandos de Discord (SBScript) y su wiki. Todas las clases llevan el prefijo dc- para no chocar con style.css */
 body[data-page=dcedit]{overflow:hidden}
 .dc-app{display:grid;grid-template-columns:290px minmax(0,1fr);height:calc(100dvh - 58px);background:var(--bg)}
 .dc-side{display:flex;flex-direction:column;min-height:0;background:var(--card);border-right:1px solid var(--line)}

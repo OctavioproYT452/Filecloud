@@ -1,4 +1,4 @@
-// Funciones de FCScript. Cada una: F(categoría, nombre, argumentos, descripción, función, opciones)
+// Funciones de SBScript. Cada una: F(categoría, nombre, argumentos, descripción, función, opciones)
 //   opciones: min/max (nº de argumentos), lazy (recibe los argumentos sin evaluar), q (no deja salto de línea en la salida)
 const { get, all, run } = require("../../db");
 const { usage } = require("../../lib/storage");
@@ -51,8 +51,8 @@ function vdel(ctx, sc, key, name) { if (ctx.dry) ctx.dryVars?.delete(`${sc}|${ke
 const num2 = (v) => { const x = R.num(v); return isNaN(x) ? 0 : x; };
 
 // Cuenta de SynapseBox de quien usa el comando o, si se indica un ID/mención de Discord, de esa persona (null si no está vinculada o está suspendida)
-function fcOf(ctx, v) { const uid = id(v); if (!uid || uid === ctx.user.id) return ctx.fc || null; const u = dstore.userByDiscord(uid); return u && !u.suspended ? u : null; }
-const fcNeed = (ctx, v) => { const u = fcOf(ctx, v); if (!u) throw Error(id(v) && id(v) !== ctx.user.id ? "esa persona no tiene la cuenta de SynapseBox vinculada" : "necesita la cuenta vinculada"); return u; };
+function sbOf(ctx, v) { const uid = id(v); if (!uid || uid === ctx.user.id) return ctx.fc || null; const u = dstore.userByDiscord(uid); return u && !u.suspended ? u : null; }
+const sbNeed = (ctx, v) => { const u = sbOf(ctx, v); if (!u) throw Error(id(v) && id(v) !== ctx.user.id ? "esa persona no tiene la cuenta de SynapseBox vinculada" : "necesita la cuenta vinculada"); return u; };
 
 // ---- calculadora segura (sin eval) ----
 function calc(src) {
@@ -103,8 +103,8 @@ F(C1, "ownerId", "", "ID del dueño del servidor.", c => c.guild?.ownerId ?? "")
 F(C1, "isOwner", "[id]", "true si el usuario es el dueño del servidor.", (c, a) => (c.guild?.ownerId ?? "") === (id(a[0]) || c.user.id));
 F(C1, "boostCount", "", "Número de mejoras (boosts) del servidor.", c => c.guild?.premiumSubscriptionCount ?? 0);
 F(C1, "channelTopic", "", "Tema del canal actual (vacío si no tiene).", c => c.channel?.topic ?? "");
-F(C1, "isFcAdmin", "[idUsuario]", "true si esa persona (por defecto, quien usa el comando) tiene su cuenta de SynapseBox vinculada y es administrador.", (c, a) => !!fcOf(c, a[0])?.is_admin);
-F(C1, "isLinked", "[idUsuario]", "true si esa persona (por defecto, quien usa el comando) tiene una cuenta de SynapseBox vinculada.", (c, a) => !!fcOf(c, a[0]));
+F(C1, "isFcAdmin", "[idUsuario]", "true si esa persona (por defecto, quien usa el comando) tiene su cuenta de SynapseBox vinculada y es administrador.", (c, a) => !!sbOf(c, a[0])?.is_admin);
+F(C1, "isLinked", "[idUsuario]", "true si esa persona (por defecto, quien usa el comando) tiene una cuenta de SynapseBox vinculada.", (c, a) => !!sbOf(c, a[0]));
 
 // =================== Respuesta ===================
 const C2 = "Respuesta";
@@ -275,12 +275,12 @@ F(C7, "weekday", "[unix]", "Nombre del día de la semana (lunes, martes…) de u
 
 // =================== SynapseBox ===================
 const C8 = "SynapseBox";
-F(C8, "fcUser", "[idUsuario]", "Usuario de SynapseBox vinculado a esa persona (por defecto, quien usa el comando); vacío si no hay.", (c, a) => fcOf(c, a[0])?.username ?? "");
-F(C8, "fcSpace", "[idUsuario]", "Espacio usado por esa persona (requiere cuenta vinculada).", async (c, a) => fmtB(await usage(fcNeed(c, a[0]))));
-F(C8, "fcQuota", "[idUsuario]", "Espacio total de la cuenta vinculada de esa persona.", (c, a) => { const l = limitB(fcNeed(c, a[0])); return Number.isFinite(l) ? fmtB(l) : "sin límite"; });
-F(C8, "fcPercent", "[idUsuario]", "Porcentaje de espacio usado por esa persona.", async (c, a) => { const u = fcNeed(c, a[0]), l = limitB(u); return Number.isFinite(l) ? Math.round(await usage(u) / l * 100) : 0; });
-F(C8, "fcUsers", "", "Número de cuentas del servidor de SynapseBox.", () => get("SELECT COUNT(*) n FROM users").n);
-F(C8, "fcVersion", "", "Versión instalada de SynapseBox.", () => ver.info().current);
+F(C8, "sbUser", "[idUsuario]", "Usuario de SynapseBox vinculado a esa persona (por defecto, quien usa el comando); vacío si no hay.", (c, a) => sbOf(c, a[0])?.username ?? "");
+F(C8, "sbSpace", "[idUsuario]", "Espacio usado por esa persona (requiere cuenta vinculada).", async (c, a) => fmtB(await usage(sbNeed(c, a[0]))));
+F(C8, "sbQuota", "[idUsuario]", "Espacio total de la cuenta vinculada de esa persona.", (c, a) => { const l = limitB(sbNeed(c, a[0])); return Number.isFinite(l) ? fmtB(l) : "sin límite"; });
+F(C8, "sbPercent", "[idUsuario]", "Porcentaje de espacio usado por esa persona.", async (c, a) => { const u = sbNeed(c, a[0]), l = limitB(u); return Number.isFinite(l) ? Math.round(await usage(u) / l * 100) : 0; });
+F(C8, "sbUsers", "", "Número de cuentas del servidor de SynapseBox.", () => get("SELECT COUNT(*) n FROM users").n);
+F(C8, "sbVersion", "", "Versión instalada de SynapseBox.", () => ver.info().current);
 
 // =================== Moderación (el que usa el comando debe tener el permiso en Discord) ===================
 const C9 = "Moderación";
@@ -303,14 +303,14 @@ function grantable(g, roleId) { // devuelve el rol o lanza un error que explica 
   const me = g.members.me; if (!me?.permissions?.has("ManageRoles")) throw Error("el bot no tiene el permiso «Gestionar roles» en este servidor");
   if (r.id === g.id || r.managed) throw Error("ese rol no se puede dar (es @everyone o de una integración)");
   if (r.position >= me.roles.highest.position) throw Error("el rol está por encima del rol del bot: sube el rol del bot en Ajustes del servidor → Roles");
-  const bad = DANGER.filter(p => r.permissions.has(p)); if (bad.length) throw Error(`por seguridad no se pueden dar con FCScript roles con permisos de gestión (${bad.slice(0, 3).join(", ")}…)`);
+  const bad = DANGER.filter(p => r.permissions.has(p)); if (bad.length) throw Error(`por seguridad no se pueden dar con SBScript roles con permisos de gestión (${bad.slice(0, 3).join(", ")}…)`);
   return r;
 }
 const selfRole = (give) => async (c, a) => {
   const g = sameGuild(c), rid = id(a[0]); if (!rid) throw Error("falta el ID del rol");
   await act(c, `${give ? "daría" : "quitaría"} el rol ${rid} a quien usa el comando (lo hace el bot, sin pedir permisos al usuario)`, async () => {
     const r = grantable(g, rid), m = c.member || await g.members.fetch(c.user.id);
-    if (give) await m.roles.add(r, "FCScript: $grantRole"); else await m.roles.remove(r, "FCScript: $revokeRole");
+    if (give) await m.roles.add(r, "SBScript: $grantRole"); else await m.roles.remove(r, "SBScript: $revokeRole");
   });
 };
 F(C9, "grantRole", "idRol", "Da un rol a quien usa el comando, lo hace el bot: el usuario NO necesita permisos. Ideal para el captcha. Solo roles sin permisos de gestión y por debajo del rol del bot.", selfRole(true), { q: true, min: 1 });
@@ -341,6 +341,12 @@ F(CA, "aiIdeas", "tema;[cantidad]", "Da una lista de ideas sobre un tema (5 por 
 F(CA, "aiSentiment", "texto", "Devuelve positivo, negativo o neutral según el tono del texto.", async (c, a) => { const r = (await askAI(c, "Indica el sentimiento del texto. Responde con una sola palabra: positivo, negativo o neutral.", a[0])).toLowerCase(); return /negativ/.test(r) ? "negativo" : /positiv/.test(r) ? "positivo" : "neutral"; }, { min: 1 });
 F(CA, "aiClassify", "texto;cat1,cat2,…", "Elige a cuál de tus categorías pertenece el texto. Devuelve una de ellas (vacío si ninguna encaja).", async (c, a) => { const cats = S(a[1]).split(",").map(x => x.trim()).filter(Boolean).slice(0, 20); if (!cats.length) throw Error("indica las categorías separadas por coma"); const r = (await askAI(c, `Clasifica el texto en UNA de estas categorías: ${cats.join(", ")}. Responde solo con el nombre exacto de la categoría.`, a[0])).toLowerCase(); return cats.find(x => r === x.toLowerCase()) || cats.find(x => r.includes(x.toLowerCase())) || ""; }, { min: 2 });
 F(CA, "aiModerate", "texto", "true si la IA considera el texto ofensivo, acoso, spam o inapropiado; si no, false. Pensado para comandos de mensaje.", async (c, a) => /^\s*(si|sí|true|yes)/i.test(await askAI(c, "¿El texto contiene insultos, acoso, discurso de odio, spam o contenido inapropiado? Responde solo «si» o «no».", a[0])), { min: 1 });
+
+// =================== HTTP y JSON (httpjson.js) ===================
+require("./httpjson")(F, { S, N, act });
+
+// Los comandos guardados antes del cambio de nombre (FCScript → SBScript) usaban $fcUser, $fcSpace… Siguen funcionando, sin aparecer en la wiki.
+for (const n of ["User", "Space", "Quota", "Percent", "Users", "Version"]) FN["fc" + n.toLowerCase()] = FN["sb" + n.toLowerCase()];
 
 const BLOCKDOCS = [
   { n: "if", a: "condición", d: "Empieza una condición. Operadores: == != > < >= <= ~= (contiene), && (y), || (o).", c: "Bloques", blk: true },

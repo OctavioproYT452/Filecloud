@@ -1,4 +1,4 @@
-// Intérprete de FCScript. Evalúa el árbol creado por parser.js con límites de pasos, de tiempo y de bucles.
+// Intérprete de SBScript. Evalúa el árbol creado por parser.js con límites de pasos, de tiempo y de bucles.
 // El texto que escribe un usuario NUNCA se vuelve a interpretar como código: solo se inserta como texto.
 const MAX_STEPS = 4000, MAX_LOOP = 200;
 class Stop extends Error { constructor(msg) { super(msg || ""); this.stop = true; this.msg = msg || ""; } }
@@ -97,7 +97,7 @@ async function cond(ctx, nodes) {
 
 // Ejecuta un comando ya compilado. ctx lo prepara custom.js (quién lo usa, dónde, opciones…).
 async function exec(compiled, ctx) {
-  Object.assign(ctx, { steps: 0, deadline: Date.now() + (ctx.limitMs || 4000), vars: new Map(), sim: ctx.sim || [], out: { embed: {}, fields: [], files: [], buttons: [], update: false, clearButtons: false, eph: false, del: false, reactions: [], ai: 0 } });
+  Object.assign(ctx, { http: undefined, json: undefined, steps: 0, deadline: Date.now() + (ctx.limitMs || 4000), vars: new Map(), sim: ctx.sim || [], out: { embed: {}, fields: [], files: [], buttons: [], update: false, clearButtons: false, eph: false, del: false, reactions: [], ai: 0 } });
   try {
     const text = (await ev(ctx, compiled.ast)).replace(/\n{3,}/g, "\n\n").trim();
     return { content: text.slice(0, 2000), out: ctx.out, sim: ctx.sim };

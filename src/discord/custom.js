@@ -1,4 +1,4 @@
-// Comandos propios del bot (FCScript). Cada comando es un archivo .fcs dentro de data/discord-commands/<carpeta>/.
+// Comandos propios del bot (SBScript). Cada comando es un archivo .fcs dentro de data/discord-commands/<carpeta>/.
 // Al arrancar (o al guardar) se leen y se compilan UNA vez; después solo se ejecuta el árbol que está en memoria.
 //   Tipos: slash (/comando con opciones) · prefijo (!comando) · mensaje (responde a un texto concreto)
 const fs = require("fs"), path = require("path");
@@ -187,7 +187,7 @@ async function runSlash(i) {
   await send(p); return true;
 }
 
-// Botón de un mensaje de FCScript (id «fcs:…»): se busca el comando de tipo «boton» cuyo activador coincide
+// Botón de un mensaje de SBScript (id «fcs:…»): se busca el comando de tipo «boton» cuyo activador coincide
 async function runButton(i) {
   ensure(); const bid = String(i.customId).slice(4), EPH = D.MessageFlags.Ephemeral;
   const c = btns.find(b => b.meta.coincidencia === "exacta" ? bid === b.meta.disparador : b.meta.coincidencia === "empieza" ? bid.startsWith(b.meta.disparador) : bid.includes(b.meta.disparador));
